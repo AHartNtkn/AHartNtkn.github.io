@@ -3,3 +3,15 @@
 ### About Me
 
 I'm currently a data science student. I'm interested in dependent type theory, extentional type theories, machine learning, and the foundations of logic an mathematics.
+
+<div class="content list">
+  {% for post in site.posts %}
+    {% if post.categories contains 'blog' %}
+    <div class="list-item">
+    <p class="list-post-title">
+        <a href="{{ site.baseurl }}{{ post.url }}">- {{ post.title }}</a> (<small>{{post.date | date: "%m/%d/%y" }}</small>)
+        </p>
+    </div>
+    {% endif %}
+  {% endfor %}
+</div>
