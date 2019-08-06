@@ -48,17 +48,20 @@ From here, we can prove things like
 giving a unique typing to the S combinator (assuming `A ⪯ B` and `B ⪯ A` implies `A = B`).
 
 One of the main fixations of the paper is that of a complete lattice. This gives us universal meets `⋏ X . F X` and joins `⋎ X . F X`. Generically, `A` is a subtype of `⋎ X . F X` whenever `F A` holds, and `⋏ X . F X` is a subtype of `A` whenever `F A` holds. They should satisfy the following principals;
-
-    ⋎Witness : ∀ A F . F A → A ⪯ ⋎ X . F X
-    ⋎Elim : ∀ A F . (∀ X . F X → X ⪯ A) → ⋎ X . F X ⪯ A
     
     ⋏Witness : ∀ A F . (∀ X . F X → A ⪯ X) → A ⪯ ⋏ X . F X
     ⋏Elim : ∀ A F . F A → ⋏ X . F X ⪯ A
+    
+    ⋎Witness : ∀ A F . F A → A ⪯ ⋎ X . F X
+    ⋎Elim : ∀ A F . (∀ X . F X → X ⪯ A) → ⋎ X . F X ⪯ A
 
 These operators are similar to existential and universal types. Compare:
 
-    ∀Witness : ∀ A F . F A ⪯ ∀ X . F X
-    ∃Elim : ∀ A F . ∃ X . F X ⪯ F A
+    ∀Witness : ∀ A F . (∀ X . A ⪯ F X) → A ⪯ ∀ X . F X 
+    ∀Elim : ∀ A F . ∀ X . F X ⪯ F A
+
+    ∃Witness : ∀ A F . F A ⪯ ∃ X . F X  
+    ∃Elim : ∀ A F . (∀ X . F X ⪯ A) → ∃ X . F X ⪯ A
 
 Using these meets and joins, we can define an application for a particular notion of implication as `A B = ⋏X . A ⪯ B → X`. That is, `A B` is a subtype of anything, `X`, that can result when interpreting `A` as a function that takes `B`s as inputs.
 
