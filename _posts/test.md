@@ -1,7 +1,7 @@
 ---
 title: Test Post
 description: A post for testing
-categories: null
+categories: blog
 ---
 
 ## Test Post
