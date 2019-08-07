@@ -81,7 +81,7 @@ Function types (should be provably equivalent, though not necessarily equal, to 
 
 Intersection Types:
 
-    ∪ X Y = ⋎Z . Z ⪯ X & Z ⪯ Y
+    ∩ X Y = ⋎Z . Z ⪯ X & Z ⪯ Y
 
 Dependent Intersection Types:
 
