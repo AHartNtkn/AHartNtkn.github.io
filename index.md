@@ -2,7 +2,7 @@
 
 ### About Me
 
-I'm currently a data science student. I'm interested in dependent type theory, extentional type theories, machine learning, and the foundations of logic an mathematics. Test
+I'm currently a data science student. I'm interested in dependent type theory, extentional type theories, machine learning, and the foundations of logic an mathematics.
 
 ## Blog Posts
 
