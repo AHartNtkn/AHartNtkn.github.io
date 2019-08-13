@@ -1,10 +1,10 @@
 # --- General options --- #
 
 # Name of website
-title: Math and Science from and extentional perspective
+title: Anthony Hart
 
 # Short description of your site
-description: The blog of Anthony Hart
+description: Math and Science from an Extentional Perspective
 
 # --- Local development options ---
 # If your website is hosted locally rather than on GitHub, then you need to uncomment the next two parameters to set the url and baseurl
@@ -40,7 +40,7 @@ avatar: "/img/avatar-icon.png"
 navbar-col: "#F5F5F5"
 navbar-text-col: "#368a4d"
 navbar-children-col: "#F5F5F5"
-page-col: "#fd6363"
+page-col: "#ff6969"
 link-col: "#a6ff94"
 hover-col: "#3b9654"
 footer-col: "#ed5353"
