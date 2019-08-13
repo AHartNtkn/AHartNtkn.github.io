@@ -4,7 +4,7 @@
 title: Anthony Hart
 
 # Short description of your site
-description: Math and Science from an Extentional Perspective
+description: Math and Science from an Extensional Perspective
 
 # --- Local development options ---
 # If your website is hosted locally rather than on GitHub, then you need to uncomment the next two parameters to set the url and baseurl
@@ -20,7 +20,7 @@ description: Math and Science from an Extentional Perspective
 
 # List of links in the navigation bar
 navbar-links:
-  About Me: "I’m currently a data science student. I’m interested in dependent type theory, extentional type theories, machine learning, and the foundations of logic an mathematics."
+  About Me: "I’m currently a data science student. I’m interested in dependent type theory, extensional type theories, machine learning, and the foundations of logic an mathematics."
   Resources:
     - Beautiful Jekyll: "http://deanattali.com/beautiful-jekyll/"
   Author's home: "http://deanattali.com"
