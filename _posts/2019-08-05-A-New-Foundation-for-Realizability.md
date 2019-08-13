@@ -1,5 +1,3 @@
-## A New Foundation for Realizability
-
 I read a rather fascinating paper recently called "[Implicative algebras: a new foundation for realizability and forcing](https://arxiv.org/abs/1802.00528)". I thought this was a good paper, and I need content for this blog, so I figure giving a summary of it would be a good idea.
 
 The paper itself, from the very beginning, spends an inordinate amount of time on classical realizability, implicative algebras, and complete lattices. By my account, there are two ?most? important insights early in the paper, neither of which require an understanding of any of these. Of course, this assessment is colored by my personal priorities, so another reader can feel free to disagree. The two insights are, firstly, a way to talk about terms and typing on the level of propositions rather than judgments, and secondly, a notion of type-type application, from which term-term application can be recovered as a special case.
