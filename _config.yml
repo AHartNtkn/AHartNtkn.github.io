@@ -1,7 +1,7 @@
 # --- General options --- #
 
 # Name of website
-title: My website
+title: Math and Science from and extentional perspective
 
 # Short description of your site
 description: The blog of Anthony Hart
@@ -40,7 +40,7 @@ avatar: "/img/avatar-icon.png"
 navbar-col: "#F5F5F5"
 navbar-text-col: "#368a4d"
 navbar-children-col: "#F5F5F5"
-page-col: "#cd3333"
+page-col: "#fd6363"
 link-col: "#a6ff94"
 hover-col: "#3b9654"
 footer-col: "#ed5353"
@@ -92,7 +92,7 @@ share-links-active:
 
 # How to display the link to the website in the footer
 # Remove this if you don't want a link in the footer
-url-pretty: "MyWebsite.com"  # eg. "deanattali.com/beautiful-jekyll"
+url-pretty: "ahartntkn.github.io"  # eg. "deanattali.com/beautiful-jekyll"
 
 # --- Web Statistics Section --- #
 
