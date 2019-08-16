@@ -154,6 +154,9 @@ title-separator: "-"
 # Output options (more information on Jekyll's site)
 timezone: "America/Mountain"
 markdown: kramdown
+kramdown:
+   syntax_highlighter_opts:
+      disable : true
 highlighter: none
 permalink: /:year-:month-:day-:title/
 paginate: 5
