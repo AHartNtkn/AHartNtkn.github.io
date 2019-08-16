@@ -674,10 +674,9 @@ pre {
   margin: 0;
 }
 .highlight > pre {
-  color: rgba(0,0,0,0.3);
-  background:none
+  color: #a61717;
+  background-color: #e3d2d2
   border: 1px solid rgba(0,0,0,0.1);
-  border-left: 7px solid #444;
 }
 .highlight > pre:not([class~="highlight"]) { /* code block with line number */
   padding: 0;
