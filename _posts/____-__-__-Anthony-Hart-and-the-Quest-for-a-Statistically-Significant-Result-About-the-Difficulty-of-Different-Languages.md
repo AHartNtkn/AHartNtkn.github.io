@@ -12,9 +12,16 @@ The answer to the initial question is Japanese, for the record; restricted to th
 
 Throughout this post, I will be making use of two datasets. Firstly, [this](https://data.world/dataremixed/language-difficulty-ranking) version of the FSI data put into a nice csv file, and secondly, [this](https://wals.info/download) database version of the Atlas of Language Structures. With these, we might be able to draw conclusions about what makes languages more or less difficult to learn.
 
-Firstly, some housekeeping! The two datasets aren't completely compatible, and, as such, some changes need to be made to combine them. I will call the initial difficulty `diffDf`, rename it's language name column, and rename a few entries so that it can be combined with the ALS database.
+Firstly, some housekeeping! For reference, I will be using [python](https://www.python.org/), [pandas](https://pandas.pydata.org/), [geopandas](http://geopandas.org/), [matplotlib](https://matplotlib.org/), and [scipy](https://www.scipy.org/) for my analysis here.
 
-(For reference, I will be using [python](https://www.python.org/), [pandas](https://pandas.pydata.org/), and [scipy](https://www.scipy.org/) for my analysis here).
+```python
+import matplotlib.pyplot as plt
+import pandas as pd
+import geopandas as gpd
+import scipy.stats as stats
+```
+
+The two datasets aren't completely compatible, and, as such, some changes need to be made to combine them. I will call the initial difficulty `diffDf`, rename it's language name column, and rename a few entries so that it can be combined with the ALS database.
 
 ```python
 # Import and clean database of language difficulties.
@@ -80,6 +87,57 @@ english = langDf[langDf['Name'] == "English"].copy()
 
 Well, now that we have a dataset, let's do the most obvious thing. Plot the world! By taking the 
 
+[shape file](https://www.naturalearthdata.com/downloads/110m-cultural-vectors/)
+
+```
+count_dict = {}
+
+for i in langDf.T:
+  newKeys = langDf['countrycodes'][i].split()
+  newHours = langDf['class_hours'][i]
+  for key in newKeys:
+    if key in count_dict.keys():
+      count_dict[key] = ((count_dict[key][0]*count_dict[key][1]+newHours)/(count_dict[key][1]+1), count_dict[key][1]+1)
+    else:
+      count_dict[key] = (newHours, 1)
+```
+
+```
+newDF = []
+
+i=0
+for key in count_dict.keys():
+  newDF.append([key,count_dict[key][0]])
+  i+=1
+
+count_hours = pd.DataFrame(newDF,  columns=['countrycodes','class_hours'])
+```
+
+```
+shapefile = 'ne_110m_admin_0_countries.shp'
+
+gdf = gpd.read_file(shapefile)[['ISO_A2', 'geometry']].to_crs('+proj=robin')
+gdf.sample(5)
+# Drop Antarctica
+merged = gdf.merge(count_hours, left_on='ISO_A2', right_on='countrycodes', how = 'left').drop(159)
+```
+
+```
+ax = merged.dropna().plot(column='class_hours', cmap='Reds', figsize=(16, 10), scheme='equal_interval', k=9, legend=True)
+
+merged[merged.isna().any(axis=1)].plot(ax=ax, color='#aaaaaa', hatch='//')
+
+ax.set_title('Hours Needed to Learn Language by Country of Origin (Averaged)', fontdict={'fontsize': 20}, loc='left')
+# ax.annotate(description, xy=(0.1, 0.1), size=12, xycoords='figure fraction')
+
+ax.set_axis_off()
+ax.set_xlim([-1.5e7, 1.7e7])
+ax.get_legend().set_bbox_to_anchor((.12, .4))
+ax.get_figure();
+```
+
+
+Shoutout to Ramiro Gómez and his [helpful tutorial](https://ramiro.org/notebook/geopandas-choropleth/). So many choropleth guides overcomplicate things with interactivity and way too many extranious libraries. Sometimes when you need a hammer a jackhammer just won't help.
 
 ## Subjects, Objects, Verbs
 
@@ -91,6 +149,6 @@ Well, now that we have a dataset, let's do the most obvious thing. Plot the worl
 ## Goodbye!
 
 
-Well, we certainly learned a lot today. I mean, nothing that we learned was definitely true, but we *did* learned a lot, regardless.
+Well, we certainly learned a lot today. I mean, nothing that we learned was definitely true, but we *did* learn a lot, regardless.
 
 ... Bye!
