@@ -77,7 +77,7 @@ for i in langDf.T:
 langDf = langDf.reset_index()
 ```
 
-Note that this also gets rid of english as a column, so before running that, I took out the english row for later reference.
+Note that this also gets rid of English as a column, so before running that, I took out the English row for later reference.
 
 ```python
 english = langDf[langDf['Name'] == "English"].copy()
@@ -85,9 +85,9 @@ english = langDf[langDf['Name'] == "English"].copy()
 
 ## The World
 
-Well, now that we have a dataset, let's do the most obvious thing. Plot the world! By taking the 
+Well, now that we have a dataset, let's do the most obvious thing. Plot the world! The ALS dataset contains country codes for where its languages come from. We can use those to see where the most difficult languages come from. However, they aren't in the right format. Some of the languages list multiply country codes. To fix this, I must create a new dataset with the individual country codes connected to the difficulties.
 
-[shape file](https://www.naturalearthdata.com/downloads/110m-cultural-vectors/)
+I start out with a dictionary that I can use to map the country codes to the difficulty of its languages. For each listed language and for each country code listed for each lanugage, if the country isn't already in the dictionary, add it along with its difficulty; if it is then update the mean difficulty using the new refference.
 
 ```
 count_dict = {}
@@ -102,6 +102,8 @@ for i in langDf.T:
       count_dict[key] = (newHours, 1)
 ```
 
+Now we convert the dictionary into a new dataframe by first converting it into an array, then casting it.
+
 ```
 newDF = []
 
@@ -113,14 +115,26 @@ for key in count_dict.keys():
 count_hours = pd.DataFrame(newDF,  columns=['countrycodes','class_hours'])
 ```
 
+A bit annoying, but not too hard. But now I need to plot this out. I need a shape file for the earth. A good source is [naturalearthdata.com](aturalearthdata.com). In particular, the [100m data](https://www.naturalearthdata.com/downloads/110m-cultural-vectors/) will work fine for my purposes. This data can be loaded using geopandas.
+
+
 ```
 shapefile = 'ne_110m_admin_0_countries.shp'
 
 gdf = gpd.read_file(shapefile)[['ISO_A2', 'geometry']].to_crs('+proj=robin')
-gdf.sample(5)
-# Drop Antarctica
+```
+
+This will give us a large database with lots of entries. One of them, the main geometric data, is a polygon describing the geometry of the country. The other column we're interested in is the `ISO_A2` column, being one of several columns giving country codes. That one contains the ISO alpha-2 country codes, the same codes that the ALS database uses. We can easily merge these together using that column.
+
+
+```
 merged = gdf.merge(count_hours, left_on='ISO_A2', right_on='countrycodes', how = 'left').drop(159)
 ```
+
+Row 159 contains Antarctica. Since it just takes up space on our map, I decided to simply drop it.
+
+At this point, we can get on with out plotting. In particular, we'll be plotting two layers. The first layer will plot our data, the second will plot any country who's data is missing.
+
 
 ```
 ax = merged.dropna().plot(column='class_hours', cmap='Reds', figsize=(16, 10), scheme='equal_interval', k=9, legend=True)
@@ -128,7 +142,6 @@ ax = merged.dropna().plot(column='class_hours', cmap='Reds', figsize=(16, 10), s
 merged[merged.isna().any(axis=1)].plot(ax=ax, color='#aaaaaa', hatch='//')
 
 ax.set_title('Hours Needed to Learn Language by Country of Origin (Averaged)', fontdict={'fontsize': 20}, loc='left')
-# ax.annotate(description, xy=(0.1, 0.1), size=12, xycoords='figure fraction')
 
 ax.set_axis_off()
 ax.set_xlim([-1.5e7, 1.7e7])
@@ -136,8 +149,14 @@ ax.get_legend().set_bbox_to_anchor((.12, .4))
 ax.get_figure();
 ```
 
+![Hours Needed to Learn Language by Country of Origin (Averaged)](../img/language_difficulty.png)
 
-Shoutout to Ramiro Gómez and his [helpful tutorial](https://ramiro.org/notebook/geopandas-choropleth/). So many choropleth guides overcomplicate things with interactivity and way too many extranious libraries. Sometimes when you need a hammer a jackhammer just won't help.
+
+Shoutout to Ramiro Gómez and his [helpful tutorial](https://ramiro.org/notebook/geopandas-choropleth/). So many choropleth guides overcomplicate things with interactivity and way too many extranious libraries, but I found this one to be just right.
+
+Now that we have this plot, we can notice a few things. The hardest languages are concentrated in two places; firstly in the far east within Japan and Korea, and secondly spread throughout northern Africa and the Middle East. That second area is so dark mostly due to different dialects of Arabic. We can also note that the easiest languages tend to group in europe, close to England. Not surprising, as these are where the languages most similar to English are concentrates.
+
+We can also notice that there's lots of missing data. Few major languages come from the Americas, Australia, or southern Africa, and, as a result, information on the difficulty of languages from there isn't as easy to find. Or, at the very least, the FSI didn't bother to find it. 
 
 ## Subjects, Objects, Verbs
 
