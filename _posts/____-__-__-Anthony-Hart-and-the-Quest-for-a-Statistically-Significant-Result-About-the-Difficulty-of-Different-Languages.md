@@ -122,6 +122,8 @@ A bit annoying, but not too hard. But now I need to plot this out. I need a shap
 shapefile = 'ne_110m_admin_0_countries.shp'
 
 gdf = gpd.read_file(shapefile)[['ISO_A2', 'geometry']].to_crs('+proj=robin')
+#Fix France
+gdf['ISO_A2'][43]='FR'
 ```
 
 This will give us a large database with lots of entries. One of them, the main geometric data, is a polygon describing the geometry of the country. The other column we're interested in is the `ISO_A2` column, being one of several columns giving country codes. That one contains the ISO alpha-2 country codes, the same codes that the ALS database uses. We can easily merge these together using that column.
