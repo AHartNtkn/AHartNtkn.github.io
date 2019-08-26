@@ -7,7 +7,7 @@ The answer to the initial question is Japanese, for the record; restricted to th
 - [Boilerplate](#heading)
 - [Seeing The World](#heading-1)
 - [Preliminary Examination](#heading-2)
-- [Through Examination](#heading-3)
+- [Thorough Examination](#heading-3)
 - [Goodbye!](#heading-4)
 
 ## Boilerplate
@@ -109,12 +109,7 @@ for i in langDf.T:
 Now we convert the dictionary into a new dataframe by first converting it into an array, then casting it.
 
 ```python
-newDF = []
-
-i=0
-for key in count_dict.keys():
-  newDF.append([key,count_dict[key][0]])
-  i+=1
+newDF = [ [key,count_dict[key][0]] for key in count_dict.keys() ]
 
 count_hours = pd.DataFrame(newDF,  columns=['countrycodes','class_hours'])
 ```
@@ -215,11 +210,11 @@ ttest_ind(langDf[langDf[c]=='6 No gender distinctions']['class_hours'],
           langDf[langDf[c]=='2 3rd person only, but also non-singular']['class_hours'])
 ```
 
-    > Ttest_indResult(statistic=-0.8620928091641663, pvalue=0.4013730995744619)
+    Ttest_indResult(statistic=-0.8620928091641663, pvalue=0.4013730995744619)
 
 Nope! In fact, I went through a bunch of different attributes, from subject, object, verb order, to negation morphology, and I couldn't find a single significant result. What to do...
 
-## Through Examination
+## Thorough Examination
 
 Well, let's stop looking manually, and do things automatically! I wrote this code to perform every t-test possible on all values for every collumn. It first prints a graph of the data, then it makes a table of t-tests for each unique value.
 
@@ -235,7 +230,7 @@ for c in langDf.columns:
         pd.DataFrame(
           [ [ ttest_ind(langDf[langDf[c]==r1]['class_hours'], langDf[langDf[c]==r2]['class_hours']).pvalue
               for r1 in langDf[c].unique()[1:] ]
-              for r2 in langDf[c].unique()[1:]]
+              for r2 in langDf[c].unique()[1:] ]
           , columns=langDf[c].unique()[1:]) )
 ```
 
@@ -243,7 +238,7 @@ With this, I can simply look for small p-values! Of course, let's consider the f
 
 The fist thing I find is the relation between languages with differnt words for tea.
 
-![Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns](../img/AHQSSRADDL/num_of_genders_pronouns.png)
+![Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns](../img/AHQSSRADDL/word_for_tea.png)
 
 <!-- 
 ax = langDf.pivot_table(values=['class_hours'], index='138A Tea').sort_values('class_hours').plot(kind='bar', color='g');
@@ -259,13 +254,14 @@ ttest_ind(langDf[langDf[c]=='1 Words derived from Sinitic cha']['class_hours'],
           langDf[langDf[c]=='2 Words derived from Min Nan Chinese te']['class_hours'])
 ```
 
-    > Ttest_indResult(statistic=3.226432025596896, pvalue=0.002113020067139584)
+    Ttest_indResult(statistic=3.226432025596896, pvalue=0.002113020067139584)
 
 I suspect that this has more to do with location than anything. I double having "Cha" as the word for tea makes a laguage harder. To see this, we can run a χ^2 test with this vs language genus, we can see a significant relation
 
 ```python
 ct = pd.crosstab(langDf['genus'], langDf['138A Tea'])
 chi_squared, p_value, dof, expected = chi2_contingency(np.array(ct))
+print('Chi-squared: ', chi_squared, '\np-value: ', p_value)
 ```
 
     Chi-squared:  78.91874999999999 
@@ -273,63 +269,59 @@ chi_squared, p_value, dof, expected = chi2_contingency(np.array(ct))
 
 It seems most likely that those languages which happen to be hard for English speakers often share a history which is what really determines this category.
 
-Continuing on, 
+Something that seems to genuenly contribute to difficulty is the handling of nominal vs verbal conjunction. In English, they are the same ("The cat *and* the dog played *and* ran"). Some languages use two different words, such as Japanese ("猫*と*犬が遊ん*で*走った").
 
-![Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns](../img/AHQSSRADDL/polar_questions.png)
+![Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns](../img/AHQSSRADDL/nominal_verbal_conjunction.png)
 
 <!-- 
-ax = langDf.pivot_table(values=['class_hours'], index='116A Polar Questions').sort_values('class_hours').plot(kind='bar', color='g');
+ax = langDf.pivot_table(values=['class_hours'], index='64A Nominal and Verbal Conjunction').sort_values('class_hours').plot(kind='bar', color='g');
 plt.title("Hours Needed to Learn Languag by\n Gender Distinctions in Independent Personal Pronouns");
 ax.get_legend().remove()
 
 plt.show()
 -->
 
-!!!!1 Question particle vs 4 Interrogative word order!!!
+Langauges with differentiated conjunction tend to be much more difficult, though I doubt this alone would contribute hugely to language difficulty.
 
-![Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns](../img/AHQSSRADDL/neg_ind_pro_pred.png)
+Something similar can be observed with comitative and instrumental case. Comitative case ocure when something is accompanied by something else (I went *with* him). Instrumental case occures when something is used as an instrument (I cut *with* a knife). Some lagnuages differentiate between the two with different markings, while English does not. For example, in Japanese ("彼と*一緒*に行きました", "ナイフ*で*切る").
+
+usage of differentiaion vs identity. This appears significatnly in two categories, 'Nominal and Verbal Conjunction' and 'Comitatives and Instrumentals'. 
+
+![Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns](../img/AHQSSRADDL/comitative_instrumental.png)
 
 <!-- 
-ax = langDf.pivot_table(values=['class_hours'], index='115A Negative Indefinite Pronouns and Predicate Negation').sort_values('class_hours').plot(kind='bar', color='g');
+ax = langDf.pivot_table(values=['class_hours'], index='52A Comitatives and Instrumentals').sort_values('class_hours').plot(kind='bar', color='g');
 plt.title("Hours Needed to Learn Languag by\n Gender Distinctions in Independent Personal Pronouns");
 ax.get_legend().remove()
 
 plt.show()
 -->
 
-!!!1 Predicate negation also present vs 3 Mixed behaviour !!!
+While I'd expect this to matter, again, I doubt this alone would contribute hugely to language difficulty.
 
+Another significant result can be seen with suppletion. This is a phenomina whereby two paradigms within a language creates irregularities within the language on their interface. The most accesible example is go vs. went. Both go and the now archaic "wende" (meaning the same thing as go) ended up ocupying the same semantic territory. Nowadays, most of "wende"'s cognates are gone, but "went" remains. It's common for such irregularies to form across tense and aspect lines.
 
-!!!!103A Third Person Zero of Verbal Person Marking!!!!
-!!!1 No person marking vs 2 No zero realization!!!
+![Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns](../img/AHQSSRADDL/suppletion.png)
 
-!!!!101A Expression of Pronominal Subjects!!!!
-!!!5 Optional pronouns in subject position vs 1 Obligatory pronouns in subject position!!!!
+<!-- 
+ax = langDf.pivot_table(values=['class_hours'], index='79A Suppletion According to Tense and Aspect').sort_values('class_hours').plot(kind='bar', color='g');
+plt.title("Hours Needed to Learn Languag by\n Gender Distinctions in Independent Personal Pronouns");
+ax.get_legend().remove()
 
-!!!!96A Relationship between the Order of Object and Verb and the Order of Relative Clause and Noun!!!!
-!!!3 VO and RelN vs EVERYTHING!!!
+plt.show()
+-->
 
-!!!!89A Order of Numeral and Noun!!!!
-!!!3 No dominant order vs EVERTHING!!!
+This seems especially suspect to me. Whouldn't a lack of irregularies make a language easier to learn? Perhapse it does, but those languages which lack irregularies may be unlike English, making them overall harder to learn, regardless. Doing a Chi-squared test on this vs genus we see that, indeed, the existance of suppletion is tied to a langauge's history.
 
-!!!!79A Suppletion According to Tense and Aspect!!!!
-!!!4 None vs EVERYTHING!!!
+    Chi-squared:  67.30446623093682 
+    p-value:  0.034314515156764806
 
-!!!!64A Nominal and Verbal Conjunction!!!!
-!!!Differentiation vs Identity!!!
-
-!!!52A Comitatives and Instrumentals!!!
-!!!Differentiation vs Identity!!!
-
-!!!53A Ordinal Numerals!!!
-!!!4 One-th, two-th, three-th vs everything!!!
-
-!!!4A Voicing in Plosives and Fricatives!!!
-!!!1 No voicing contrast vs everything!!!
-
+Similar things can be said about the various other significant attributes...
 
 ## Goodbye!
 
-I suppose there should be a narrative somewhere here, but there isn't. These languages were not made by thinking gods, and though they manifest through the actions of man, they do not exist by the designs of man. Each is an egregore and such inscrutable entities distain narraration. Through, some patterns are, hopefully, clear.
+I suppose there should be a narrative somewhere here, but there isn't. These languages were not made by thinking gods, and though they manifest through the actions of man, they do not exist by the designs of man. Each is an egregore and such inscrutable entities distain narraration. 
+
+Well, we learned a lot today. Nothing that was definitely true, but a lot, regardless.
 
 ... Bye!
