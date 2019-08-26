@@ -173,10 +173,29 @@ The most obvious thing to start with is simply the number of genders in the lang
 ![Hours Needed to Learn Language by Number of Genders](../img/AHQSSRADDL/num_of_genders.png)
 
 <!-- 
-ax = langDf.pivot_table(values=['class_hours'], index='30A Number of Genders').sort_values('class_hours').plot(kind='bar', color='g');
-plt.title("Hours Needed to Learn Language by Number of Genders");
-ax.get_legend().remove()
+ax = langDf.pivot_table(values=['class_hours'], index='30A Number of Genders').sort_values('class_hours').plot(kind='bar', color='#BCE4B5');
 
+fontColor = "#a61717"
+
+plt.autoscale(tight=True)
+
+ax.set_frame_on(False)
+
+ax.set_xticklabels(["5+", "3", "0", "2"], rotation=0, color=fontColor)
+ax.set_yticklabels(["0", "200", "400", "600", "800", "1000", "1200"], color=fontColor)
+
+plt.tick_params(
+    axis='both',
+    which='both', 
+    bottom=False,
+    top=False,
+    left=False,
+    labelbottom=True)
+
+ax.set_xlabel('')
+
+plt.title("Hours Needed to Learn Language by Number of Genders", color=fontColor);
+ax.get_legend().remove()
 plt.show()
  -->
 
@@ -193,11 +212,32 @@ The only place where gender plays a clear role in english is in pronoun usage. T
 ![Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns](../img/AHQSSRADDL/num_of_genders_pronouns.png)
 
 <!-- 
-ax = langDf.pivot_table(values=['class_hours'], index='44A Gender Distinctions in Independent Personal Pronouns').sort_values('class_hours').plot(kind='bar', color='g');
-plt.title("Hours Needed to Learn Languag by\n Gender Distinctions in Independent Personal Pronouns");
-ax.get_legend().remove()
+ax = langDf.pivot_table(values=['class_hours'], index='44A Gender Distinctions in Independent Personal Pronouns').sort_values('class_hours').plot(kind='bar', color='#BCE4B5');
 
+fontColor = "#a61717"
+
+plt.autoscale(tight=True)
+
+ax.set_frame_on(False)
+
+ax.set_xticklabels(["No gender distinctions", "3rd person singular only", "In 3rd person + 1st and/or 2nd person", "3rd person only, but also non-singular"],
+                    rotation=10, color=fontColor)
+ax.set_yticklabels(["0", "200", "400", "600", "800", "1000", "1200"], color=fontColor)
+
+plt.tick_params(
+    axis='both',          # changes apply to the x-axis
+    which='both',      # both major and minor ticks are affected
+    bottom=False,      # ticks along the bottom edge are off
+    top=False,         # ticks along the top edge are off
+    left=False,         # ticks along the top edge are off
+    labelbottom=True) # labels along the bottom edge are off
+
+ax.set_xlabel('')
+
+plt.title("Hours Needed to Learn Language by\nGender Distinctions in Independent Personal Pronouns", color=fontColor);
+ax.get_legend().remove()
 plt.show()
+
 -->
 
 Interestingly enough, there isn't much of a difference in class hours between the categories. That highest category does include Japanese, inclusing other languages, such as Polish and Swahili. There doesn't seem to be much sense in which languages which are similar use gender in a similar way, causing few correlations in the end.
@@ -238,13 +278,32 @@ With this, I can simply look for small p-values! Of course, let's consider the f
 
 The fist thing I find is the relation between languages with differnt words for tea.
 
-![Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns](../img/AHQSSRADDL/word_for_tea.png)
+![Hours Needed to Learn Language by Word for Tea](../img/AHQSSRADDL/word_for_tea.png)
 
 <!-- 
-ax = langDf.pivot_table(values=['class_hours'], index='138A Tea').sort_values('class_hours').plot(kind='bar', color='g');
-plt.title("Hours Needed to Learn Languag by\n Gender Distinctions in Independent Personal Pronouns");
-ax.get_legend().remove()
+ax = langDf.pivot_table(values=['class_hours'], index='138A Tea').sort_values('class_hours').plot(kind='bar', color='#BCE4B5');
 
+fontColor = "#a61717"
+
+plt.autoscale(tight=True)
+
+ax.set_frame_on(False)
+
+ax.set_xticklabels(['From Min Chinese "te"', "Other", 'From Sintic "cha"'], color=fontColor, rotation=0)
+ax.set_yticklabels(["0", "200", "400", "600", "800", "1000", "1200"], color=fontColor)
+
+plt.tick_params(
+    axis='both',          # changes apply to the x-axis
+    which='both',      # both major and minor ticks are affected
+    bottom=False,      # ticks along the bottom edge are off
+    top=False,         # ticks along the top edge are off
+    left=False,         # ticks along the top edge are off
+    labelbottom=True) # labels along the bottom edge are off
+
+ax.set_xlabel('')
+
+plt.title("Hours Needed to Learn Language by Word for Tea", color=fontColor);
+ax.get_legend().remove()
 plt.show()
 -->
 
@@ -271,14 +330,34 @@ It seems most likely that those languages which happen to be hard for English sp
 
 Something that seems to genuenly contribute to difficulty is the handling of nominal vs verbal conjunction. In English, they are the same ("The cat *and* the dog played *and* ran"). Some languages use two different words, such as Japanese ("猫*と*犬が遊ん*で*走った").
 
-![Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns](../img/AHQSSRADDL/nominal_verbal_conjunction.png)
+![Hours Needed to Learn Language by Nominal and Verbal Conjunction](../img/AHQSSRADDL/nominal_verbal_conjunction.png)
 
 <!-- 
-ax = langDf.pivot_table(values=['class_hours'], index='64A Nominal and Verbal Conjunction').sort_values('class_hours').plot(kind='bar', color='g');
-plt.title("Hours Needed to Learn Languag by\n Gender Distinctions in Independent Personal Pronouns");
-ax.get_legend().remove()
+ax = langDf.pivot_table(values=['class_hours'], index='64A Nominal and Verbal Conjunction').sort_values('class_hours').plot(kind='bar', color='#BCE4B5');
 
+fontColor = "#a61717"
+
+plt.autoscale(tight=True)
+
+ax.set_frame_on(False)
+
+ax.set_xticklabels(["Identified", "Differentiated"], color=fontColor, rotation=0)
+ax.set_yticklabels(["0", "200", "400", "600", "800", "1000", "1200", "1400", "1600"], color=fontColor)
+
+plt.tick_params(
+    axis='both',          # changes apply to the x-axis
+    which='both',      # both major and minor ticks are affected
+    bottom=False,      # ticks along the bottom edge are off
+    top=False,         # ticks along the top edge are off
+    left=False,         # ticks along the top edge are off
+    labelbottom=True) # labels along the bottom edge are off
+
+ax.set_xlabel('')
+
+plt.title("Hours Needed to Learn Language by Nominal and Verbal Conjunction", color=fontColor);
+ax.get_legend().remove()
 plt.show()
+
 -->
 
 Langauges with differentiated conjunction tend to be much more difficult, though I doubt this alone would contribute hugely to language difficulty.
@@ -287,13 +366,32 @@ Something similar can be observed with comitative and instrumental case. Comitat
 
 usage of differentiaion vs identity. This appears significatnly in two categories, 'Nominal and Verbal Conjunction' and 'Comitatives and Instrumentals'. 
 
-![Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns](../img/AHQSSRADDL/comitative_instrumental.png)
+![Hours Needed to Learn Language by Comitatives and Instrumentals](../img/AHQSSRADDL/comitative_instrumental.png)
 
 <!-- 
-ax = langDf.pivot_table(values=['class_hours'], index='52A Comitatives and Instrumentals').sort_values('class_hours').plot(kind='bar', color='g');
-plt.title("Hours Needed to Learn Languag by\n Gender Distinctions in Independent Personal Pronouns");
-ax.get_legend().remove()
+ax = langDf.pivot_table(values=['class_hours'], index='52A Comitatives and Instrumentals').sort_values('class_hours').plot(kind='bar', color='#BCE4B5');
 
+fontColor = "#a61717"
+
+plt.autoscale(tight=True)
+
+ax.set_frame_on(False)
+
+ax.set_xticklabels(["Identified", "Mixed", "Differentiated"], color=fontColor, rotation=0)
+ax.set_yticklabels(["0", "200", "400", "600", "800", "1000", "1200"], color=fontColor)
+
+plt.tick_params(
+    axis='both',          # changes apply to the x-axis
+    which='both',      # both major and minor ticks are affected
+    bottom=False,      # ticks along the bottom edge are off
+    top=False,         # ticks along the top edge are off
+    left=False,         # ticks along the top edge are off
+    labelbottom=True) # labels along the bottom edge are off
+
+ax.set_xlabel('')
+
+plt.title("Hours Needed to Learn Language by Comitatives and Instrumentals", color=fontColor);
+ax.get_legend().remove()
 plt.show()
 -->
 
@@ -301,14 +399,34 @@ While I'd expect this to matter, again, I doubt this alone would contribute huge
 
 Another significant result can be seen with suppletion. This is a phenomina whereby two paradigms within a language creates irregularities within the language on their interface. The most accesible example is go vs. went. Both go and the now archaic "wende" (meaning the same thing as go) ended up ocupying the same semantic territory. Nowadays, most of "wende"'s cognates are gone, but "went" remains. It's common for such irregularies to form across tense and aspect lines.
 
-![Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns](../img/AHQSSRADDL/suppletion.png)
+![Hours Needed to Learn Language by Suppletion According to Tense and Aspect](../img/AHQSSRADDL/suppletion.png)
 
 <!-- 
-ax = langDf.pivot_table(values=['class_hours'], index='79A Suppletion According to Tense and Aspect').sort_values('class_hours').plot(kind='bar', color='g');
-plt.title("Hours Needed to Learn Languag by\n Gender Distinctions in Independent Personal Pronouns");
-ax.get_legend().remove()
+ax = langDf.pivot_table(values=['class_hours'], index='79A Suppletion According to Tense and Aspect').sort_values('class_hours').plot(kind='bar', color='#BCE4B5');
 
+fontColor = "#a61717"
+
+plt.autoscale(tight=True)
+
+ax.set_frame_on(False)
+
+ax.set_xticklabels(["Tense", "Tense and Aspect", "None"], color=fontColor, rotation=0)
+ax.set_yticklabels(["0", "200", "400", "600", "800", "1000", "1200", "1400"], color=fontColor)
+
+plt.tick_params(
+    axis='both',          # changes apply to the x-axis
+    which='both',      # both major and minor ticks are affected
+    bottom=False,      # ticks along the bottom edge are off
+    top=False,         # ticks along the top edge are off
+    left=False,         # ticks along the top edge are off
+    labelbottom=True) # labels along the bottom edge are off
+
+ax.set_xlabel('')
+
+plt.title("Hours Needed to Learn Language by\nSuppletion According to Tense and Aspect", color=fontColor);
+ax.get_legend().remove()
 plt.show()
+
 -->
 
 This seems especially suspect to me. Whouldn't a lack of irregularies make a language easier to learn? Perhapse it does, but those languages which lack irregularies may be unlike English, making them overall harder to learn, regardless. Doing a Chi-squared test on this vs genus we see that, indeed, the existance of suppletion is tied to a langauge's history.
