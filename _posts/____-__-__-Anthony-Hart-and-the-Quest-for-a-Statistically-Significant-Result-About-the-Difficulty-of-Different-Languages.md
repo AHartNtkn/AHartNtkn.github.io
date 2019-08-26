@@ -1,11 +1,13 @@
+# !!!!!!!!~(DRAFT)~!!!!!!!!
+
 What's the most difficult language to learn? The answer will depend on what languages you know already, but since I'm writing this in English, let's assume that's all you know. In that case, there's a handy database maintained by the [Foreign Service Institute](https://www.atlasandboots.com/foreign-service-institute-language-difficulty/) which tells you how long it takes for an English speaker to learn a variety of languages. It's hardly exhaustive, bit it includes just about every languages that can be considered "major".
 
 The answer to the initial question is Japanese, for the record; restricted to the languages within that database, of course. But, why? There are lots of things we could point to; its morphology, it's grammar, it's semantics. But there are other hard languages as well; Arabic is notoriously hard to learn, and yet it's very different from either Japanese or English. What things, truly, make a language hard to learn? That's what this post is going to explore.
 
 - [Boilerplate](#heading)
-- [The World](#heading-1)
-- [Subjects, Objects, Verbs](#heading-2)
-- [Gender](#heading-3)
+- [Seeing The World](#heading-1)
+- [Preliminary Examination](#heading-2)
+- [Through Examination](#heading-3)
 - [Goodbye!](#heading-4)
 
 ## Boilerplate
@@ -18,7 +20,9 @@ Firstly, some housekeeping! For reference, I will be using [python](https://www.
 import matplotlib.pyplot as plt
 import pandas as pd
 import geopandas as gpd
-import scipy.stats as stats
+import numpy as np
+from scipy.stats import ttest_ind, chi2_contingency
+
 ```
 
 The two datasets aren't completely compatible, and, as such, some changes need to be made to combine them. I will call the initial difficulty `diffDf`, rename it's language name column, and rename a few entries so that it can be combined with the ALS database.
@@ -83,13 +87,13 @@ Note that this also gets rid of English as a column, so before running that, I t
 english = langDf[langDf['Name'] == "English"].copy()
 ```
 
-## The World
+## Seeing The World
 
 Well, now that we have a dataset, let's do the most obvious thing. Plot the world! The ALS dataset contains country codes for where its languages come from. We can use those to see where the most difficult languages come from. However, they aren't in the right format. Some of the languages list multiply country codes. To fix this, I must create a new dataset with the individual country codes connected to the difficulties.
 
 I start out with a dictionary that I can use to map the country codes to the difficulty of its languages. For each listed language and for each country code listed for each lanugage, if the country isn't already in the dictionary, add it along with its difficulty; if it is then update the mean difficulty using the new refference.
 
-```
+```python
 count_dict = {}
 
 for i in langDf.T:
@@ -104,7 +108,7 @@ for i in langDf.T:
 
 Now we convert the dictionary into a new dataframe by first converting it into an array, then casting it.
 
-```
+```python
 newDF = []
 
 i=0
@@ -115,21 +119,26 @@ for key in count_dict.keys():
 count_hours = pd.DataFrame(newDF,  columns=['countrycodes','class_hours'])
 ```
 
-A bit annoying, but not too hard. But now I need to plot this out. I need a shape file for the earth. A good source is [naturalearthdata.com](aturalearthdata.com). In particular, the [100m data](https://www.naturalearthdata.com/downloads/110m-cultural-vectors/) will work fine for my purposes. This data can be loaded using geopandas.
+A bit annoying, but not too hard. But now I need to plot this out. I need a shape file for the earth. A good source is [naturalearthdata.com](aturalearthdata.com). In particular, the [100m data](https://www.naturalearthdata.com/downloads/110m-cultural-vectors/) will work fine for my purposes. This data can be loaded using geopandas. This will give us a large database with lots of columns. One of them, the main geometric data, consists of polygons describing the geometry of variosu countries. The other column we're interested in is the `ISO_A2` column, being one of several columns giving country codes. That one contains the ISO alpha-2 country codes, the same codes that the ALS database uses. 
 
 
-```
+```python
 shapefile = 'ne_110m_admin_0_countries.shp'
 
 gdf = gpd.read_file(shapefile)[['ISO_A2', 'geometry']].to_crs('+proj=robin')
-#Fix France
+```
+
+Also, France and Norway's ISO alpha-2 code is listed as `'-99'` for some reason, so that needs to be fixed.
+
+```python
 gdf['ISO_A2'][43]='FR'
+gdf['ISO_A2'][21]='NO'
 ```
 
-This will give us a large database with lots of entries. One of them, the main geometric data, is a polygon describing the geometry of the country. The other column we're interested in is the `ISO_A2` column, being one of several columns giving country codes. That one contains the ISO alpha-2 country codes, the same codes that the ALS database uses. We can easily merge these together using that column.
+We can now merge these together.
 
 
-```
+```python
 merged = gdf.merge(count_hours, left_on='ISO_A2', right_on='countrycodes', how = 'left').drop(159)
 ```
 
@@ -138,7 +147,7 @@ Row 159 contains Antarctica. Since it just takes up space on our map, I decided 
 At this point, we can get on with out plotting. In particular, we'll be plotting two layers. The first layer will plot our data, the second will plot any country who's data is missing.
 
 
-```
+```python
 ax = merged.dropna().plot(column='class_hours', cmap='Reds', figsize=(16, 10), scheme='equal_interval', k=9, legend=True)
 
 merged[merged.isna().any(axis=1)].plot(ax=ax, color='#aaaaaa', hatch='//')
@@ -151,7 +160,7 @@ ax.get_legend().set_bbox_to_anchor((.12, .4))
 ax.get_figure();
 ```
 
-![Hours Needed to Learn Language by Country of Origin (Averaged)](../img/language_difficulty.png)
+![Hours Needed to Learn Language by Country of Origin (Averaged)](../img/AHQSSRADDL/language_difficulty.png)
 
 
 Shoutout to Ramiro Gómez and his [helpful tutorial](https://ramiro.org/notebook/geopandas-choropleth/). So many choropleth guides overcomplicate things with interactivity and way too many extranious libraries, but I found this one to be just right.
@@ -160,16 +169,167 @@ Now that we have this plot, we can notice a few things. The hardest languages ar
 
 We can also notice that there's lots of missing data. Few major languages come from the Americas, Australia, or southern Africa, and, as a result, information on the difficulty of languages from there isn't as easy to find. Or, at the very least, the FSI didn't bother to find it. 
 
-## Subjects, Objects, Verbs
+## Preliminary Examination
+
+Which structures are most important when it comes to learning a new language? There are a couple of things that come to mind, the sort of thing people complain about when learning a new language; the writing system, conjugation, the vocabulary. These things apear in the guis of various structures within the ALS database. One of the more interesting of these is grammatical gender; let's start with that.
+
+The most obvious thing to start with is simply the number of genders in the language. Some languages have over a dosen, while many have none. One might imagine that the more exotic gender systems are harder to learn. How does 
+
+![Hours Needed to Learn Language by Number of Genders](../img/AHQSSRADDL/num_of_genders.png)
+
+<!-- 
+ax = langDf.pivot_table(values=['class_hours'], index='30A Number of Genders').sort_values('class_hours').plot(kind='bar', color='g');
+plt.title("Hours Needed to Learn Language by Number of Genders");
+ax.get_legend().remove()
+
+plt.show()
+ -->
+
+Hmm... Interesting. The easiest category is the one with five or more genders. That's quite unexpected. Out of curiosity, I looked at which langauges had five or more genders. As it turns out, there was only one in our list, Swahili, which is apearently fairly easy to learn for english speakers, taking around 900 hours.
+
+Swahili has an interesting system with aroudn 10 genders, depending on how you count them. Some are pretty ordinary, making distinctions between animate and inanimate objects, while some are quite peculiar, such as a gender for artifacts and tools. Interestingly, there aren't equivalents of masculine/feminine gender. If you're interested, [here's](https://en.wikipedia.org/wiki/Swahili_grammar) a rundown:
+
+But, what conclusion should we draw from this? Well, not much, the trend seems to be a cioncidence. There just aren't many major languages with complex gender systems. As a consiquence, data about how hard they are to learn isn't as easy to come by. The singular example makes this pattern likely a cioncidence.
+
+I also think the data at the world atlas might be a bit faulty; it's certainly incomplete besides. English is listed as having three genders; masculine, feminine, and neuter. I don't think many people would recognize this. Nowadays, there are few gendered words (actor vs. actress, dominator vs. dominatrix), and their nature is semantic more than gramatical. There is an argument to be made that, for most of its history (up to around the 1600s), gender was a clear part of english, wherfrome many modern artifacts of gender come.
+
+The only place where gender plays a clear role in english is in pronoun usage. This made me think, what about Japanese? It uses gender in a way that's very similar to english. For the most part, it doesn't really have gender, though it has a few words that are semantically distinguished by sex (海人 (fisherman) and 海女 (fisherwoman), for instance), but such examples are relatively rare. Like english, it also genders some of its pronouns, such as 彼女 (she) and 彼 (he). Unlike english, it even has gendered personal pronouns such as 僕 (I, masculine). On top of that, Japanese does gramatically care about things like animate vs. inanimate nouns, something often implemented via gramatical genders. So I looked up Japanese in the atlas to see how many genders it listed. As it turns out, that spot is simply blank. ¯\\_(ツ)_/¯ Japanese' gendered pronouns, however, are mentioned in a separate column. Graphing that;
+
+![Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns](../img/AHQSSRADDL/num_of_genders_pronouns.png)
+
+<!-- 
+ax = langDf.pivot_table(values=['class_hours'], index='44A Gender Distinctions in Independent Personal Pronouns').sort_values('class_hours').plot(kind='bar', color='g');
+plt.title("Hours Needed to Learn Languag by\n Gender Distinctions in Independent Personal Pronouns");
+ax.get_legend().remove()
+
+plt.show()
+-->
+
+Interestingly enough, there isn't much of a difference in class hours between the categories. That highest category does include Japanese, inclusing other languages, such as Polish and Swahili. There doesn't seem to be much sense in which languages which are similar use gender in a similar way, causing few correlations in the end.
+
+But are those correlations significant!?!
+
+```python
+c = '44A Gender Distinctions in Independent Personal Pronouns'
+ttest_ind(langDf[langDf[c]=='6 No gender distinctions']['class_hours'],
+          langDf[langDf[c]=='2 3rd person only, but also non-singular']['class_hours'])
+```
+
+    > Ttest_indResult(statistic=-0.8620928091641663, pvalue=0.4013730995744619)
+
+Nope! In fact, I went through a bunch of different attributes, from subject, object, verb order, to negation morphology, and I couldn't find a single significant result. What to do...
+
+## Through Examination
+
+Well, let's stop looking manually, and do things automatically! I wrote this code to perform every t-test possible on all values for every collumn. It first prints a graph of the data, then it makes a table of t-tests for each unique value.
+
+```python
+for c in langDf.columns:
+  if not (c in ['index', 'wals_code', 'iso_code', 'glottocode', 'Name', 'latitude', 'longitude', 'countrycodes']):
+    langDf.pivot_table(values=['class_hours'], index=c).sort_values('class_hours').plot(kind='bar');
+    plt.title(c)
+    plt.show()
+
+    with pd.option_context('display.max_rows', 10, 'display.max_columns', 7):
+      print(
+        pd.DataFrame(
+          [ [ ttest_ind(langDf[langDf[c]==r1]['class_hours'], langDf[langDf[c]==r2]['class_hours']).pvalue
+              for r1 in langDf[c].unique()[1:] ]
+              for r2 in langDf[c].unique()[1:]]
+          , columns=langDf[c].unique()[1:]) )
+```
+
+With this, I can simply look for small p-values! Of course, let's consider the fact that this is doing over 100 t-tests. If we cared about p<.05 results, we would expect there to be several false positives. To be more restrictive, I'll only look for p<.01 results.
+
+The fist thing I find is the relation between languages with differnt words for tea.
+
+![Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns](../img/AHQSSRADDL/num_of_genders_pronouns.png)
+
+<!-- 
+ax = langDf.pivot_table(values=['class_hours'], index='138A Tea').sort_values('class_hours').plot(kind='bar', color='g');
+plt.title("Hours Needed to Learn Languag by\n Gender Distinctions in Independent Personal Pronouns");
+ax.get_legend().remove()
+
+plt.show()
+-->
+
+```python
+c = '138A Tea'
+ttest_ind(langDf[langDf[c]=='1 Words derived from Sinitic cha']['class_hours'],
+          langDf[langDf[c]=='2 Words derived from Min Nan Chinese te']['class_hours'])
+```
+
+    > Ttest_indResult(statistic=3.226432025596896, pvalue=0.002113020067139584)
+
+I suspect that this has more to do with location than anything. I double having "Cha" as the word for tea makes a laguage harder. To see this, we can run a χ^2 test with this vs language genus, we can see a significant relation
+
+```python
+ct = pd.crosstab(langDf['genus'], langDf['138A Tea'])
+chi_squared, p_value, dof, expected = chi2_contingency(np.array(ct))
+```
+
+    Chi-squared:  78.91874999999999 
+    p-value:  0.03526750602855796
+
+It seems most likely that those languages which happen to be hard for English speakers often share a history which is what really determines this category.
+
+Continuing on, 
+
+![Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns](../img/AHQSSRADDL/polar_questions.png)
+
+<!-- 
+ax = langDf.pivot_table(values=['class_hours'], index='116A Polar Questions').sort_values('class_hours').plot(kind='bar', color='g');
+plt.title("Hours Needed to Learn Languag by\n Gender Distinctions in Independent Personal Pronouns");
+ax.get_legend().remove()
+
+plt.show()
+-->
+
+!!!!1 Question particle vs 4 Interrogative word order!!!
+
+![Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns](../img/AHQSSRADDL/neg_ind_pro_pred.png)
+
+<!-- 
+ax = langDf.pivot_table(values=['class_hours'], index='115A Negative Indefinite Pronouns and Predicate Negation').sort_values('class_hours').plot(kind='bar', color='g');
+plt.title("Hours Needed to Learn Languag by\n Gender Distinctions in Independent Personal Pronouns");
+ax.get_legend().remove()
+
+plt.show()
+-->
+
+!!!1 Predicate negation also present vs 3 Mixed behaviour !!!
 
 
-## Gender
+!!!!103A Third Person Zero of Verbal Person Marking!!!!
+!!!1 No person marking vs 2 No zero realization!!!
 
+!!!!101A Expression of Pronominal Subjects!!!!
+!!!5 Optional pronouns in subject position vs 1 Obligatory pronouns in subject position!!!!
+
+!!!!96A Relationship between the Order of Object and Verb and the Order of Relative Clause and Noun!!!!
+!!!3 VO and RelN vs EVERYTHING!!!
+
+!!!!89A Order of Numeral and Noun!!!!
+!!!3 No dominant order vs EVERTHING!!!
+
+!!!!79A Suppletion According to Tense and Aspect!!!!
+!!!4 None vs EVERYTHING!!!
+
+!!!!64A Nominal and Verbal Conjunction!!!!
+!!!Differentiation vs Identity!!!
+
+!!!52A Comitatives and Instrumentals!!!
+!!!Differentiation vs Identity!!!
+
+!!!53A Ordinal Numerals!!!
+!!!4 One-th, two-th, three-th vs everything!!!
+
+!!!4A Voicing in Plosives and Fricatives!!!
+!!!1 No voicing contrast vs everything!!!
 
 
 ## Goodbye!
 
-
-Well, we certainly learned a lot today. I mean, nothing that we learned was definitely true, but we *did* learn a lot, regardless.
+I suppose there should be a narrative somewhere here, but there isn't. These languages were not made by thinking gods, and though they manifest through the actions of man, they do not exist by the designs of man. Each is an egregore and such inscrutable entities distain narraration. Through, some patterns are, hopefully, clear.
 
 ... Bye!
