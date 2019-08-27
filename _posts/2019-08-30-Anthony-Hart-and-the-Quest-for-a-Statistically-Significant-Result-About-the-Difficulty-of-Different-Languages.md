@@ -138,15 +138,27 @@ At this point, we can get on without plotting. In particular, we'll be plotting 
 
 
 ```python
-ax = merged.dropna().plot(column='class_hours', cmap='Reds', figsize=(16, 10), scheme='equal_interval', k=9, legend=True)
+fontColor = "#a61717"
+
+ax = merged.dropna().plot(column='class_hours', cmap='Greens', figsize=(16, 10), scheme='equal_interval', k=8, legend=True)
 
 merged[merged.isna().any(axis=1)].plot(ax=ax, color='#aaaaaa', hatch='//')
-
-ax.set_title('Hours Needed to Learn Language by Country of Origin (Averaged)', fontdict={'fontsize': 20}, loc='left')
+ax.set_title('Hours Needed to Learn Language by Country of Origin (Averaged)', fontdict={'fontsize': 20}, loc='left', color=fontColor)
 
 ax.set_axis_off()
 ax.set_xlim([-1.5e7, 1.7e7])
-ax.get_legend().set_bbox_to_anchor((.12, .4))
+leg = ax.get_legend()
+leg.set_bbox_to_anchor((.12, .4))
+leg.set_alpha(0)
+leg.set_frame_on(False)
+
+niceLabels = ["600-800", "800-1000", "1000-1200", "1200-1400", "1400-1600", "1600-1800", "1800-2000", "2000-2200"]
+i=0
+for text in leg.get_texts():
+    text.set_text(niceLabels[i])
+    i+=1
+    text.set_color(fontColor)
+
 ax.get_figure();
 ```
 
