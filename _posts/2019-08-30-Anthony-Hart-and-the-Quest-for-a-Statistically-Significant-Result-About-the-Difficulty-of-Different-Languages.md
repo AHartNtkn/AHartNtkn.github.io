@@ -170,7 +170,7 @@ Which structures are most important when it comes to learning a new language? Th
 
 The most obvious thing to start with is simply the number of genders in the language. Some languages have over a dosen, while many have none. One might imagine that the more exotic gender systems are harder to learn. How does 
 
-![Hours Needed to Learn Language by Number of Genders](../img/AHQSSRADDL/num_of_genders.png)
+<div style="text-align:center" TITLE="Hours Needed to Learn Language by Number of Genders"><img src="../img/AHQSSRADDL/num_of_genders.png" /></div>
 
 <!-- 
 ax = langDf.pivot_table(values=['class_hours'], index='30A Number of Genders').sort_values('class_hours').plot(kind='bar', color='#BCE4B5');
@@ -209,7 +209,7 @@ I also think the data at the world atlas might be a bit faulty; it's certainly i
 
 The only place where gender plays a clear role in english is in pronoun usage. This made me think, what about Japanese? It uses gender in a way that's very similar to english. For the most part, it doesn't really have gender, though it has a few words that are semantically distinguished by sex (海人 (fisherman) and 海女 (fisherwoman), for instance), but such examples are relatively rare. Like english, it also genders some of its pronouns, such as 彼女 (she) and 彼 (he). Unlike english, it even has gendered personal pronouns such as 僕 (I, masculine). On top of that, Japanese does gramatically care about things like animate vs. inanimate nouns, something often implemented via gramatical genders. So I looked up Japanese in the atlas to see how many genders it listed. As it turns out, that spot is simply blank. ¯\\_(ツ)_/¯ Japanese' gendered pronouns, however, are mentioned in a separate column. Graphing that;
 
-![Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns](../img/AHQSSRADDL/num_of_genders_pronouns.png)
+<div style="text-align:center" TITLE="Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns"><img src="../img/AHQSSRADDL/num_of_genders_pronouns.png" /></div>
 
 <!-- 
 ax = langDf.pivot_table(values=['class_hours'], index='44A Gender Distinctions in Independent Personal Pronouns').sort_values('class_hours').plot(kind='bar', color='#BCE4B5');
@@ -278,7 +278,7 @@ With this, I can simply look for small p-values! Of course, let's consider the f
 
 The fist thing I find is the relation between languages with differnt words for tea.
 
-![Hours Needed to Learn Language by Word for Tea](../img/AHQSSRADDL/word_for_tea.png)
+<div style="text-align:center" TITLE="Hours Needed to Learn Language by Word for Tea"><img src="../img/AHQSSRADDL/word_for_tea.png" /></div>
 
 <!-- 
 ax = langDf.pivot_table(values=['class_hours'], index='138A Tea').sort_values('class_hours').plot(kind='bar', color='#BCE4B5');
@@ -330,7 +330,7 @@ It seems most likely that those languages which happen to be hard for English sp
 
 Something that seems to genuenly contribute to difficulty is the handling of nominal vs verbal conjunction. In English, they are the same ("The cat *and* the dog played *and* ran"). Some languages use two different words, such as Japanese ("猫*と*犬が遊ん*で*走った").
 
-![Hours Needed to Learn Language by Nominal and Verbal Conjunction](../img/AHQSSRADDL/nominal_verbal_conjunction.png)
+<div style="text-align:center" TITLE="Hours Needed to Learn Language by Nominal and Verbal Conjunction"><img src="../img/AHQSSRADDL/nominal_verbal_conjunction.png" /></div>
 
 <!-- 
 ax = langDf.pivot_table(values=['class_hours'], index='64A Nominal and Verbal Conjunction').sort_values('class_hours').plot(kind='bar', color='#BCE4B5');
@@ -366,7 +366,7 @@ Something similar can be observed with comitative and instrumental case. Comitat
 
 usage of differentiaion vs identity. This appears significatnly in two categories, 'Nominal and Verbal Conjunction' and 'Comitatives and Instrumentals'. 
 
-![Hours Needed to Learn Language by Comitatives and Instrumentals](../img/AHQSSRADDL/comitative_instrumental.png)
+<div style="text-align:center" TITLE="Hours Needed to Learn Language by Comitatives and Instrumentals"><img src="../img/AHQSSRADDL/comitative_instrumental.png" /></div>
 
 <!-- 
 ax = langDf.pivot_table(values=['class_hours'], index='52A Comitatives and Instrumentals').sort_values('class_hours').plot(kind='bar', color='#BCE4B5');
