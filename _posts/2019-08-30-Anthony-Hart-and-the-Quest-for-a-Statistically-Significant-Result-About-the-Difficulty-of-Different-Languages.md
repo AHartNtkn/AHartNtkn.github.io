@@ -248,9 +248,11 @@ But are those correlations significant!?!
 c = '44A Gender Distinctions in Independent Personal Pronouns'
 ttest_ind(langDf[langDf[c]=='6 No gender distinctions']['class_hours'],
           langDf[langDf[c]=='2 3rd person only, but also non-singular']['class_hours'])
+print("t-statistic: ", t.statistic, "\np-value: ", t.pvalue)
 ```
 
-    Ttest_indResult(statistic=-0.8620928091641663, pvalue=0.4013730995744619)
+    t-statistic:  3.226432025596896 
+    p-value:  0.002113020067139584
 
 Nope! In fact, I went through a bunch of different attributes, from subject, object, verb order, to negation morphology, and I couldn't find a single significant result. What to do...
 
