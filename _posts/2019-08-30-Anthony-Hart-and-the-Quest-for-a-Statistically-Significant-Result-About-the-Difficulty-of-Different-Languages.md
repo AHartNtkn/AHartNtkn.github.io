@@ -399,7 +399,7 @@ While I'd expect this to matter, again, I doubt this alone would contribute huge
 
 Another significant result can be seen with suppletion. This is a phenomina whereby two paradigms within a language creates irregularities within the language on their interface. The most accesible example is go vs. went. Both go and the now archaic "wende" (meaning the same thing as go) ended up ocupying the same semantic territory. Nowadays, most of "wende"'s cognates are gone, but "went" remains. It's common for such irregularies to form across tense and aspect lines.
 
-![Hours Needed to Learn Language by Suppletion According to Tense and Aspect](../img/AHQSSRADDL/suppletion.png)
+<div style="text-align:center" TITLE="Hours Needed to Learn Language by Suppletion According to Tense and Aspect"><img src="../img/AHQSSRADDL/suppletion.png" /></div>
 
 <!-- 
 ax = langDf.pivot_table(values=['class_hours'], index='79A Suppletion According to Tense and Aspect').sort_values('class_hours').plot(kind='bar', color='#BCE4B5');
