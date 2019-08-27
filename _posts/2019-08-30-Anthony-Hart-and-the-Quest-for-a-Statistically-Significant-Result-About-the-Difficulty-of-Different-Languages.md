@@ -22,7 +22,6 @@ import pandas as pd
 import geopandas as gpd
 import numpy as np
 from scipy.stats import ttest_ind, chi2_contingency
-
 ```
 
 The two datasets aren't completely compatible, and, as such, some changes need to be made to combine them. I will call the initial difficulty `diffDf`, rename it's language name column, and rename a few entries so that it can be combined with the ALS database.
@@ -246,13 +245,13 @@ But are those correlations significant!?!
 
 ```python
 c = '44A Gender Distinctions in Independent Personal Pronouns'
-ttest_ind(langDf[langDf[c]=='6 No gender distinctions']['class_hours'],
+t = ttest_ind(langDf[langDf[c]=='6 No gender distinctions']['class_hours'],
           langDf[langDf[c]=='2 3rd person only, but also non-singular']['class_hours'])
 print("t-statistic: ", t.statistic, "\np-value: ", t.pvalue)
 ```
 
-    t-statistic:  3.226432025596896 
-    p-value:  0.002113020067139584
+    t-statistic:  -1.400262210171068 
+    p-value:  0.18052782358880434
 
 Nope! In fact, I went through a bunch of different attributes, from subject, object, verb order, to negation morphology, and I couldn't find a single significant result. What to do...
 
@@ -309,13 +308,17 @@ ax.get_legend().remove()
 plt.show()
 -->
 
+<!-- 
 ```python
 c = '138A Tea'
-ttest_ind(langDf[langDf[c]=='1 Words derived from Sinitic cha']['class_hours'],
+t = ttest_ind(langDf[langDf[c]=='1 Words derived from Sinitic cha']['class_hours'],
           langDf[langDf[c]=='2 Words derived from Min Nan Chinese te']['class_hours'])
+print("t-statistic: ", t.statistic, "\np-value: ", t.pvalue)
 ```
+-->
 
-    Ttest_indResult(statistic=3.226432025596896, pvalue=0.002113020067139584)
+    t-statistic:  3.226432025596896 
+    p-value:  0.002113020067139584
 
 I suspect that this has more to do with location than anything. I double having "Cha" as the word for tea makes a laguage harder. To see this, we can run a χ^2 test with this vs language genus, we can see a significant relation
 
