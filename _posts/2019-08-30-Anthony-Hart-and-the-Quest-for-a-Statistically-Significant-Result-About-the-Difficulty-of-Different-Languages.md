@@ -173,7 +173,7 @@ The most obvious thing to start with is simply the number of genders in the lang
 <div style="text-align:center" TITLE="Hours Needed to Learn Language by Number of Genders"><img src="../img/AHQSSRADDL/num_of_genders.png" /></div>
 
 <!-- 
-ax = langDf.pivot_table(values=['class_hours'], index='30A Number of Genders').sort_values('class_hours').plot(kind='bar', color='#BCE4B5');
+ax = langDf.pivot_table(values=['class_hours'], index='30A Number of Genders').sort_values('class_hours').plot(kind='bar', color='#56B567');
 
 fontColor = "#a61717"
 
@@ -212,7 +212,7 @@ The only place where gender plays a clear role in english is in pronoun usage. T
 <div style="text-align:center" TITLE="Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns"><img src="../img/AHQSSRADDL/num_of_genders_pronouns.png" /></div>
 
 <!-- 
-ax = langDf.pivot_table(values=['class_hours'], index='44A Gender Distinctions in Independent Personal Pronouns').sort_values('class_hours').plot(kind='bar', color='#BCE4B5');
+ax = langDf.pivot_table(values=['class_hours'], index='44A Gender Distinctions in Independent Personal Pronouns').sort_values('class_hours').plot(kind='bar', color='#56B567');
 
 fontColor = "#a61717"
 
@@ -281,7 +281,7 @@ The fist thing I find is the relation between languages with differnt words for 
 <div style="text-align:center" TITLE="Hours Needed to Learn Language by Word for Tea"><img src="../img/AHQSSRADDL/word_for_tea.png" /></div>
 
 <!-- 
-ax = langDf.pivot_table(values=['class_hours'], index='138A Tea').sort_values('class_hours').plot(kind='bar', color='#BCE4B5');
+ax = langDf.pivot_table(values=['class_hours'], index='138A Tea').sort_values('class_hours').plot(kind='bar', color='#56B567');
 
 fontColor = "#a61717"
 
@@ -333,7 +333,7 @@ Something that seems to genuenly contribute to difficulty is the handling of nom
 <div style="text-align:center" TITLE="Hours Needed to Learn Language by Nominal and Verbal Conjunction"><img src="../img/AHQSSRADDL/nominal_verbal_conjunction.png" /></div>
 
 <!-- 
-ax = langDf.pivot_table(values=['class_hours'], index='64A Nominal and Verbal Conjunction').sort_values('class_hours').plot(kind='bar', color='#BCE4B5');
+ax = langDf.pivot_table(values=['class_hours'], index='64A Nominal and Verbal Conjunction').sort_values('class_hours').plot(kind='bar', color='#56B567');
 
 fontColor = "#a61717"
 
@@ -369,7 +369,7 @@ usage of differentiaion vs identity. This appears significatnly in two categorie
 <div style="text-align:center" TITLE="Hours Needed to Learn Language by Comitatives and Instrumentals"><img src="../img/AHQSSRADDL/comitative_instrumental.png" /></div>
 
 <!-- 
-ax = langDf.pivot_table(values=['class_hours'], index='52A Comitatives and Instrumentals').sort_values('class_hours').plot(kind='bar', color='#BCE4B5');
+ax = langDf.pivot_table(values=['class_hours'], index='52A Comitatives and Instrumentals').sort_values('class_hours').plot(kind='bar', color='#56B567');
 
 fontColor = "#a61717"
 
@@ -402,7 +402,7 @@ Another significant result can be seen with suppletion. This is a phenomina wher
 <div style="text-align:center" TITLE="Hours Needed to Learn Language by Suppletion According to Tense and Aspect"><img src="../img/AHQSSRADDL/suppletion.png" /></div>
 
 <!-- 
-ax = langDf.pivot_table(values=['class_hours'], index='79A Suppletion According to Tense and Aspect').sort_values('class_hours').plot(kind='bar', color='#BCE4B5');
+ax = langDf.pivot_table(values=['class_hours'], index='79A Suppletion According to Tense and Aspect').sort_values('class_hours').plot(kind='bar', color='#56B567');
 
 fontColor = "#a61717"
 
