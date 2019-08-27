@@ -4,13 +4,13 @@ What's the most difficult language to learn? The answer will depend on what lang
 
 The answer to the initial question is Japanese, for the record; restricted to the languages within that database, of course. But, why? There are lots of things we could point to; its morphology, it's grammar, it's semantics. But there are other hard languages as well; Arabic is notoriously hard to learn, and yet it's very different from either Japanese or English. What things, truly, make a language hard to learn? That's what this post is going to explore.
 
-- [Boilerplate](#heading)
-- [Seeing The World](#heading-1)
-- [Preliminary Examination](#heading-2)
-- [Thorough Examination](#heading-3)
-- [Goodbye!](#heading-4)
+1. [Boilerplate](#heading1)
+2. [Seeing The World](#heading2)
+3. [Preliminary Examination](#heading3)
+4. [Thorough Examination](#heading4)
+5. [Goodbye!](#heading5)
 
-## Boilerplate
+## Boilerplate <a name="heading1"></a>
 
 Throughout this post, I will be making use of two datasets. Firstly, [this](https://data.world/dataremixed/language-difficulty-ranking) version of the FSI data put into a nice csv file, and secondly, [this](https://wals.info/download) database version of the Atlas of Language Structures. With these, we might be able to draw conclusions about what makes languages more or less difficult to learn.
 
@@ -86,7 +86,7 @@ Note that this also gets rid of English as a column, so before running that, I t
 english = langDf[langDf['Name'] == "English"].copy()
 ```
 
-## Seeing The World
+## Seeing The World <a name="heading2"></a>
 
 Well, now that we have a dataset, let's do the most obvious thing. Plot the world! The ALS dataset contains country codes for where its languages come from. We can use those to see where the most difficult languages come from. However, they aren't in the right format. Some of the languages list multiply country codes. To fix this, I must create a new dataset with the individual country codes connected to the difficulties.
 
@@ -163,7 +163,7 @@ Now that we have this plot, we can notice a few things. The hardest languages ar
 
 We can also notice that there's lots of missing data. Few major languages come from the Americas, Australia, or southern Africa, and, as a result, information on the difficulty of languages from there isn't as easy to find. Or, at the very least, the FSI didn't bother to find it. 
 
-## Preliminary Examination
+## Preliminary Examination <a name="heading3"></a>
 
 Which structures are most important when it comes to learning a new language? There are a couple of things that come to mind, the sort of thing people complain about when learning a new language; the writing system, conjugation, the vocabulary. These things apear in the guis of various structures within the ALS database. One of the more interesting of these is grammatical gender; let's start with that.
 
@@ -255,7 +255,7 @@ print("t-statistic: ", t.statistic, "\np-value: ", t.pvalue)
 
 Nope! In fact, I went through a bunch of different attributes, from subject, object, verb order, to negation morphology, and I couldn't find a single significant result. What to do...
 
-## Thorough Examination
+## Thorough Examination <a name="heading4"></a>
 
 Well, let's stop looking manually, and do things automatically! I wrote this code to perform every t-test possible on all values for every collumn. It first prints a graph of the data, then it makes a table of t-tests for each unique value.
 
@@ -441,10 +441,10 @@ This seems especially suspect to me. Whouldn't a lack of irregularies make a lan
 
 Similar things can be said about the various other significant attributes...
 
-## Goodbye!
+## Goodbye! <a name="heading5"></a>
 
 I suppose there should be a narrative somewhere here, but there isn't. These languages were not made by thinking gods, and though they manifest through the actions of man, they do not exist by the designs of man. Each is an egregore and such inscrutable entities distain narraration. 
 
-Well, we learned a lot today. Nothing that was definitely true, but a lot, regardless.
+Well, we certainly learned a lot today. Nothing that was definitely true, but, a lot, regardless.
 
 ... Bye!
