@@ -1,6 +1,6 @@
 # !!!!!!!!~(DRAFT)~!!!!!!!!
 
-What's the most difficult language to learn? The answer will depend on what languages you know already, but since I'm writing this in English, let's assume that's all you know. In that case, there's a handy database maintained by the [Foreign Service Institute](https://www.atlasandboots.com/foreign-service-institute-language-difficulty/) which tells you how long it takes for an English speaker to learn a variety of languages. It's hardly exhaustive, bit it includes just about every languages that can be considered "major".
+What's the most difficult language to learn? The answer will depend on what languages you know already, but since I'm writing this in English, let's assume that's all you know. In that case, there's a handy database maintained by the [Foreign Service Institute](https://www.atlasandboots.com/foreign-service-institute-language-difficulty/) which tells you how long it takes for an English speaker to learn a variety of languages. It's hardly exhaustive, but it includes just about every languages that can be considered "major".
 
 The answer to the initial question is Japanese, for the record; restricted to the languages within that database, of course. But, why? There are lots of things we could point to; its morphology, it's grammar, it's semantics. But there are other hard languages as well; Arabic is notoriously hard to learn, and yet it's very different from either Japanese or English. What things, truly, make a language hard to learn? That's what this post is going to explore.
 
@@ -25,7 +25,7 @@ import numpy as np
 from scipy.stats import ttest_ind, chi2_contingency
 ```
 
-The two datasets aren't completely compatible, and, as such, some changes need to be made to combine them. I will call the initial difficulty `diffDf`, rename it's language name column, and rename a few entries so that it can be combined with the ALS database.
+The two datasets aren't completely compatible, and, as such, some changes need to be made to combine them. I will call the initial difficulty `diffDf`, rename its language name column, and rename a few entries so that it can be combined with the ALS database.
 
 ```python
 # Import and clean database of language difficulties.
@@ -44,7 +44,7 @@ diffDf.loc[53,'Name'] = 'Tajik' # was 'Tajiki'
 diffDf.loc[60,'Name'] = 'Ukrainian' # was 'Ukranian'
 ```
 
-I will then load the ALS dataset into a dataframe calle `landDf`.
+I will then load the ALS dataset into a data frame called `landDf`.
 
 ```python
 langDf = pd.read_csv("language.csv")
@@ -52,7 +52,7 @@ langDf = pd.read_csv("language.csv")
 
 The ALS dataset includes many languages; many of which are dialects of other languages. Whenever a language is a dialect of another language, it's denoted "Language (Dialect)". For instance, Egyptian is listed as "Arabic (Egyptian)". The difficulty dataset isn't as granular. I decided to assign each dialect the difficulty of the language proper listed in the FSI dataset.
 
-Now, is it a principaled to assume that every dialect of a language has equal difficulty of learning? No, probably not...
+Now, is it a principled to assume that every dialect of a language has equal difficulty of learning? No, probably not...
 
 In order to pull off this merge, I wrote a function to detect if a language from the ALS database appears in the FSI database.
 
@@ -66,7 +66,7 @@ def present(x):
   return result
 ```
 
-I then systematically filter the ALS database, removing languages that don't have difficulties, and adding columns for learning times for everything else.
+I then systematically filter the ALS database, removing languages that don't have difficulties and adding columns for learning times for everything else.
 
 ```python
 # Fill in the time, accounting for dialects
@@ -89,9 +89,9 @@ english = langDf[langDf['Name'] == "English"].copy()
 <a name="heading2"></a>
 ## Seeing The World
 
-Well, now that we have a dataset, let's do the most obvious thing. Plot the world! The ALS dataset contains country codes for where its languages come from. We can use those to see where the most difficult languages come from. However, they aren't in the right format. Some of the languages list multiply country codes. To fix this, I must create a new dataset with the individual country codes connected to the difficulties.
+Well, now that we have a dataset, let's do the most obvious thing. Plot the world! The ALS dataset contains country codes for where its languages come from. We can use those to see where the most difficult languages come from. However, they aren't in the right format. Some of the languages list multiple country codes. To fix this, I must create a new dataset with the individual country codes connected to the difficulties.
 
-I start out with a dictionary that I can use to map the country codes to the difficulty of its languages. For each listed language and for each country code listed for each lanugage, if the country isn't already in the dictionary, add it along with its difficulty; if it is then update the mean difficulty using the new refference.
+I start out with a dictionary that I can use to map the country codes to the difficulty of its languages. For each listed language and for each country code listed for each language, if the country isn't already in the dictionary, add it along with its difficulty; if it is, then update the mean difficulty using the new reference.
 
 ```python
 count_dict = {}
@@ -106,7 +106,7 @@ for i in langDf.T:
       count_dict[key] = (newHours, 1)
 ```
 
-Now we convert the dictionary into a new dataframe by first converting it into an array, then casting it.
+Now we convert the dictionary into a new data frame by first converting it into an array, then casting it.
 
 ```python
 newDF = [ [key,count_dict[key][0]] for key in count_dict.keys() ]
@@ -114,7 +114,7 @@ newDF = [ [key,count_dict[key][0]] for key in count_dict.keys() ]
 count_hours = pd.DataFrame(newDF,  columns=['countrycodes','class_hours'])
 ```
 
-A bit annoying, but not too hard. But now I need to plot this out. I need a shape file for the earth. A good source is [naturalearthdata.com](aturalearthdata.com). In particular, the [100m data](https://www.naturalearthdata.com/downloads/110m-cultural-vectors/) will work fine for my purposes. This data can be loaded using geopandas. This will give us a large database with lots of columns. One of them, the main geometric data, consists of polygons describing the geometry of variosu countries. The other column we're interested in is the `ISO_A2` column, being one of several columns giving country codes. That one contains the ISO alpha-2 country codes, the same codes that the ALS database uses. 
+A bit annoying, but not too hard. But now I need to plot this out. I need a shapefile for the earth. A good source is [naturalearthdata.com](aturalearthdata.com). In particular, the [100m data](https://www.naturalearthdata.com/downloads/110m-cultural-vectors/) will work fine for my purposes. This data can be loaded using geopandas. This will give us a large database with lots of columns. One of them, the main geometric data, consists of polygons describing the geometry of various countries. The other column we're interested in is the `ISO_A2` column, being one of several columns giving country codes. That one contains the ISO alpha-2 country codes, the same codes that the ALS database uses. 
 
 
 ```python
@@ -139,7 +139,7 @@ merged = gdf.merge(count_hours, left_on='ISO_A2', right_on='countrycodes', how =
 
 Row 159 contains Antarctica. Since it just takes up space on our map, I decided to simply drop it.
 
-At this point, we can get on with out plotting. In particular, we'll be plotting two layers. The first layer will plot our data, the second will plot any country who's data is missing.
+At this point, we can get on without plotting. In particular, we'll be plotting two layers. The first layer will plot our data, the second will plot any country who's data is missing.
 
 
 ```python
@@ -158,18 +158,18 @@ ax.get_figure();
 ![Hours Needed to Learn Language by Country of Origin (Averaged)](../img/AHQSSRADDL/language_difficulty.png)
 
 
-Shoutout to Ramiro Gómez and his [helpful tutorial](https://ramiro.org/notebook/geopandas-choropleth/). So many choropleth guides overcomplicate things with interactivity and way too many extranious libraries, but I found this one to be just right.
+Shoutout to Ramiro Gómez and his [helpful tutorial](https://ramiro.org/notebook/geopandas-choropleth/). So many choropleth guides overcomplicate things with interactivity and way too many extraneous libraries, but I found this one to be just right.
 
-Now that we have this plot, we can notice a few things. The hardest languages are concentrated in two places; firstly in the far east within Japan and Korea, and secondly spread throughout northern Africa and the Middle East. That second area is so dark mostly due to different dialects of Arabic. We can also note that the easiest languages tend to group in europe, close to England. Not surprising, as these are where the languages most similar to English are concentrates.
+Now that we have this plot, we can notice a few things. The hardest languages are concentrated in two places; firstly in the far east within Japan and Korea, and secondly spread throughout northern Africa and the Middle East. That second area is so dark mostly due to different dialects of Arabic. We can also note that the easiest languages tend to group in Europe, close to England. Not surprising, as these are where the languages most similar to English are concentrates.
 
-We can also notice that there's lots of missing data. Few major languages come from the Americas, Australia, or southern Africa, and, as a result, information on the difficulty of languages from there isn't as easy to find. Or, at the very least, the FSI didn't bother to find it. 
+We can also notice that there are lots of missing data. Few major languages come from the Americas, Australia, or southern Africa, and, as a result, information on the difficulty of languages from there isn't as easy to find. Or, at the very least, the FSI didn't bother to find it. 
 
 <a name="heading3"></a>
 ## Preliminary Examination
 
-Which structures are most important when it comes to learning a new language? There are a couple of things that come to mind, the sort of thing people complain about when learning a new language; the writing system, conjugation, the vocabulary. These things apear in the guis of various structures within the ALS database. One of the more interesting of these is grammatical gender; let's start with that.
+Which structures are most important when it comes to learning a new language? There are a couple of things that come to mind, the sort of thing people complain about when learning a new language; the writing system, conjugation, the vocabulary. These things appear in the guise of various structures within the ALS database. One of the more interesting of these is grammatical gender; let's start with that.
 
-The most obvious thing to start with is simply the number of genders in the language. Some languages have over a dosen, while many have none. One might imagine that the more exotic gender systems are harder to learn. How does 
+The most obvious thing to start with is simply the number of genders in the language. Some languages have over a dozen, while many have none. One might imagine that the more exotic gender systems are harder to learn. How does 
 
 <div style="text-align:center" TITLE="Hours Needed to Learn Language by Number of Genders"><img src="../img/AHQSSRADDL/num_of_genders.png" /></div>
 
@@ -200,15 +200,15 @@ ax.get_legend().remove()
 plt.show()
  -->
 
-Hmm... Interesting. The easiest category is the one with five or more genders. That's quite unexpected. Out of curiosity, I looked at which langauges had five or more genders. As it turns out, there was only one in our list, Swahili, which is apearently fairly easy to learn for english speakers, taking around 900 hours.
+Hmm... Interesting. The easiest category is the one with five or more genders. That's quite unexpected. Out of curiosity, I looked at which languages had five or more genders. As it turns out, there was only one in our list, Swahili, which is apparently fairly easy to learn for English speakers, taking around 900 hours.
 
-Swahili has an interesting system with aroudn 10 genders, depending on how you count them. Some are pretty ordinary, making distinctions between animate and inanimate objects, while some are quite peculiar, such as a gender for artifacts and tools. Interestingly, there aren't equivalents of masculine/feminine gender. If you're interested, [here's](https://en.wikipedia.org/wiki/Swahili_grammar) a rundown:
+Swahili has an interesting system with around 10 genders, depending on how you count them. Some are pretty ordinary, making distinctions between animate and inanimate objects, while some are quite peculiar, such as a gender for artifacts and tools. Interestingly, there aren't equivalents of masculine/feminine gender. If you're interested, [here's](https://en.wikipedia.org/wiki/Swahili_grammar) a rundown:
 
-But, what conclusion should we draw from this? Well, not much, the trend seems to be a cioncidence. There just aren't many major languages with complex gender systems. As a consiquence, data about how hard they are to learn isn't as easy to come by. The singular example makes this pattern likely a cioncidence.
+But, what conclusion should we draw from this? Well, not much, the trend seems to be a coincidence. There just aren't many major languages with complex gender systems. As a consequence, data about how hard they are to learn isn't as easy to come by. The singular example makes this pattern likely a coincidence.
 
-I also think the data at the world atlas might be a bit faulty; it's certainly incomplete besides. English is listed as having three genders; masculine, feminine, and neuter. I don't think many people would recognize this. Nowadays, there are few gendered words (actor vs. actress, dominator vs. dominatrix), and their nature is semantic more than gramatical. There is an argument to be made that, for most of its history (up to around the 1600s), gender was a clear part of english, wherfrome many modern artifacts of gender come.
+I also think the data at the world atlas might be a bit faulty; it's certainly incomplete besides. English is listed as having three genders; masculine, feminine, and neuter. I don't think many people would recognize this. Nowadays, there are few gendered words (actor vs. actress, dominator vs. dominatrix), and their nature is semantic more than grammatical. There is an argument to be made that, for most of its history (up to around the 1600s), gender was a clear part of English, wherefrom many modern artifacts of gender come.
 
-The only place where gender plays a clear role in english is in pronoun usage. This made me think, what about Japanese? It uses gender in a way that's very similar to english. For the most part, it doesn't really have gender, though it has a few words that are semantically distinguished by sex (海人 (fisherman) and 海女 (fisherwoman), for instance), but such examples are relatively rare. Like english, it also genders some of its pronouns, such as 彼女 (she) and 彼 (he). Unlike english, it even has gendered personal pronouns such as 僕 (I, masculine). On top of that, Japanese does gramatically care about things like animate vs. inanimate nouns, something often implemented via gramatical genders. So I looked up Japanese in the atlas to see how many genders it listed. As it turns out, that spot is simply blank. ¯\\_(ツ)_/¯ Japanese' gendered pronouns, however, are mentioned in a separate column. Graphing that;
+The only place where gender plays a clear role in English is in pronoun usage. This made me think, what about Japanese? It uses gender in a way that's very similar to English. For the most part, it doesn't really have gender, though it has a few words that are semantically distinguished by sex (海人 (fisherman) and 海女 (fisherwoman), for instance), such examples are relatively rare. Like English, it also genders some of its pronouns, such as 彼女 (she) and 彼 (he). Unlike English, it even has gendered personal pronouns such as 僕 (I, masculine). On top of that, Japanese does grammatically care about things like animate vs. inanimate nouns, something often implemented via grammatical genders. So I looked up Japanese in the atlas to see how many genders it listed. As it turns out, that spot is simply blank. ¯\\_(ツ)_/¯ Japanese' gendered pronouns, however, are mentioned in a separate column. Graphing that;
 
 <div style="text-align:center" TITLE="Hours Needed to Learn Language by Gender Distinctions in Independent Personal Pronouns"><img src="../img/AHQSSRADDL/num_of_genders_pronouns.png" /></div>
 
@@ -241,7 +241,7 @@ plt.show()
 
 -->
 
-Interestingly enough, there isn't much of a difference in class hours between the categories. That highest category does include Japanese, inclusing other languages, such as Polish and Swahili. There doesn't seem to be much sense in which languages which are similar use gender in a similar way, causing few correlations in the end.
+Interestingly enough, there isn't much of a difference in class hours between the categories. That highest category does include Japanese, including other languages, such as Polish and Swahili. There doesn't seem to be much sense in which languages which are similar use gender in a similar way, causing few correlations in the end.
 
 But are those correlations significant!?!
 
@@ -260,7 +260,7 @@ Nope! In fact, I went through a bunch of different attributes, from subject, obj
 <a name="heading4"></a>
 ## Thorough Examination
 
-Well, let's stop looking manually, and do things automatically! I wrote this code to perform every t-test possible on all values for every collumn. It first prints a graph of the data, then it makes a table of t-tests for each unique value.
+Well, let's stop looking manually, and do things automatically! I wrote this code to perform every t-test possible on all values for every column. It first prints a graph of the data, then it makes a table of t-tests for each unique value.
 
 ```python
 for c in langDf.columns:
@@ -280,7 +280,7 @@ for c in langDf.columns:
 
 With this, I can simply look for small p-values! Of course, let's consider the fact that this is doing over 100 t-tests. If we cared about p<.05 results, we would expect there to be several false positives. To be more restrictive, I'll only look for p<.01 results.
 
-The fist thing I find is the relation between languages with differnt words for tea.
+The first thing I find is the relation between languages with different words for tea.
 
 <div style="text-align:center" TITLE="Hours Needed to Learn Language by Word for Tea"><img src="../img/AHQSSRADDL/word_for_tea.png" /></div>
 
@@ -323,7 +323,7 @@ print("t-statistic: ", t.statistic, "\np-value: ", t.pvalue)
     t-statistic:  3.226432025596896 
     p-value:  0.002113020067139584
 
-I suspect that this has more to do with location than anything. I double having "Cha" as the word for tea makes a laguage harder. To see this, we can run a χ^2 test with this vs language genus, we can see a significant relation
+I suspect that this has more to do with location than anything. I double having "Cha" as the word for tea makes a language harder. To see this, we can run a χ^2 test with this vs language genus, we can see a significant relation
 
 ```python
 ct = pd.crosstab(langDf['genus'], langDf['138A Tea'])
@@ -336,7 +336,7 @@ print('Chi-squared: ', chi_squared, '\np-value: ', p_value)
 
 It seems most likely that those languages which happen to be hard for English speakers often share a history which is what really determines this category.
 
-Something that seems to genuenly contribute to difficulty is the handling of nominal vs verbal conjunction. In English, they are the same ("The cat *and* the dog played *and* ran"). Some languages use two different words, such as Japanese ("猫*と*犬が遊ん*で*走った").
+Something that seems to genuinely contribute to difficulty is the handling of nominal vs verbal conjunction. In English, they are the same ("The cat *and* the dog played *and* ran"). Some languages use two different words, such as Japanese ("猫*と*犬が遊ん*で*走った").
 
 <div style="text-align:center" TITLE="Hours Needed to Learn Language by Nominal and Verbal Conjunction"><img src="../img/AHQSSRADDL/nominal_verbal_conjunction.png" /></div>
 
@@ -368,11 +368,11 @@ plt.show()
 
 -->
 
-Langauges with differentiated conjunction tend to be much more difficult, though I doubt this alone would contribute hugely to language difficulty.
+Languages with differentiated conjunction tend to be much more difficult, though I doubt this alone would contribute hugely to language difficulty.
 
-Something similar can be observed with comitative and instrumental case. Comitative case ocure when something is accompanied by something else (I went *with* him). Instrumental case occures when something is used as an instrument (I cut *with* a knife). Some lagnuages differentiate between the two with different markings, while English does not. For example, in Japanese ("彼と*一緒*に行きました", "ナイフ*で*切る").
+Something similar can be observed with the comitative and instrumental cases. Comitative case occure when something is accompanied by something else (I went *with* him). The instrumental case occurs when something is used as an instrument (I cut *with* a knife). Some languages differentiate between the two with different markings, while English does not. For example, in Japanese ("彼と*一緒*に行きました", "ナイフ*で*切る").
 
-usage of differentiaion vs identity. This appears significatnly in two categories, 'Nominal and Verbal Conjunction' and 'Comitatives and Instrumentals'. 
+usage of differentiation vs identity. This appears significantly in two categories, 'Nominal and Verbal Conjunction' and 'Comitatives and Instrumentals'. 
 
 <div style="text-align:center" TITLE="Hours Needed to Learn Language by Comitatives and Instrumentals"><img src="../img/AHQSSRADDL/comitative_instrumental.png" /></div>
 
@@ -405,7 +405,7 @@ plt.show()
 
 While I'd expect this to matter, again, I doubt this alone would contribute hugely to language difficulty.
 
-Another significant result can be seen with suppletion. This is a phenomina whereby two paradigms within a language creates irregularities within the language on their interface. The most accesible example is go vs. went. Both go and the now archaic "wende" (meaning the same thing as go) ended up ocupying the same semantic territory. Nowadays, most of "wende"'s cognates are gone, but "went" remains. It's common for such irregularies to form across tense and aspect lines.
+Another significant result can be seen with suppletion. This is a phenomenon whereby two paradigms within a language creates irregularities within the language on their interface. The most accessible example is "go" vs. "went". Both go and the, now-archaic, "wende" (meaning the same thing as go) ended up occupying the same semantic territory. Nowadays, most of "wende"'s cognates are gone, but "went" remains. It's common for such irregularities to form across tense and aspect lines.
 
 <div style="text-align:center" TITLE="Hours Needed to Learn Language by Suppletion According to Tense and Aspect"><img src="../img/AHQSSRADDL/suppletion.png" /></div>
 
@@ -437,7 +437,7 @@ plt.show()
 
 -->
 
-This seems especially suspect to me. Whouldn't a lack of irregularies make a language easier to learn? Perhapse it does, but those languages which lack irregularies may be unlike English, making them overall harder to learn, regardless. Doing a Chi-squared test on this vs genus we see that, indeed, the existance of suppletion is tied to a langauge's history.
+This seems especially suspect to me. Wouldn't a lack of irregularities make a language easier to learn? Perhaps it does, but those languages which lack irregularities may be unlike English, making them overall harder to learn, regardless. Doing a Chi-squared test on this vs genus we see that, indeed, the existence of suppletion is tied to a language's history.
 
     Chi-squared:  67.30446623093682 
     p-value:  0.034314515156764806
@@ -447,7 +447,7 @@ Similar things can be said about the various other significant attributes...
 <a name="heading5"></a>
 ## Goodbye!
 
-I suppose there should be a narrative somewhere here, but there isn't. These languages were not made by thinking gods, and though they manifest through the actions of man, they do not exist by the designs of man. Each is an egregore and such inscrutable entities distain narraration. 
+I suppose there should be a narrative somewhere here, but there isn't. These languages were not made by thinking gods, and though they manifest through the actions of man, they do not exist by the designs of man. Each is an egregore and such inscrutable entities disdain narration. 
 
 Well, we certainly learned a lot today. Nothing that was definitely true, but, a lot, regardless.
 
