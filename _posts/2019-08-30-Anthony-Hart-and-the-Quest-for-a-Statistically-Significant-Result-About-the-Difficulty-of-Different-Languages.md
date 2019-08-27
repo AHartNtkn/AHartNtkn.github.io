@@ -336,7 +336,7 @@ print('Chi-squared: ', chi_squared, '\np-value: ', p_value)
 
 It seems most likely that those languages which happen to be hard for English speakers often share a history which is what really determines this category.
 
-Something that seems to genuinely contribute to difficulty is the handling of nominal vs verbal conjunction. In English, they are the same ("The cat *and* the dog played *and* ran"). Some languages use two different words, such as Japanese ("猫*と*犬が遊ん*で*走った").
+Something that seems to genuinely contribute to difficulty is the handling of nominal vs verbal conjunction. In English, they are the same ("The cat **and** the dog played **and** ran"). Some languages use two different words, such as Japanese ("猫**と**犬が遊ん**で**走った").
 
 <div style="text-align:center" TITLE="Hours Needed to Learn Language by Nominal and Verbal Conjunction"><img src="../img/AHQSSRADDL/nominal_verbal_conjunction.png" /></div>
 
@@ -370,7 +370,7 @@ plt.show()
 
 Languages with differentiated conjunction tend to be much more difficult, though I doubt this alone would contribute hugely to language difficulty.
 
-Something similar can be observed with the comitative and instrumental cases. Comitative case occure when something is accompanied by something else (I went *with* him). The instrumental case occurs when something is used as an instrument (I cut *with* a knife). Some languages differentiate between the two with different markings, while English does not. For example, in Japanese ("彼と*一緒*に行きました", "ナイフ*で*切る").
+Something similar can be observed with the comitative and instrumental cases. Comitative case occure when something is accompanied by something else (I went **with** him). The instrumental case occurs when something is used as an instrument (I cut **with** a knife). Some languages differentiate between the two with different markings, while English does not. For example, in Japanese ("彼と**一緒**に行きました", "ナイフ**で**切る").
 
 usage of differentiation vs identity. This appears significantly in two categories, 'Nominal and Verbal Conjunction' and 'Comitatives and Instrumentals'. 
 
