@@ -81,11 +81,6 @@ for i in langDf.T:
 langDf = langDf.reset_index()
 ```
 
-Note that this also gets rid of English as a column, so before running that, I took out the English row for later reference.
-
-```python
-english = langDf[langDf['Name'] == "English"].copy()
-```
 <a name="heading2"></a>
 ## Seeing The World
 
@@ -123,7 +118,7 @@ shapefile = 'ne_110m_admin_0_countries.shp'
 gdf = gpd.read_file(shapefile)[['ISO_A2', 'geometry']].to_crs('+proj=robin')
 ```
 
-Also, France and Norway's ISO alpha-2 code is listed as `'-99'` for some reason, so that needs to be fixed.
+Also, France and Norway's ISO alpha-2 codes are listed as `'-99'` for some reason, so that needs to be fixed.
 
 ```python
 gdf['ISO_A2'][43]='FR'
@@ -264,7 +259,8 @@ Well, let's stop looking manually, and do things automatically! I wrote this cod
 
 ```python
 for c in langDf.columns:
-  if not (c in ['index', 'wals_code', 'iso_code', 'glottocode', 'Name', 'latitude', 'longitude', 'countrycodes']):
+  if not (c in [ 'index', 'wals_code', 'iso_code', 'glottocode'
+               , 'Name', 'latitude', 'longitude', 'countrycodes' ]):
     langDf.pivot_table(values=['class_hours'], index=c).sort_values('class_hours').plot(kind='bar');
     plt.title(c)
     plt.show()
@@ -272,7 +268,8 @@ for c in langDf.columns:
     with pd.option_context('display.max_rows', 10, 'display.max_columns', 7):
       print(
         pd.DataFrame(
-          [ [ ttest_ind(langDf[langDf[c]==r1]['class_hours'], langDf[langDf[c]==r2]['class_hours']).pvalue
+          [ [ ttest_ind( langDf[langDf[c]==r1]['class_hours']
+                       , langDf[langDf[c]==r2]['class_hours']).pvalue
               for r1 in langDf[c].unique()[1:] ]
               for r2 in langDf[c].unique()[1:] ]
           , columns=langDf[c].unique()[1:]) )
@@ -447,7 +444,7 @@ Similar things can be said about the various other significant attributes...
 <a name="heading5"></a>
 ## Goodbye!
 
-I suppose there should be a narrative somewhere here, but there isn't. These languages were not made by thinking gods, and though they manifest through the actions of man, they do not exist by the designs of man. Each is an egregore and such inscrutable entities disdain narration. 
+I suppose there should be a narrative somewhere here, but there isn't. These languages were not made by thinking gods, and though they manifest through the actions of man, they do not exist by the designs of man. Each is an egregore and such inscrutable entities disdain narration. The best we can hope is that some patterns become clear.
 
 Well, we certainly learned a lot today. Nothing that was definitely true, but, a lot, regardless.
 
