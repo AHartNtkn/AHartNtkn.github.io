@@ -4,11 +4,11 @@ What's the most difficult language to learn? The answer will depend on what lang
 
 The answer to the initial question is Japanese, for the record; restricted to the languages within that database, of course. But, why? There are lots of things we could point to; its morphology, it's grammar, it's semantics. But there are other hard languages as well; Arabic is notoriously hard to learn, and yet it's very different from either Japanese or English. What things, truly, make a language hard to learn? That's what this post is going to explore.
 
-0 - [Boilerplate](#heading1)
-1 - [Seeing The World](#heading2)
-2 - [Preliminary Examination](#heading3)
-3 - [Thorough Examination](#heading4)
-4 - [Goodbye!](#heading5)
+- [Boilerplate](#heading1)
+- [Seeing The World](#heading2)
+- [Preliminary Examination](#heading3)
+- [Thorough Examination](#heading4)
+- [Goodbye!](#heading5)
 
 <a name="heading1"></a>
 ## Boilerplate
