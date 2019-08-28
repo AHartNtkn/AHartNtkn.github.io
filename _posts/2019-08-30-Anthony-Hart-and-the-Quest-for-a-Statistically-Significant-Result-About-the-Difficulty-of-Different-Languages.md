@@ -167,7 +167,7 @@ ax.get_figure();
 
 Shoutout to Ramiro Gómez and his [helpful tutorial](https://ramiro.org/notebook/geopandas-choropleth/). So many choropleth guides overcomplicate things with interactivity and way too many extraneous libraries, but I found this one to be just right.
 
-From this plot, a few things can be notice. The hardest languages are concentrated in two places; firstly in the far east within Japan and Korea, and secondly spread throughout northern Africa and the Middle East. That second area is so dark mostly due to different dialects of Arabic. It can also be noted that the easiest languages tend to group in Europe, close to England. Not surprising, as these are where the languages most similar to English are concentrated.
+From this plot, a few things can be noticed. The hardest languages are concentrated in two places; firstly in the far east within Japan and Korea, and secondly spread throughout northern Africa and the Middle East. That second area is so dark mostly due to different dialects of Arabic. It can also be noted that the easiest languages tend to group in Europe, close to England. Not surprising, as these are where the languages most similar to English are concentrated.
 
 There is also a lot of missing data. Few major languages come from the Americas, Australia, or southern Africa, and, as a result, information on the difficulty of languages from there isn't as easy to find. Or, at the very least, the FSI didn't bother to find it. 
 
@@ -379,7 +379,7 @@ plt.show()
 
 Languages with differentiated conjunction tend to be much more difficult, though I doubt this alone would contribute hugely to language difficulty.
 
-Something similar can be observed with the comitative and instrumental cases. Comitative case occures when something is accompanied by something else (I went **with** him). The instrumental case occurs when something is used as an instrument (I cut **with** a knife). Some languages differentiate between the two with different markings, while English does not. For example, in Japanese ("彼と**一緒**に行きました", "ナイフ**で**切る"). 
+Something similar can be observed with the comitative and instrumental cases. Comitative case occurs when something is accompanied by something else (I went **with** him). The instrumental case occurs when something is used as an instrument (I cut **with** a knife). Some languages differentiate between the two with different markings, while English does not. For example, in Japanese ("彼と**一緒**に行きました", "ナイフ**で**切る"). 
 
 <div style="text-align:center" TITLE="Hours Needed to Learn Language by Comitatives and Instrumentals"><img src="../img/AHQSSRADDL/comitative_instrumental.png" /></div>
 
