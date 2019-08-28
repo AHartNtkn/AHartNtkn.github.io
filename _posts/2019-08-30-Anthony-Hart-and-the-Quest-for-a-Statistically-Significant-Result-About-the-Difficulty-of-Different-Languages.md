@@ -332,7 +332,7 @@ print("t-statistic: ", t.statistic, "\np-value: ", t.pvalue)
     t-statistic:  3.226432025596896 
     p-value:  0.002113020067139584
 
-I doubt having "Cha" as the word for tea makes a language harder. I suspect that this has more to do with history/location than anything. To see this, one can run a χ² test with this vs language genus.
+It's unlikely that having "Cha" as the word for tea makes a language harder. I suspect that this has more to do with history/location than anything. To see this, one can run a χ² test with this vs language genus.
 
 ```python
 ct = pd.crosstab(langDf['genus'], langDf['138A Tea'])
