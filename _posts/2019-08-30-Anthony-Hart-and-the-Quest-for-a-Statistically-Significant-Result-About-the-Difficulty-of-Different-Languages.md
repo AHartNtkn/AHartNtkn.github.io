@@ -1,5 +1,3 @@
-# !!!!!!!!~(DRAFT)~!!!!!!!!
-
 What's the most difficult language to learn? The answer will depend on what languages you know already, but since I'm writing this in English, let's assume that's all you know. In that case, there's a handy database maintained by the [Foreign Service Institute](https://www.atlasandboots.com/foreign-service-institute-language-difficulty/) which tells you how long it takes for a native English speaker to learn a variety of languages. It's hardly exhaustive, but it includes just about every language that could be considered "major".
 
 The answer to the initial question is Japanese, for the record; restricted to the languages within that database, of course. But, why? There are lots of things one could point to; its morphology, it's grammar, it's semantics. But there are other hard languages as well; Arabic is notoriously hard to learn, and yet it's very different from either Japanese or English. What things, truly, make a language hard to learn? That's what this post is going to explore.
@@ -25,7 +23,7 @@ import numpy as np
 from scipy.stats import ttest_ind, chi2_contingency
 ```
 
-The two datasets aren't completely compatible; as such, some changes need to be made to combine them. I will call the initial difficulty dataframe `diffDf`, and rename a few entries to make it consistent the ALS dataframe.
+The two datasets aren't completely compatible; as such, some changes need to be made to combine them. I will call the initial difficulty dataframe `diffDf`, and rename a few entries to make it consistent with the ALS dataset.
 
 ```python
 # Import and clean database of language difficulties.
@@ -52,7 +50,7 @@ langDf = pd.read_csv("language.csv")
 
 The ALS dataset includes many languages, several of which are dialects of other languages. Whenever a language is a dialect of another language, it's denoted "Language (Dialect)". For instance, Egyptian is listed as "Arabic (Egyptian)". The difficulty dataset isn't as granular. I decided to assign each dialect the difficulty of the parent language listed in the FSI dataset.
 
-One might ask at this point, is it a principled to assume that every dialect of a language has equal difficulty of learning? No, probably not...
+One might ask at this point, is it really principled to assume that every dialect of a language has equal learning difficulty? No, probably not...
 
 In order to pull off the merge, I wrote a function to detect if a language from the ALS database appears in the FSI database.
 
@@ -84,7 +82,7 @@ langDf = langDf.reset_index()
 <a name="heading2"></a>
 ## Seeing The World
 
-The ALS dataset contains country codes for each languages' country of origin. With this, the difficulty of languages can be plotted across the world. However, they aren't in the right format. Some of the languages list multiple country codes. To fix this, I must create a new dataframe with the individual country codes connected to the difficulties.
+The ALS dataset contains country codes for each language's country of origin. With this, the difficulty of languages can be plotted across the world. However, they aren't in the right format. Some of the languages list multiple country codes. To fix this, I must create a new dataframe with the individual country codes connected to the difficulties.
 
 I start out with a dictionary that I can use to map country codes to languages difficulty. For each listed language and for each country code listed, if the country isn't already in the dictionary, add it along with its difficulty; if it is, update the mean difficulty.
 
@@ -125,7 +123,7 @@ gdf['ISO_A2'][43]='FR'
 gdf['ISO_A2'][21]='NO'
 ```
 
-These can now merged together.
+Now these can be merged together.
 
 
 ```python
@@ -134,7 +132,7 @@ merged = gdf.merge(count_hours, left_on='ISO_A2', right_on='countrycodes', how =
 
 Row 159 contains Antarctica. Since it just takes up space on my map, I decided to simply drop it.
 
-At this point, I can get on with plotting. In particular, I'll be plotting two layers. The first layer will plot the avaliable data, the second will plot any country who's data is missing.
+At this point, I can get on with plotting. In particular, I'll be plotting two layers. The first layer will plot the available data, the second will plot any country who's data is missing.
 
 
 ```python
@@ -209,9 +207,9 @@ plt.show()
 
 Interesting. The easiest category is the one with five or more genders. That's quite unexpected. Out of curiosity, I looked at which languages were in this category. As it turns out, there was only one in my list, Swahili. It is apparently fairly easy to learn for English speakers, taking around 900 hours.
 
-Swahili has an interesting system with around 10 genders, depending on how you count them. Some are pretty ordinary, making distinctions between animate and inanimate objects, while some are quite peculiar, such as a gender for artifacts and tools. Interestingly, there aren't equivalents of masculine/feminine gender. If you're interested, [here's](https://en.wikipedia.org/wiki/Swahili_grammar) a rundown:
+Swahili has an interesting system with around 10 genders, depending on how you count them. Some are pretty ordinary, making distinctions between animate and inanimate objects, while some are quite peculiar, such as a gender for artifacts and tools. Interestingly, there aren't equivalents of masculine/feminine gender. If you're interested, [here's](https://en.wikipedia.org/wiki/Swahili_grammar) a rundown.
 
-But, what conclusion should be drawn from this? Not much, the trend seems to be a coincidence. There just aren't many major languages with complex gender systems. As a consequence, data about how hard they are to learn isn't as easy to come by.
+But what conclusion should be drawn from this? Not much, the trend seems to be a coincidence. There just aren't many major languages with complex gender systems. As a consequence, trends about related extremes can't be reliably extrapolated from this data.
 
 I also think the data at the Atlas of Language Structures might be a bit faulty; it's certainly incomplete besides. English is listed as having three genders; masculine, feminine, and neuter. I don't think many people would recognize this. Nowadays, there are few gendered words (actor vs. actress, dominator vs. dominatrix), and their nature is semantic more than grammatical. There is an argument to be made that, for most of its history (up to around the 1600s), gender was a clear part of English, wherefrom many gendered artifacts come.
 
@@ -248,9 +246,7 @@ plt.show()
 
 -->
 
-Interestingly enough, there isn't much of a difference in class hours between the categories. That highest category does include Japanese, along with various other languages such as Polish and Swahili. There doesn't seem to be much sense in which languages which are similar use gender in a similar way, causing few correlations in the end.
-
-I'm drawn to testing the significance of these, admittedly weak, correlations.
+Interestingly enough, there isn't much of a difference in class hours between the categories. That highest category does include Japanese, along with various other languages such as Polish and Swahili. There doesn't seem to be much sense in which languages which are similar use gender in a similar way, but the trend does align with my expectation that languages with more sophisticated gendered pronouns would be harder to learn. However, I should test their significance before jumping to conclusions.
 
 ```python
 c = '44A Gender Distinctions in Independent Personal Pronouns'
@@ -287,7 +283,7 @@ for c in langDf.columns:
           , columns=langDf[c].unique()[1:]) )
 ```
 
-With this, I can simply look for small p-values! Of course, let's consider the fact that this is doing over 100 t-tests. If I cared about p<.05 results, I would expect there to be several false positives. To be more restrictive, I'll only look for p<.01 results.
+With this, I can simply look for small p-values! Of course, let's consider the fact that this is doing over 100 t-tests. If I cared about p<.05 results, I would expect there to be several false positives. To be more restrictive, I'll only look for p<.005 results.
 
 The first thing I find is the relation between languages with different words for tea.
 
