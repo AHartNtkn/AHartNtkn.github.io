@@ -4,7 +4,7 @@ title: About me
 subtitle: 
 ---
 
-My name is Anthony Hart. I'm a current Data Science student with an interest in the theory of programming and the foundations of mathematics.
+My name is Anthony Hart. I'm a current Data Scientist with an interest in the theory of programming and the foundations of mathematics.
 
 ## History
 
