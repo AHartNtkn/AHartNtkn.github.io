@@ -21,6 +21,7 @@ description: Math and Science from an Extensional Perspective
 # List of links in the navigation bar
 navbar-links:
   About Me: "aboutme"
+  Projects: "projects"
 #  Resources:
 #    - Beautiful Jekyll: "http://deanattali.com/beautiful-jekyll/"
 #  Author's home: "http://deanattali.com"
