@@ -117,4 +117,4 @@ And, as a final example, based on [this](http://citeseerx.ist.psu.edu/viewdoc/do
 
 Though, I haven't found a nice way of actually programming with it.
 
-This basic tequnique should be able to be combined with the encodings used in [Cedille](http://firsov.ee/impred-ind/impred-ind.pdf) to get coinduction, but it's not obvious to me how that might actually work. Part of the issue might simply be that coinduction principles aren't simply stated the way induction principles are. Maybe they can be with existential types, so, perhapse, the'll be more accessible in future versions of Cedille.
+This basic technique should be able to be combined with the encodings used in [Cedille](http://firsov.ee/impred-ind/impred-ind.pdf) to get coinduction, but it's not obvious to me how that might actually work. Part of the issue might simply be that coinduction principles aren't simply stated the way induction principles are. Maybe they can be with existential types, so, perhapse, they'll be immediately accessible in future versions of Cedille.
