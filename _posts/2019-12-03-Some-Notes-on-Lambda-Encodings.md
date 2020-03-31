@@ -107,6 +107,12 @@ Continuing to a more conventional example, streams can be defined as;
     tail : Stream A → Stream A
     tail st = λ s . st (λ seed step . s (π₂ (step seed)) step)
 
+    cons : A → Stream A → Stream A
+    cons a st = λ f . f {Stream A + Stream A} (inl st) (λ s . case s of
+                                                              | inl s = a, inr s
+                                                              | inr s = head s, tail s
+                      )
+
 And, as a final example, based on [this](http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=9A564F2172717230E15D3F8EC5253423?doi=10.1.1.47.5204&rep=rep1&type=pdf), the interval of reals `[0,1)` can be encoded as;
 
     RealCoAlg : * → *
@@ -117,7 +123,7 @@ And, as a final example, based on [this](http://citeseerx.ist.psu.edu/viewdoc/do
 
 Though, I haven't found a nice way of actually programming with it.
 
-This basic technique should be able to be combined with the encodings used in [Cedille](http://firsov.ee/impred-ind/impred-ind.pdf) to get coinduction. It took a while for me to see a reasonable way it could be done, but the following might work. It's important to note that codata can be constructed via some kind of unfolding. In the case of streams, we can define it as;
+This basic technique should be able to be combined with the encodings used in [Cedille](http://firsov.ee/impred-ind/impred-ind.pdf) to get coinduction. (Edit: This has now [been done](https://github.com/cedille/cedille-developments/tree/master/efficient-mendler-codata)) It took a while for me to see a reasonable way it could be done, but the following might work. It's important to note that codata can be constructed via some kind of unfolding. In the case of streams, we can define it as;
 
     unfold : S → (S → A × S) → Stream A
     unfold seed gen = λ f . f {S} seed gen
