@@ -107,6 +107,9 @@ Continuing to a more conventional example, streams can be defined as;
     tail : Stream A → Stream A
     tail st = λ s . st (λ seed step . s (π₂ (step seed)) step)
 
+    cons : A → Stream A → Stream A
+    cons a st = λ f . f {Stream A} st (λ s . a × s)
+
 And, as a final example, based on [this](http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=9A564F2172717230E15D3F8EC5253423?doi=10.1.1.47.5204&rep=rep1&type=pdf), the interval of reals `[0,1)` can be encoded as;
 
     RealCoAlg : * → *
@@ -119,13 +122,13 @@ Though, I haven't found a nice way of actually programming with it.
 
 This basic technique should be able to be combined with the encodings used in [Cedille](http://firsov.ee/impred-ind/impred-ind.pdf) to get coinduction. It took a while for me to see a reasonable way it could be done, but the following might work. It's important to note that codata can be constructed via some kind of unfolding. In the case of streams, we can define it as;
 
-    unfold : S → (S → X × S) → Stream X
+    unfold : S → (S → A × S) → Stream A
     unfold seed gen = λ f . f {S} seed gen
 
 If we want to define a coinduction principle, there's only one case that needs to be addressed; the single unfold. 
 
-    streamCoInd = (s : Stream X) → ∀ (P : Stream X → *) . (∀ S . (seed : S) → (gen : S → X × S) → P (unfold seed gen)) → P s
+    streamCoInd = (s : Stream A) → ∀ (P : Stream A → *) . (∀ S . (seed : S) → (gen : S → A × S) → P (unfold seed gen)) → P s
 
 From here, we can take the dependent intersection of the original stream type with this coinduction principle to get a notion of stream with dependent elimination.
 
-    StreamD X = ι(s : Stream X) . streamCoInd s
+    StreamD A = ι(s : Stream A) . streamCoInd s
