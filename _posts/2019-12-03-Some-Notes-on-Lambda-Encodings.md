@@ -117,4 +117,15 @@ And, as a final example, based on [this](http://citeseerx.ist.psu.edu/viewdoc/do
 
 Though, I haven't found a nice way of actually programming with it.
 
-This basic technique should be able to be combined with the encodings used in [Cedille](http://firsov.ee/impred-ind/impred-ind.pdf) to get coinduction, but it's not obvious to me how that might actually work. Part of the issue might simply be that coinduction principles aren't simply stated the way induction principles are. Maybe they can be with existential types, so, perhapse, they'll be immediately accessible in future versions of Cedille.
+This basic technique should be able to be combined with the encodings used in [Cedille](http://firsov.ee/impred-ind/impred-ind.pdf) to get coinduction. It took a while for me to see a reasonable way it could be done, but the following might work. It's important to note that codata are principally defined by their destructor. In the case of streams, we can define it using a simple unfold;
+
+    unfold : S → (S → X × S) → Stream X
+    unfold seed gen = λ f . f {S} seed gen
+
+If we want to define a coinduction principle, there's only one case that needs to be addressed; the single unfold destructor. 
+
+    streamCoInd = (s : Stream X) → ∀ (P : Stream X → *) . (∀ S . (seed : S) → (gen : S → X × S) → P (unfold seed gen)) → P s
+
+From here, we can take the dependent intersection of the original stream type with this coinduction principle to get a notion of stream with dependent elimination.
+
+    StreamD X = ι(s : Stream X) . streamCoInd s
