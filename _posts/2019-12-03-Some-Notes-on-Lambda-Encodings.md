@@ -117,7 +117,7 @@ And, as a final example, based on [this](http://citeseerx.ist.psu.edu/viewdoc/do
 
 Though, I haven't found a nice way of actually programming with it.
 
-This basic technique should be able to be combined with the encodings used in [Cedille](http://firsov.ee/impred-ind/impred-ind.pdf) to get coinduction. It took a while for me to see a reasonable way it could be done, but the following might work. It's important to note that codata are principally defined by their destructor. In the case of streams, we can define it using a simple unfold;
+This basic technique should be able to be combined with the encodings used in [Cedille](http://firsov.ee/impred-ind/impred-ind.pdf) to get coinduction. It took a while for me to see a reasonable way it could be done, but the following might work. It's important to note that codata are principally defined by their destructors. In the case of streams, we can define it using a simple unfold;
 
     unfold : S → (S → X × S) → Stream X
     unfold seed gen = λ f . f {S} seed gen
