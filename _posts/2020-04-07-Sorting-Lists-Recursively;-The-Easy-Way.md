@@ -333,7 +333,7 @@ Notice that `branch_split` also stores an item within a leaf if it's the only it
 
 Our algebra, the thing deconstructing one step of our tree, will be a function that deconstructs a branch containing two lists by merging them. I'll call it `branch_merge`. `branch_merge` will be recursive since merging is a recursive operation. That means we'll need to define it using an ana, cata, or hylomorphism.
 
-Alright, let's back up. If we take the merging operation as a problem just like merge sort itself, then it starts with a pair of lists and fuses them into a single list. By taking `ListF` to be our recursion step, we can conceptualize this via a coalgebra which is constructing a single step of a list. If we take `List` to be our `M` and `List × List` to be our `A` in the previous diagram, then we can see how it fits into the previous scheme. The coalgebra has to be a function that takes a pair of lists and returns an element consed with a pair of lists. This element will simply be whichever of the two elements at the beginning of the pair is biggest.
+Alright, let's back up. If we take the merging operation as a problem just like merge sort itself, then it starts with a pair of lists and fuses them into a single list. By taking `ListF` to be our recursion step, we can conceptualize this via a coalgebra which is constructing a single step of a list. If we take `List` to be our `M` and `List × List` to be our `A` in the previous diagram, then we can see how it fits into the previous scheme. The coalgebra has to be a function that takes a pair of lists and returns one of the list heads consed with a pair of lists. This head will simply be whichever of the two is biggest.
 
 ```python
 from typing import Tuple
