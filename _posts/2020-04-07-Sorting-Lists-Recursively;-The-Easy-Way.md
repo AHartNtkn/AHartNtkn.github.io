@@ -75,9 +75,9 @@ Now that we have our data structure, we want to consider what we need to make Me
 
 ![What could those functions be?](../img/hylomorphisms/Hylo2.png)
 
-We won't be targeted either of those functions; instead, we're going to go around them.
+We won't be targeting either of those functions; instead, we're going to go around them.
 
-Consider that both `List` and `MaybeBinTree` are inductive datatypes. We can define `List` via the endofunctor `ListF A := X ↦ 1 + A × X`, where the `1` corresponds to the empty list, and the `A × X` corresponds to the case where an `A` is appended onto a list, called the "cons" case. This is often phrased as `List A` being the initial algrbra of the endofunctor `ListF A`.
+Consider that both `List` and `MaybeBinTree` are inductive datatypes. We can define `List` via the endofunctor `ListF A := X ↦ 1 + A × X`, where the `1` corresponds to the empty list, and the `A × X` corresponds to the case where an `A` is appended onto a list, called the "cons" case. This is often phrased as `List A` being the initial algebra of the endofunctor `ListF A`.
 
 We can define this functor as follows;
 
