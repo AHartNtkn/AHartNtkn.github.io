@@ -1,6 +1,6 @@
-In this post, I will show a nice, clean, organized, schematic, and theoretically well-justified approach to sorting. I'll implement it in Python because of my target audience, but there's no significance to the choice beyond that. I'm going to describe and implement mergesort and Quicksort via hylomorphisms. That may sound intimidating, but, trust me, it's way simpler than the usual implementation. This will allow for a semi-direct comparison between the algorithms while simultaneously demonstrating some techniques which might be considered esoteric to the Pythonic mind.
+In this post, I will show a nice, clean, organized, schematic, and theoretically well-justified approach to sorting. I'll implement it in Python because of my target audience, but there's no significance to the choice beyond that. I'm going to describe and implement Marge Sort and Quicksort via hylomorphisms. That may sound intimidating, but, trust me, it's way simpler than the usual implementation. This will allow for a semi-direct comparison between the algorithms while simultaneously demonstrating some techniques which might be considered esoteric to the Pythonic mind.
 
-First, let's look at mergesort since it's a very common example of using a hylomorphism. We will use the specification of Merge Sort to motivate our implementation of hylo. For a start, I'll simply describe merge sort in an abstract way.
+First, let's look at Marge Sort since it's a very common example of using a hylomorphism. We will use the specification of Merge Sort to motivate our implementation of hylo. For a start, I'll simply describe merge sort in an abstract way.
 
 Mergesort starts by splitting a list into a binary tree, with approximately half of its components on one side and the other half on the other. These branches are then merged into lists, ensuring that the lists remain sorted at each merging. Here's a diagram depicting the process.
 
@@ -397,7 +397,7 @@ print(branch_merge(BranchF([2,4], [1,3,5])))
 Out: [1, 2, 3, 4, 5]
 ```
 
-And, with all that, we can finally define mergesort.
+And, with all that, we can finally define Marge Sort.
 
 ```python
 def merg_sort(l: List[A]) -> List[A]:
