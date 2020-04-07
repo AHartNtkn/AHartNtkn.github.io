@@ -453,7 +453,7 @@ The coalgebra of Quicksort, the thing constructing a single step of our tree, wi
 * the head of the list
 * a list of elements greater than the head of the list
 
-I'll call this function `duel_filter`. This function will recurse over the input list; deconstructing one element of the list at every step and placing it in one of the two branches. Since algebra's deconstruct one step, we'll try looking for that and then defining `duel_filter` as a catamorphism over that algebra. The algebra in question will take and `a` and `b` of type `A` and two lists; placing `b` in the first list if it’s less than or equal to `a`, and in the second list otherwise. The lists and `a` will the be placed in a branch.
+I'll call this function `duel_filter`. This function will recurse over the input list; deconstructing one element of the list at every step and placing it in one of the two branches. Since algebra's deconstruct one step, we'll try looking for that and then defining `duel_filter` as a catamorphism over that algebra. The algebra in question will take and `a` and `b` of type `A` and two lists; placing `b` in the first list if it’s less than or equal to `a`, and in the second list otherwise. The lists and `a` will then be placed in a branch.
 
 ```python
 def duel_filter_alg(lF: ListF[A, NodeTreeF[A, List[A]]]) -> NodeTreeF[A, List[A]]:
