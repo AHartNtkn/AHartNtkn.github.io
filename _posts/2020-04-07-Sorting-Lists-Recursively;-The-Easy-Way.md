@@ -430,7 +430,9 @@ class NodeBranchF(NodeTreeF[A, N]):
         self.b2 = b2
         
     def __str__(self):
-        return "NodeBranchF(" + str(self.b1) + ", " + str(self.a) + ", " + str(self.b2) + ")"
+        return "NodeBranchF(" + str(self.b1) + ", "\
+                              + str(self.a) + ", "\
+                              + str(self.b2) + ")"
 
 class NodeLeafF(NodeTreeF[A, N]):
     def __init__(self) -> None:
