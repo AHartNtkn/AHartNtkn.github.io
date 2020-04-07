@@ -243,7 +243,8 @@ from typing import Callable
 X = TypeVar('X')
 Y = TypeVar('Y')
 
-def maybeBinTreeF_map(f: Callable[[X], Y], mF: MaybeBinTreeF[A, X]) -> MaybeBinTreeF[A, Y]:
+def maybeBinTreeF_map(f: Callable[[X], Y], mF: MaybeBinTreeF[A, X])\
+                                                    -> MaybeBinTreeF[A, Y]:
     if isinstance(mF, BranchF):
         return BranchF(f(mF.a), f(mF.b))
     elif isinstance(mF, LeafF):
