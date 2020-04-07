@@ -412,7 +412,7 @@ Out: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 And it's as simple as that!
 
-Let's move on to Quicksort. This algorithm does something quite different. It starts by splitting the list into pairs of lists which are, respectively, all less than and all greater than the head element. Thes splits are made over and over again, constructing a tree. After that, the tree is simply flattened. Here's a diagram showing the process.
+Let's move on to Quicksort. This algorithm does something quite different. It starts by splitting the list into pairs of lists which are, respectively, all less than and all greater than the head element. These splits are made over and over again, constructing a tree. After that, the tree is simply flattened. Here's a diagram showing the process.
 
 ![Quicksort Diagram](../img/hylomorphisms/Hylo6.png)
 
