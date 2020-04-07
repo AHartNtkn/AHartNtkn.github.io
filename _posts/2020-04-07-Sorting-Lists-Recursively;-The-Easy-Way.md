@@ -129,7 +129,7 @@ def list_out(l : List[A]) -> ListF[A, List[A]]:
         return ConsF(l2, r)
 ```
 
-You can note that all these do is deconstruct and reconstruct one recurse within a list;
+You can note that all these do is highlight one recurse within a list;
 
 ```python
 y = [1,2,3,4,5]
@@ -195,7 +195,7 @@ def maybeBinTree_out(m : MaybeBinTree[A]) -> MaybeBinTreeF[A, MaybeBinTree[A]]:
         return EmptyLeafF()
 ```
 
-We can observe that this also just constructs/deconstructs one recurse down.
+We can observe that this also just highlights one recurse down.
 
 ```python
 m = Branch(
