@@ -108,10 +108,11 @@ Continuing to a more conventional example, streams can be defined as;
     tail st = λ s . st (λ seed step . s (π₂ (step seed)) step)
 
     cons : A → Stream A → Stream A
-    cons a st = λ f . f {Stream A + Stream A} (inl st) (λ s . case s of
-                                                              | inl s = a, inr s
-                                                              | inr s = head s, inr (tail s)
-                      )
+    cons a st = λ f . f {Stream A + Stream A} (inl st)
+                                              (λ s . case s of
+                                                     | inl s = a, inr s
+                                                     | inr s = head s, inr (tail s)
+                                              )
 
 And, as a final example, based on [this](http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=9A564F2172717230E15D3F8EC5253423?doi=10.1.1.47.5204&rep=rep1&type=pdf), the interval of reals `[0,1)` can be encoded as;
 
