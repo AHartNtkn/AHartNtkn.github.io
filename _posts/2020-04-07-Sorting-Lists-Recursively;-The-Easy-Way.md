@@ -310,7 +310,7 @@ def hylo(mapF, alg, coalg, a):
     return alg(mapF(lambda x: hylo(mapF, alg, coalg, x), coalg(a)))
 ```
 
-This is all well and good; these will be the only recursive functions in our implementation. Everything else will recurse by calling one of these three. But to use any of them, we need to find an appropriate algebra and coalgebra. In the case of merge sort, our coalgebra, the thing constructing on step of our tree, isn't a recursive function; it just splits up the list into our `maybeBinTreeF` container. It will take a list and split it between the branches, roughly even on each side. I'll call it `branch_split`.
+This is all well and good; these will be the only recursive functions in our implementation. Everything else will recurse by calling one of these three. But to use any of them, we need to find an appropriate algebra and coalgebra. In the case of merge sort, our coalgebra, the thing constructing one step of our tree, isn't a recursive function; it just splits up the list into our `maybeBinTreeF` container. It will take a list and split it between the branches, roughly even on each side. I'll call it `branch_split`.
 
 ```python
 def branch_split(l: List[A]) -> MaybeBinTreeF[A, List[A]]:
