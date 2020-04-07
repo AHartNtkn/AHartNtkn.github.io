@@ -88,12 +88,12 @@ class ListF(Generic[A, L]):
     pass
 
 class ConsF(ListF[A, L]):
-    def __init__(self, a: L, b: A) -> None:
+    def __init__(self, a: L, a: A) -> None:
+        self.l = l
         self.a = a
-        self.b = b
         
     def __str__(self):
-        return "ConsF(" + str(self.a) + ", " + str(self.b) + ")"
+        return "ConsF(" + str(self.l) + ", " + str(self.a) + ")"
 
 class NilF(ListF[A, L]):
     def __init__(self) -> None:
@@ -114,8 +114,8 @@ from typing import List
 
 def list_in(lF : ListF[A, List[A]]) -> List[A]:
     if isinstance(lF, ConsF):
-        r = lF.a.copy()
-        r.append(lF.b)
+        r = lF.l.copy()
+        r.append(lF.a)
         return r
     elif isinstance(lF, NilF):
         return []
@@ -267,7 +267,7 @@ Out[2]: LeafF(2)
 ```python
 def listF_map(f: Callable[[X], Y], lF: ListF[A, X]) -> ListF[A, Y]:
     if isinstance(lF, ConsF):
-        return ConsF(f(lF.a), lF.b)
+        return ConsF(f(lF.l), lF.a)
     elif isinstance(lF, NilF):
         return NilF()
 
@@ -458,19 +458,19 @@ I'll call this function `duel_filter`. This function will recurse over the input
 ```python
 def duel_filter_alg(lF: ListF[A, NodeTreeF[A, List[A]]]) -> NodeTreeF[A, List[A]]:
     if isinstance(lF, ConsF):
-        if isinstance(lF.a, NodeLeafF):
-            return NodeBranchF([], lF.b, [])
-        elif isinstance(lF.a, NodeBranchF):
-            a = lF.a.a
-            l1 = lF.a.b1
-            l2 = lF.a.b2
-            if lF.b <= a:
+        if isinstance(lF.l, NodeLeafF):
+            return NodeBranchF([], lF.a, [])
+        elif isinstance(lF.l, NodeBranchF):
+            a = lF.l.a
+            l1 = lF.l.b1
+            l2 = lF.l.b2
+            if lF.a <= a:
                 l1p = l1.copy()
-                l1p.append(lF.b)
+                l1p.append(lF.a)
                 return NodeBranchF(l1p, a, l2)
-            elif lF.b > a:
+            elif lF.a > a:
                 l2p = l2.copy()
-                l2p.append(lF.b)
+                l2p.append(lF.a)
                 return NodeBranchF(l1, a, l2p)
     elif isinstance(lF, NilF):
         return NodeLeafF()
