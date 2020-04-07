@@ -446,7 +446,7 @@ def nodeTree_map(f: Callable[[X], Y], nF: NodeTreeF[A, X]) -> NodeTreeF[A, Y]:
         return NodeBranchF(f(nF.b1), nF.a, f(nF.b2))
 ```
 
-The coalgebra of Quicksort, the thing constructing a single step of our tree, will be recursive. It will tak a list, and split it into a branch consisting of
+The coalgebra of Quicksort, the thing constructing a single step of our tree, will be recursive. It will take a list, and split it into a branch consisting of
 * a list of elements less than the head of the list
 * the head of the list
 * a list of elements greater than the head of the list
