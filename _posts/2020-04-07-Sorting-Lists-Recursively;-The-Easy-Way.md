@@ -441,7 +441,7 @@ class NodeLeafF(NodeTreeF[A, N]):
     def __str__(self):
         return "NodeLeafF()"
 
-def nodeTree_map(f: Callable[[X], Y], nF: NodeTreeF[A, X]) -> NodeTreeF[A, Y]:
+def nodeTreeF_map(f: Callable[[X], Y], nF: NodeTreeF[A, X]) -> NodeTreeF[A, Y]:
     if isinstance(nF, NodeLeafF):
         return NodeLeafF()
     elif isinstance(nF, NodeBranchF):
@@ -507,7 +507,7 @@ And, finally, we have Quicksort!
 
 ```python
 def Quicksort(l: List[A]) -> List[A]:
-    return hylo(nodeTree_map, nodeTree_flatten, duel_filter, l)
+    return hylo(nodeTreeF_map, nodeTree_flatten, duel_filter, l)
 
 print(Quicksort([9,4,5,3,8,0,1,2,6,7]))
 ```
