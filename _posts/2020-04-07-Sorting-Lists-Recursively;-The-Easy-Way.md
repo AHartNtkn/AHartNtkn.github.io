@@ -77,7 +77,7 @@ Now that we have our data structure, we want to consider a few things. In the di
 
 We won't be targeted either of those functions; instead, we're going to go around them.
 
-First, consider that both `List` and `MaybeBinTree` are inductive datatypes. This means, among other things, that they're the initial algebra of some endofunctor. It's well-known that the endofunctor which produces `List A` is `ListF A := X ↦ 1 + A × X`, where the `1` corresponds to the empty list, and the `A × X` corresponds to the case where an `A` is appended onto a list.
+First, consider that both `List` and `MaybeBinTree` are inductive datatypes. This means, among other things, that they're the initial algebra of some endofunctor. It's well-known that the endofunctor which produces `List A` is `ListF A := X ↦ 1 + A × X`, where the `1` corresponds to the empty list, and the `A × X` corresponds to the case where an `A` is appended onto a list, called the "cons" case.
 
 We can define this functor as follows;
 
@@ -129,7 +129,7 @@ def list_out(l : List[A]) -> ListF[A, List[A]]:
         return ConsF(l2, r)
 ```
 
-You can note that all these do is deconstruct and reconstruct one recursion within a list;
+You can note that all these do is deconstruct and reconstruct one recurse within a list;
 
 ```python
 y = [1,2,3,4,5]
@@ -144,7 +144,7 @@ Out[1]: ConsF([1, 2, 3, 4], 5)
 Out[2]: [1, 2, 3, 4, 5]
 ```
 
-We'll make use of these later on. First, we won't be using them. Instead, we'll use the ones for `MaybeBinTree`. The endofunctor generating this datatype is `MaybeBinTreeF A := X ↦ 1 + A + X × X`. We can construct this functor as a type;
+We'll make use of these later on. We'll also need the ones for `MaybeBinTree`. The endofunctor generating this datatype is `MaybeBinTreeF A := X ↦ 1 + A + X × X`, corresponsing to the empty leaf, leaf, and branch cases. We can construct this functor as a type;
 
 ```python
 M = TypeVar('M')
