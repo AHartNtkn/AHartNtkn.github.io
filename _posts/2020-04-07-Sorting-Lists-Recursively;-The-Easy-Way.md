@@ -199,13 +199,9 @@ We can observe that this also just constructs/deconstructs one recursion down.
 
 ```python
 m = Branch(
+      Leaf(2),
       Branch(
-        Leaf(4), 
-        Leaf(2)),
-      Branch(
-        Branch(
-          Leaf(1), 
-          EmptyLeaf()),
+        Leaf(1),
         Branch(
           Leaf(3),
           Leaf(5))))
@@ -217,8 +213,8 @@ print(maybeBinTree_in(m))
 ```
 
 ```
-Out[1]: BranchF(Branch(Leaf(4), Leaf(2)), Branch(Branch(Leaf(1), EmptyLeaf()), Branch(Leaf(3), Leaf(5))))
-Out[2]: Branch(Branch(Leaf(4), Leaf(2)), Branch(Branch(Leaf(1), EmptyLeaf()), Branch(Leaf(3), Leaf(5))))
+Out[1]: BranchF(Leaf(2), Branch(Leaf(1), Branch(Leaf(3), Leaf(5))))
+Out[2]: Branch(Leaf(2), Branch(Leaf(1), Branch(Leaf(3), Leaf(5))))
 ```
 
 This is more obvious here than with the case of `List`; we can replace all the constructors of `MaybeBinTree` with those of `MaybeBinTreeF` and we won't lose any information.
