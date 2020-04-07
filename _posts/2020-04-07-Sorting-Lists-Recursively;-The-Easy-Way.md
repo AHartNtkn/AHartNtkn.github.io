@@ -281,11 +281,13 @@ print( listF_map(exf, ex3) )
 Out: ConsF(15!, 3)
 ```
 
-Neat! At this point, we can fill in a few details. 
+Neat! We can fill in a few details, now. We can add in and out to our diagram, along with the mapped versions of the functions we're looking for. This also begs us to look for two more functions which we'd need to make use of those maps. 
 
 ![Some mapping hints.](../img/hylomorphisms/Hylo3.png)
 
-It's at this point which we notice the possibility of a solution. If we had a function pointing from our input lists to our output lists (what we were looking for in the first place), then we could map it over our lists within our `maybeBinTreeF` container.
+`?3` and `?4` are what we'll ultimately be targeting.
+
+I mentioned before that we'll go around `?1` and `?2`. If we had a function pointing from our input lists to our output lists (what we were looking for in the first place), then we could map it over our lists within our `maybeBinTreeF` container.
 
 ![???](../img/hylomorphisms/Hylo5.png)
 
