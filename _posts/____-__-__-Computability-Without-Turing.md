@@ -137,11 +137,15 @@ Except this souldn't be a problem anyway. In no universal model of computation w
 
 K(x) + I(ε) < I(x)
 
+
+
 There is information inherent in application. I_ap is the, increase or decrease, in the information of a pair of programs when they are applied to eachother.
 
-I_ap = I(f(x)) - I(f) - I(x)
+I_ap = I(f(x)) - I(f) - I(x), for any f and x
 
-It's possible that I_ap is negative. For example if our programs come in the form of binary strings and application is defined as concatination, then I(f ++ x) = I(f) + I(x) - I(ε), meaning that application subtracts roungly 1.58 bits of information. This, however, is unusual. In the lambda calculus, application at the top level corresponds to a binary choice between lambda abstraction and applicaiton, meaning each additional application induces 1 bit of additional information, which is more typical.
+It's possible that I_ap is negative. For example if our programs come in the form of binary strings and application is defined as concatination, then I(f ++ x) = I(f) + I(x) - I(ε), meaning that application subtracts roungly 1.58 bits of information. This, however, is unusual. In the lambda calculus, application at the top level corresponds to a binary choice between lambda abstraction and application, meaning each additional application incures 1 bit of additional information, which is more typical.
+
+
 
 
 

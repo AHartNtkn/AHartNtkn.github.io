@@ -1,8 +1,8 @@
-In this post, I will show a nice, clean, organized, schematic, and theoretically well-justified approach to sorting. I'll implement it in Python because of my target audience, but there's no significance to the choice beyond that. I'm going to describe and implement mergesort and quicksort via hylomorphisms. That may sound intimidating, but, trust me, it's way simpler than the usual implementation. This will allow for a semi-direct comparison between the algorithms while simultaneously demonstrating some techniques which might be considered esoteric to the Pythonic mind.
+In this post, I will show a nice, clean, organized, schematic, and theoretically well-justified approach to sorting. I'll implement it in Python because of my target audience, but there's no significance to the choice beyond that. I'm going to describe and implement Marge Sort and Quicksort via hylomorphisms. That may sound intimidating, but, trust me, it's way simpler than the usual implementation. This will allow for a semi-direct comparison between the algorithms while simultaneously demonstrating some techniques which might be considered esoteric to the Pythonic mind.
 
-First, let's look at mergesort since it's a very common example of using hylomorphism. We will use the specification of Merge Sort to motivate our implementation of hylo. For a start, I'll simply describe merge sort in an abstract way.
+First, let's look at Marge Sort since it's a very common example of using a hylomorphism. We will use the specification of Merge Sort to motivate our implementation of hylo. For a start, I'll simply describe merge sort in an abstract way.
 
-Mergesort starts by splitting a list into a binary tree, with approximately half of its components on one side and the other half on the other. Theses branches are then merged into lists, ensuring that the lists remain sorted at each merging. Here's a diagram depicting the process.
+Mergesort starts by splitting a list into a binary tree, with approximately half of its components on one side and the other half on the other. These branches are then merged into lists, ensuring that the lists remain sorted at each merging. Here's a diagram depicting the process.
 
 ![Merge Sort Diagram](../img/hylomorphisms/Hylo1.png)
 
@@ -71,13 +71,13 @@ Out: True
 
 Though, it's mostly for schematic completeness.
 
-Now that we have our data structure, we want to consider a few things. In the diagram I gave, the program passes through the `MaybeBinTree` type. Given some `A`s to sort, we have a function going from `List A` to `MaybeBinTree A`. We then compose this with a function from `MaybeBinTree A` to `List A` to complete the sorting.
+Now that we have our data structure, we want to consider what we need to make Merge Sort. In the diagram I gave, the program passes through the `MaybeBinTree` type. Given some `A`s to sort, we have a function going from `List A` to `MaybeBinTree A`. We then compose this with a function from `MaybeBinTree A` to `List A` to complete the sorting.
 
 ![What could those functions be?](../img/hylomorphisms/Hylo2.png)
 
-We won't be targeted either of those functions; instead, we're going to go around them.
+We won't be targeting either of those functions; instead, we're going to go around them.
 
-First, consider that both `List` and `MaybeBinTree` are inductive datatypes. This means, among other things, that they're the initial algebra of some endofunctor. It's well-known that the endofunctor which produces `List A` is `ListF A := X ↦ 1 + A × X`, where the `1` corresponds to the empty list, and the `A × X` corresponds to the case where an `A` is appended onto a list.
+Consider that both `List` and `MaybeBinTree` are inductive datatypes. We can define `List` via the endofunctor `ListF A := X ↦ 1 + A × X`, where the `1` corresponds to the empty list, and the `A × X` corresponds to the case where an `A` is appended onto a list, called the "cons" case. This is often phrased as `List A` being the initial algebra of the endofunctor `ListF A`.
 
 We can define this functor as follows;
 
@@ -88,12 +88,12 @@ class ListF(Generic[A, L]):
     pass
 
 class ConsF(ListF[A, L]):
-    def __init__(self, a: L, b: A) -> None:
+    def __init__(self, a: L, a: A) -> None:
+        self.l = l
         self.a = a
-        self.b = b
         
     def __str__(self):
-        return "ConsF(" + str(self.a) + ", " + str(self.b) + ")"
+        return "ConsF(" + str(self.l) + ", " + str(self.a) + ")"
 
 class NilF(ListF[A, L]):
     def __init__(self) -> None:
@@ -107,15 +107,15 @@ This endofunctor allows us to define `List` as:
 
 `List A := ListF A (List A)`
 
-The canonical function from any `F A` to `A`, where `A` is the initial algebra, is called `in`, while the other direction is called `out`. We can define these for the list as follows;
+If we wanted. The canonical function from any `F A` to `A`, where `A` is the initial algebra, is called `in`, while the other direction is called `out`. We can define these for the list as follows;
 
 ```python
 from typing import List
 
 def list_in(lF : ListF[A, List[A]]) -> List[A]:
     if isinstance(lF, ConsF):
-        r = lF.a.copy()
-        r.append(lF.b)
+        r = lF.l.copy()
+        r.append(lF.a)
         return r
     elif isinstance(lF, NilF):
         return []
@@ -129,7 +129,7 @@ def list_out(l : List[A]) -> ListF[A, List[A]]:
         return ConsF(l2, r)
 ```
 
-You can note that all these do is deconstruct and reconstruct one recursion within a list;
+You can note that all these do is highlight one recurse within a list;
 
 ```python
 y = [1,2,3,4,5]
@@ -144,7 +144,7 @@ Out[1]: ConsF([1, 2, 3, 4], 5)
 Out[2]: [1, 2, 3, 4, 5]
 ```
 
-We'll make use of these later on. First, we won't be using them. Instead, we'll use the ones for `MaybeBinTree`. The endofunctor generating this datatype is `MaybeBinTreeF A := X ↦ 1 + A + X × X`. We can construct this functor as a type;
+We'll make use of these later on. We'll also need the ones for `MaybeBinTree`. The endofunctor generating this datatype is `MaybeBinTreeF A := X ↦ 1 + A + X × X`, corresponding to the empty leaf, leaf, and branch cases. We can construct this functor as a type;
 
 ```python
 M = TypeVar('M')
@@ -195,17 +195,13 @@ def maybeBinTree_out(m : MaybeBinTree[A]) -> MaybeBinTreeF[A, MaybeBinTree[A]]:
         return EmptyLeafF()
 ```
 
-We can observe that this also just constructs/deconstructs one recursion down.
+We can observe that this also just highlights one recurse down.
 
 ```python
 m = Branch(
+      Leaf(2),
       Branch(
-        Leaf(4), 
-        Leaf(2)),
-      Branch(
-        Branch(
-          Leaf(1), 
-          EmptyLeaf()),
+        Leaf(1),
         Branch(
           Leaf(3),
           Leaf(5))))
@@ -217,8 +213,8 @@ print(maybeBinTree_in(m))
 ```
 
 ```
-Out[1]: BranchF(Branch(Leaf(4), Leaf(2)), Branch(Branch(Leaf(1), EmptyLeaf()), Branch(Leaf(3), Leaf(5))))
-Out[2]: Branch(Branch(Leaf(4), Leaf(2)), Branch(Branch(Leaf(1), EmptyLeaf()), Branch(Leaf(3), Leaf(5))))
+Out[1]: BranchF(Leaf(2), Branch(Leaf(1), Branch(Leaf(3), Leaf(5))))
+Out[2]: Branch(Leaf(2), Branch(Leaf(1), Branch(Leaf(3), Leaf(5))))
 ```
 
 This is more obvious here than with the case of `List`; we can replace all the constructors of `MaybeBinTree` with those of `MaybeBinTreeF` and we won't lose any information.
@@ -247,7 +243,8 @@ from typing import Callable
 X = TypeVar('X')
 Y = TypeVar('Y')
 
-def maybeBinTreeF_map(f: Callable[[X], Y], mF: MaybeBinTreeF[A, X]) -> MaybeBinTreeF[A, Y]:
+def maybeBinTreeF_map(f: Callable[[X], Y], mF: MaybeBinTreeF[A, X])\
+                                                    -> MaybeBinTreeF[A, Y]:
     if isinstance(mF, BranchF):
         return BranchF(f(mF.a), f(mF.b))
     elif isinstance(mF, LeafF):
@@ -271,7 +268,7 @@ Out[2]: LeafF(2)
 ```python
 def listF_map(f: Callable[[X], Y], lF: ListF[A, X]) -> ListF[A, Y]:
     if isinstance(lF, ConsF):
-        return ConsF(f(lF.a), lF.b)
+        return ConsF(f(lF.l), lF.a)
     elif isinstance(lF, NilF):
         return NilF()
 
@@ -284,23 +281,25 @@ print( listF_map(exf, ex3) )
 Out: ConsF(15!, 3)
 ```
 
-Neat! At this point, we can fill in a few details. 
+Neat! We can fill in a few details, now. We can add in and out to our diagram, along with the mapped versions of the functions we're looking for. This also begs us to look for two more functions which we'd need to make use of those maps. 
 
 ![Some mapping hints.](../img/hylomorphisms/Hylo3.png)
 
-It's at this point which we notice the possibility of a solution. If we had a function pointing from our input lists to our output lists (what we were looking for in the first place), then we could map it over our lists within our `maybeBinTreeF` container.
+`?3` and `?4` are what we'll ultimately be targeting.
+
+I mentioned before that we'll go around `?1` and `?2`. If we had a function pointing from our input lists to our output lists (what we were looking for in the first place), then we could map it over our lists within our `maybeBinTreeF` container.
 
 ![???](../img/hylomorphisms/Hylo5.png)
 
-If you think about this for a second, you may realize that, being under a map, `???`, at the bottom, is operating one recursion step deeper then the `???` at the top is operating. This means it's one step closer to the base case, and it should eventually terminate as a valid recursion. `???` is usually called `hylo` (short for `hylomorphism`), while `?3` is called the algebra and `?4` is called the coalgebra. Using them as inputs, we can define `hylo` in general. By composing `?4` with `map hylo` and then `?3`. The most general typing becomes clear when I clean up the above picture into something less busy;
+If you think about this for a second, you may realize that, being under a map, `???`, at the bottom, is operating one recursion step deeper then the `???` at the top is operating. This means it's one step closer to the base case, and it should eventually terminate as a valid recursion. `???` is usually called `hylo` (short for `hylomorphism`), while `?3` is called the algebra (something that deconstructs one recursion step) and `?4` is called the coalgebra (something that constructs one recursion step). Using them as inputs, we can define `hylo` in general. By composing `?4` with `map hylo` and then `?3`. The most general typing becomes clear when I clean up the above picture into something less busy;
 
 ![cata](../img/hylomorphisms/Hylo4.png)
 
-Also, by the same reasoning as with `hylo`, we can derive `?1` and `?2`, which are usually called `ana` and `cata`.
+Also, by the same reasoning as with `hylo`, we can derive `?1` and `?2`, which are usually called `ana` (short for `anamorphism`) and `cata` (short for `catamorphism`). Incidently, those words, ["ana"](https://www.dictionary.com/browse/ana-), ["cata"](https://www.dictionary.com/browse/cata-), and ["hylo"](https://www.dictionary.com/browse/hylo-), are common Greek prefixes.
 
 
 ```python
-# Unfortunately, this is the point where Python's type system fails to capture the full generallity of our program.
+# Unfortunately, this is the point where Python's type system fails to capture the full generality of our program.
 # We want our `F` a variable, but Python won't have it. It's type should be;
 # def hylo(mapF: ..., alg: Callable[[F[B]], B], coalg: Callable[[A], F[A]], a: A) -> B:
 
@@ -314,7 +313,7 @@ def hylo(mapF, alg, coalg, a):
     return alg(mapF(lambda x: hylo(mapF, alg, coalg, x), coalg(a)))
 ```
 
-Great! But now we need `?3` and `?4`. `?4` isn't a recursive function; it just splits up the list into our `maybeBinTreeF` container. It will take a list and split it between the branches. I'll call it `branch_split`.
+This is all well and good; these will be the only recursive functions in our implementation. Everything else will recurse by calling one of these three. But to use any of them, we need to find an appropriate algebra and coalgebra. In the case of merge sort, our coalgebra, the thing constructing one step of our tree, isn't a recursive function; it just splits up the list into our `maybeBinTreeF` container. It will take a list and split it between the branches, roughly even on each side. I'll call it `branch_split`.
 
 ```python
 def branch_split(l: List[A]) -> MaybeBinTreeF[A, List[A]]:
@@ -335,7 +334,9 @@ Out: BranchF([4, 2], [1, 3, 5])
 
 Notice that `branch_split` also stores an item within a leaf if it's the only item in the list. Also notice that if we apply `branch_split` to smaller and smaller terms, an empty list is never actually produced. That `EmptyLeafF` case seems a bit pointless, but it ensures our program won't, for example, crash if we're asked to sort an empty list.
 
-`?3` will be a function that takes a pair of lists within a branch, and merges them. I'll call it `branch_merge`. But, uhh... it's recursive too. Damn. Alright, let's back up. If we take the merging operation as a problem just like merge sort itself, then it starts with a pair of lists and fuses them into a single list. If we take `List` to be our `M` and `List × List` to be our `A` in the previous diagram, then we can get our merging function if we give a coalgebra. This has to be a function that takes a pair of lists and returns an element paired with a pair of lists. This element will simply be whichever of the two elements at the beginning of the pair is biggest.
+Our algebra, the thing deconstructing one step of our tree, will be a function that deconstructs a branch containing two lists by merging them. I'll call it `branch_merge`. `branch_merge` will be recursive since merging is a recursive operation. That means we'll need to define it using an ana, cata, or hylomorphism.
+
+Alright, let's back up. If we take the merging operation as a problem just like merge sort itself, then it starts with a pair of lists and fuses them into a single list. By taking `ListF` to be our recursion step, we can conceptualize this via a coalgebra which is constructing a single step of a list. If we take `List` to be our `M` and `List × List` to be our `A` in the previous diagram, then we can see how it fits into the previous scheme. The coalgebra has to be a function that takes a pair of lists and returns one of the list heads consed with a pair of lists. This head will simply be whichever of the two is biggest.
 
 ```python
 from typing import Tuple
@@ -398,7 +399,7 @@ print(branch_merge(BranchF([2,4], [1,3,5])))
 Out: [1, 2, 3, 4, 5]
 ```
 
-And, with all that, we can finally define mergesort.
+And, with all that, we can finally define Marge Sort.
 
 ```python
 def merg_sort(l: List[A]) -> List[A]:
@@ -413,11 +414,11 @@ Out: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 And it's as simple as that!
 
-Let's move on to quicksort. This algorithm does something quite different. It starts by splitting the list into pairs of lists which are, respectively, all less than and all greater than the head element. In the end, the tree is simply flattened. Here's a diagram showing the process.
+Let's move on to Quicksort. This algorithm does something quite different. It starts by splitting the list into pairs of lists which are, respectively, all less than and all greater than the head element. These splits are made over and over again, constructing a tree. After that, the tree is simply flattened. Here's a diagram showing the process.
 
-![Quick Sort Diagram](../img/hylomorphisms/Hylo6.png)
+![Quicksort Diagram](../img/hylomorphisms/Hylo6.png)
 
-This, like merge sort, requires its own data structure. This is something I call a `NodeTree`, a tree that stores data at its nodes. This has this simple endofunctor `X ↦ 1 + X × A × X`. We don't need the full datatype, so I'll only define the functor.
+This, like Merge Sort, requires its own data structure. This is something I call a `NodeTree`, a tree that stores data at its nodes. This has the simple endofunctor `X ↦ 1 + X × A × X`. We don't need the full datatype, so I'll only define the functor.
 
 ```python
 N = TypeVar('N')
@@ -432,7 +433,9 @@ class NodeBranchF(NodeTreeF[A, N]):
         self.b2 = b2
         
     def __str__(self):
-        return "NodeBranchF(" + str(self.b1) + ", " + str(self.a) + ", " + str(self.b2) + ")"
+        return "NodeBranchF(" + str(self.b1) + ", "\
+                              + str(self.a) + ", "\
+                              + str(self.b2) + ")"
 
 class NodeLeafF(NodeTreeF[A, N]):
     def __init__(self) -> None:
@@ -441,31 +444,36 @@ class NodeLeafF(NodeTreeF[A, N]):
     def __str__(self):
         return "NodeLeafF()"
 
-def nodeTree_map(f: Callable[[X], Y], nF: NodeTreeF[A, X]) -> NodeTreeF[A, Y]:
+def nodeTreeF_map(f: Callable[[X], Y], nF: NodeTreeF[A, X]) -> NodeTreeF[A, Y]:
     if isinstance(nF, NodeLeafF):
         return NodeLeafF()
     elif isinstance(nF, NodeBranchF):
         return NodeBranchF(f(nF.b1), nF.a, f(nF.b2))
 ```
 
-Before we can get to the appropriate (co)algebras, we need to define the function which splits the lists in the way quicksort requires. I'll call this function `duel_filter`. This function will be recursive, taking a list as input and outputting a triple consisting of an element of an `A` and two lists of `A`s. Ultimately, we're trying to recurse over the list; so that's our recursive structure. `duel_filter` can then be defined via a catamorphism who's algebra takes `a` and `b` of type `A` and two lists; placing `b` in the first list if it's less than or equal to `a`, and in the second list otherwise.
+The coalgebra of Quicksort, the thing constructing a single step of our tree, will be recursive. It will take a list, and split it into a branch consisting of
+* a list of elements less than the head of the list
+* the head of the list
+* a list of elements greater than the head of the list
+
+I'll call this function `duel_filter`. This function will recurse over the input list; deconstructing one element of the list at every step and placing it in one of the two branches. Since algebra's deconstruct one step, we'll try looking for that and then defining `duel_filter` as a catamorphism over that algebra. The algebra in question will take and `a` and `b` of type `A` and two lists; placing `b` in the first list if it’s less than or equal to `a`, and in the second list otherwise. The lists and `a` will then be placed in a branch.
 
 ```python
 def duel_filter_alg(lF: ListF[A, NodeTreeF[A, List[A]]]) -> NodeTreeF[A, List[A]]:
     if isinstance(lF, ConsF):
-        if isinstance(lF.a, NodeLeafF):
-            return NodeBranchF([], lF.b, [])
-        elif isinstance(lF.a, NodeBranchF):
-            a = lF.a.a
-            l1 = lF.a.b1
-            l2 = lF.a.b2
-            if lF.b <= a:
+        if isinstance(lF.l, NodeLeafF):
+            return NodeBranchF([], lF.a, [])
+        elif isinstance(lF.l, NodeBranchF):
+            a = lF.l.a
+            l1 = lF.l.b1
+            l2 = lF.l.b2
+            if lF.a <= a:
                 l1p = l1.copy()
-                l1p.append(lF.b)
+                l1p.append(lF.a)
                 return NodeBranchF(l1p, a, l2)
-            elif lF.b > a:
+            elif lF.a > a:
                 l2p = l2.copy()
-                l2p.append(lF.b)
+                l2p.append(lF.a)
                 return NodeBranchF(l1, a, l2p)
     elif isinstance(lF, NilF):
         return NodeLeafF()
@@ -488,7 +496,7 @@ print(duel_filter([4,2,1,5,3]))
 Out: NodeBranchF([2, 1, 3], 4, [5])
 ```
 
-That will act as the coalgebra for our quicksort hylomorphism. The algebra simply sandwiches the element at a node of our tree between the lists on its sides.
+That will act as the coalgebra for our Quicksort hylomorphism. The algebra, the thing deconstructing a single step of our tree, simply sandwiches the element at a node of our tree between the lists on its sides.
 
 ```python
 def nodeTree_flatten(nF: NodeTreeF[A, List[A]]) -> List[A]:
@@ -498,13 +506,13 @@ def nodeTree_flatten(nF: NodeTreeF[A, List[A]]) -> List[A]:
         return nF.b1 + [nF.a] + nF.b2
 ```
 
-And, finally, we have quicksort!
+And, finally, we have Quicksort!
 
 ```python
-def quicksort(l: List[A]) -> List[A]:
-    return hylo(nodeTree_map, nodeTree_flatten, duel_filter, l)
+def Quicksort(l: List[A]) -> List[A]:
+    return hylo(nodeTreeF_map, nodeTree_flatten, duel_filter, l)
 
-print(quicksort([9,4,5,3,8,0,1,2,6,7]))
+print(Quicksort([9,4,5,3,8,0,1,2,6,7]))
 ```
 
 ```
@@ -513,6 +521,6 @@ Out: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 Well, it doesn't sort the elements in place. This implementation leaves some things to be desired, as far as efficiency is concerned. IMO, this is mostly a compiler issue. Some modern languages (e.g. Formality and Idris 2) can check linearity, that data isn't copied, only manipulated or deleted, allowing the final, compiled program to manipulate data on such calls in-place. But there's probably a way to get this working more efficiently in Python, but I don't care enough to do so.
 
-So, you may be asking yourself, "I this *really* the easy way to sort lists recursively? This all seems abstract and confusing." I would say there's a tradeoff one has to make when it comes to making things simple. Most tasks that programmers to are special cases of very generic activities. Everything arises out of an adjunction, or a fibration, etc. We can make things very simple by climbing the tower of abstraction, but the tradeoff is that our most commonly used functions will become ever more abstruse. For my money, I think the cost is worth it. The other direction is to stay grounded at the bottom of the tower of abstraction; forever dwelling on miscellaneous details, even when they could be ignored.
+At this point, you may be asking yourself, "is this *really* the easy way to sort lists recursively? This all seems abstract and confusing." I would say there's a tradeoff one has to make when it comes to making things simple. Most tasks that programmers do are special cases of very generic activities. Everything arises out of an adjunction, or a fibration, etc. We can make things very simple by climbing the tower of abstraction, but the tradeoff is that our most commonly used functions will become ever more abstruse. For my money, I think the cost is worth it. The alternative is to stay grounded at the bottom of the tower of abstraction; forever dwelling on miscellaneous details, even when they could be ignored.
 
-As a practical demonstration, all the code written in this post ran the first time, without any modification. Well, that's not quite true. `duel_filter_alg` didn't work at first because of an indentation error, but that was genuinely it. Compared to usual Python development; that's quite spectacular. This general approach, called "Recursion Schemes", is a very, very good organizational principle for recursive programs. If you want to learn more, [this presentation](https://www.youtube.com/watch?v=_1XXFJgA6fs) is a very nice starting point which points to further resources.
+As a practical demonstration, I'll point out that all the code written in this post ran the first time, without any modification... Well, that's not quite true. `duel_filter_alg` didn't work at first because of an indentation error, but that was genuinely it. There were no errors related to recursion at all. It just worked. Compared to usual Python development, that's quite spectacular. This general approach, called "Recursion Schemes", is a very, very good organizational principle for recursive programs. If you want to learn more, [this presentation](https://www.youtube.com/watch?v=_1XXFJgA6fs) is a very nice starting point which points to further resources.
