@@ -122,7 +122,7 @@ so, `Π f B` should be the final dialgebra over
 
 Now, it's not clear to me how this definition relates to a more conventional presentation of Pi types. As a simple example, if I had 
 ```
-λ b . bool_elim b refl refl : Π (b : Bool) . b = true ∨ b = false
+λ b . bool_elim b (inl refl) (inr refl) : Π (b : Bool) . b = true ∨ b = false
 ```
 how would I write this using the above characterization? This, incidentally, has nothing to do with dialgebras, so I'll move on.
 
