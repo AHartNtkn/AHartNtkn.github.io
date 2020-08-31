@@ -1,8 +1,8 @@
-I've known for a while that dependent types can be defined as initial and final dialgebras. This is a somewhat obscure fact; but an important generalization of the more commonly referenced fact that non-dependent types are initial and final (co)algebras of specific endofunctors. The only thorough source of this fact, however, is ["Dependent Inductive and Coinductive Types are Fibrational Dialgebras"](https://arxiv.org/pdf/1508.06779.pdf). That paper has been cited only once, by a followup from the same author implementing a programming language. That language itself has influenced a few more projects in dependent type theory, but the original, more theoretical, result remains obscure.
+I've known for a while that dependent types can be defined as initial and final dialgebras. This is a somewhat obscure fact; but an important generalization of the more commonly referenced fact that non-dependent types are initial and final (co)algebras of specific endofunctors. The only thorough source of this fact that I know of, however, is ["Dependent Inductive and Coinductive Types are Fibrational Dialgebras"](https://arxiv.org/pdf/1508.06779.pdf). That paper has been cited only once, by a followup from the same author implementing a programming language. That language itself has influenced a few more projects in dependent type theory, but the original, more theoretical, result remains obscure.
 
 I didn't understand it the first few times I read it. I read it again, probably for the fourth time now, and I finally feel I have a grasp on what it's saying, and this post is meant to express the basic point in my own words. This note will be a bit meandering.
 
-I won't explain what a dialgebra is. Look it up on the nlab. Did you do that? Good. Now that you've seen the definition, let's define vectors as an (F, G)-dialgebra. Essentially, F will have all the information for the input requirements and G will have the output requirements. The dialgebra itself expresses the existence of a structure-preserving transformation from F Xs to G Xs; from inputs to outputs.
+I won't explain what a dialgebra is. Look it up on the [nlab](https://ncatlab.org/nlab/show/dialgebra). Did you do that? Good. Now that you've seen the definition, let's define vectors as an (F, G)-dialgebra. Essentially, F will have all the information for the input requirements and G will have the output requirements. The dialgebra itself expresses the existence of a structure-preserving transformation from F Xs to G Xs; from inputs to outputs.
 
 Here's the first example; vectors have two constructors;
 
@@ -17,11 +17,11 @@ So F has to say that the inputs are expecting something either trivial or a pair
 `Vect A n` is the initial dialgebra over the functors;
 ```
   F, G : (ℕ → *) → * × (ℕ → *)
-  F = X ↦ (1,   λ k . A × X k)
-  G = X ↦ (X 0, λ k . X (k + 1))
+  F(X) = (1,   λ n . A × X n)
+  G(X) = (X 0, λ n . X (n + 1))
 ```
 
-The types are important. We're defining something that's dependent on the natural numbers, so the inputs must be functions from ℕ to our type universe. The outputs of our functors are going to match the dependencies of the input and output, with one entry in the product for each constructor. The first constructor, `nil`, doesn't depend on anything, so it's just `*`. `cons`, on the other hand, depends on a natural number. This means our functors are taking functions and returning other functions. This is what "fibrational" means in the original paper. The "dialgebra" part basically asserts that we need to make a morphism between F(X) and G(X), for any X. Since the outputs are pairs, this will generally be pairs of morphisms; one for each constructor, mapping inputs to outputs.
+The types are important. We're defining something that's dependent on the natural numbers, so the inputs must be functions from ℕ to our type universe. The outputs of our functors are going to match the dependencies of the input and output, with one entry in the product for each constructor. The first constructor, `nil`, doesn't depend on anything, so it's just `*`. `cons`, on the other hand, depends on a natural number. This means our functors are taking functions and returning other functions. This is what "fibrational" means in the original paper. The "dialgebra" part basically asserts that we need to make a morphism between `F(X)` and `G(X)`, for any `X`. Since the outputs are pairs, this will generally be pairs of morphisms; one for each constructor, mapping an input to an output.
 
 Let's move onto a second example; finite sets. `Fin n` has two constructors;
 ```
@@ -34,23 +34,23 @@ And we can perform the exact same construction to get a dialgebraic characteriza
 `Fin n` is the initial dialgebra over the functors
 ```
   F, G : (ℕ → *) → (ℕ → *) × (ℕ → *)
-  F = X ↦ (λ _ . 1, X)
-    = X ↦ (const 1, X)
-  G = X ↦ (λ k . X (k + 1), λ k . X (k + 1))
-    = X ↦ Δ (X ∘ (+1))
+  F(X) = (λ _ . 1, X)
+       = (const 1, X)
+  G(X) = (λ k . X (k + 1), λ k . X (k + 1))
+       = Δ (X ∘ (+1))
 ```
 
 we can give a few obvious alternative definitions by altering the functors;
 
 ```
   F, G : (ℕ → *) → ℕ + ℕ → *
-  F = X ↦ [λ _ . 1, X]
-  G = X ↦ [λ k . X (k + 1), λ k . X (k + 1)]
+  F(X) = [λ _ . 1, X]
+  G(X) = [λ k . X (k + 1), λ k . X (k + 1)]
 ```
 ```
   F, G : (ℕ → *) → Bool × ℕ → *
-  F = X ↦ λ (b, k) . if b then 1 else X k
-  G = X ↦ λ (_, k) . X (k + 1)
+  F(X) = λ (b, k) . if b then 1 else X k
+  G(X) = λ (_, k) . X (k + 1)
 ```
 
 It's worth looking at a trivial case. We have the type of natural numbers
@@ -63,16 +63,16 @@ It's worth looking at a trivial case. We have the type of natural numbers
 ℕ is then the initial dialgebra over the functors
 ```
   F, G : * → * × *
-  F = X ↦ (1, X)
-  G = X ↦ (X, X)
-    = Δ
+  F(X) = (1, X)
+  G(X) = (X, X)
+       = Δ
 ```
 
 ℕ is also the initial dialgebra over the functors
 ```
   F, G : * → *
-  F = X ↦ 1 + X
-  G = X ↦ X
+  F(X) = 1 + X
+  G(X) = X
 ```
 
 I do wonder what the generic principal relating these is. I think it may be a peculiar property of the universe of types. What I can say is that morphisms from `(1, X)` to `(X, X)` will be pairs of morphisms from `1` to `X` and from `X` to `X`. This can be written as
@@ -87,8 +87,8 @@ Codata is essentially the same construction, but the inputs and outputs are swit
 ℕ∞ is the final dialgebra over the functors
 ```
   F, G : * → * × *
-  F = X ↦ (X, X)
-  G = X ↦ (1, X)
+  F(X) = (X, X)
+  G(X) = (1, X)
 ```
 
 Another example; partial streams over A of length n : ℕ∞ are defined as
@@ -101,8 +101,8 @@ PStr A n
 `PStr A n` is then the final dialgebra over the endofunctors,
 ```
   F, G : (ℕ∞ → *) → (ℕ∞ → *) × (ℕ∞ → *)
-  F = X ↦ (const A, X)
-  G = X ↦ Δ (X ∘ (+1))
+  F(X) = (const A, X)
+  G(X) = Δ (X ∘ (+1))
 ```
 
 The final example I'll give is pi types. As a coinductive type, they have one constructor;
@@ -114,8 +114,8 @@ The final example I'll give is pi types. As a coinductive type, they have one co
 so, `Π f B` should be the final dialgebra over
 ```
   F, G : (J → *) → (I → *)
-  F = X ↦ B
-  G = X ↦ X ∘ f
+  F(X) = B
+  G(X) = X ∘ f
 ```
 
 Now, it's not clear to me how this definition relates to a more conventional presentation of Pi types. As a simple example, if I had 
@@ -138,8 +138,8 @@ It seemed obvious to me that understanding the dialgebraic approach to dependent
 ℕ is the initial dialgebra over the functors
 ```
   F, G : * → * × *
-  F = X ↦ (1, X)
-  G = X ↦ (X, X)
+  F(X) = (1, X)
+  G(X) = (X, X)
 ```
 
 We can give other first-order impredicative encodings of ℕ as;
@@ -164,8 +164,8 @@ Let's try with vectors;
 `Vect A n` is the initial dialgebra over the functors;
 ```
   F, G : (ℕ → *) → * × (ℕ → *)
-  F = X ↦ (1,   λ k . A × X k)
-  G = X ↦ (X 0, λ k . X (k + 1))
+  F(X) = (1,   λ k . A × X k)
+  G(X) = (X 0, λ k . X (k + 1))
 ```
 
 We can pair morphisms again, but then we'll need morphisms between the functions too. A morphism between functions `f, g : X → Y` is going to be something of type `∀ x : X . f x → g x`, so a product of morphisms in `Y`. Since `Y` is our universe of types, these will simply be functions.
