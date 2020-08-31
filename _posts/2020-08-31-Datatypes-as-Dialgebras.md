@@ -14,7 +14,7 @@ Vect A : ℕ → *
 
 The types are important. We're defining something that's dependent on the natural numbers, so the functor inputs must be functions from ℕ to our type universe, which can be any category of our choosing so long as these initial/final dialgebras actually exist in it. I'll use `*` to refer to this generic category/universe throughout this post. 
 
-The outputs of our functors are going to match the dependencies of the input and output, with one entry in a product for each constructor. F will say that the inputs are expecting something either trivial or a pair with an A and a vector. G will say that the outputs are expected to be a vector of length zero or a vector of length one greater than the input. Putting this together, we can say,
+The outputs of our functors are going to match the dependencies of the input and output, with one entry in a product for each constructor. F will say that the inputs are expecting something either trivial or a pair with an `A` and a vector. G will say that the outputs are expected to be a vector of length zero or a vector of length one greater than the input. Putting this together, we can say,
 
 `Vect A n` is the initial dialgebra over the functors;
 ```
