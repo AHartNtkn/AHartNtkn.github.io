@@ -217,4 +217,21 @@ Not too hard to work out. A more generic construction for dialgebras in general 
                 ... 
                 → X i
 ```
-which seems workable.
+
+which is equivalent to
+
+```
+   T (i : I) = ∀ X : I → * . 
+                (∀ i : I + I + ... . F i → G i)
+                → X i
+```
+
+which is further equivalent to
+
+```
+   T (i : I) = ∀ X : I → * . 
+                (∀ i : Fin n × I . F i → G i)
+                → X i
+```
+
+where n is the number of constructors. This seems very workable and should give a generic construction for something like a Church encoding for dependent types.
