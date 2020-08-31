@@ -168,13 +168,13 @@ Let's try with vectors;
   G(X) = (X 0, λ k . X (k + 1))
 ```
 
-We can pair morphisms again, but then we'll need morphisms between the functions too. A morphism between functions `f, g : X → Y` is going to be something of type `∀ x : X . f x → g x`, so a product of morphisms in `Y`. Since `Y` is our universe of types, these will simply be functions.
+We can pair morphisms again, but then we'll need morphisms between the functions for `cons` too. A morphism between functions `f, g : X → Y` is going to be something of type `∀ x : X . f x → g x`, so a product of morphisms in `Y`. Since `Y` is our universe of types, these will simply be functions.
 
 ```
 Vect A n ≅ ∀ X : ℕ → * . (1 → X 0) × (∀ k : ℕ . A × X k → X (k + 1)) → X n
 ```
 
-we can make this a bit easier to work with;
+we can make this a bit easier to work with by currying;
 ```
 Vect A n ≅ ∀ X : ℕ → * . X 0 → (∀ k : ℕ . A → X k → X (k + 1)) → X n
 ```
