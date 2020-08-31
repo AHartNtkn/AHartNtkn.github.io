@@ -7,12 +7,14 @@ I won't explain what a dialgebra is. Look it up on the [nlab](https://ncatlab.or
 Here's the first example; vectors have two constructors;
 
 ```
-Vect A n
+Vect A : ℕ → *
   nil  :       1            → Vect A 0
   cons : ∀ n . A × Vect A n → Vect A (n + 1)
 ```
 
-So F has to say that the inputs are expecting something either trivial or a pair with an A and a vector. G will say that the outputs are expected to be a vector of length zero or a vector of length one greater than the input. Putting this together, we can say,
+The types are important. We're defining something that's dependent on the natural numbers, so the functor inputs must be functions from ℕ to our type universe, which can be any category of our choosing so long as these initial/final dialgebras actually exist in it. I'll use `*` to refer to this generic category/universe throughout this post. 
+
+The outputs of our functors are going to match the dependencies of the input and output, with one entry in the product for each constructor. F will say that the inputs are expecting something either trivial or a pair with an A and a vector. G will say that the outputs are expected to be a vector of length zero or a vector of length one greater than the input. Putting this together, we can say,
 
 `Vect A n` is the initial dialgebra over the functors;
 ```
@@ -21,11 +23,11 @@ So F has to say that the inputs are expecting something either trivial or a pair
   G(X) = (X 0, λ n . X (n + 1))
 ```
 
-The types are important. We're defining something that's dependent on the natural numbers, so the inputs must be functions from ℕ to our type universe, which can be any category of our choosing so long as these initial/final dialgebras actually exist in it. I'll use `*` to refer to this generic category/universe throughout this post. The outputs of our functors are going to match the dependencies of the input and output, with one entry in the product for each constructor. The first constructor, `nil`, doesn't depend on anything, so it's just `*`. `cons`, on the other hand, depends on a natural number. This means our functors are taking functions and returning other functions. This is what "fibrational" means in the original paper. The "dialgebra" part basically asserts that we need to make a morphism between `F(X)` and `G(X)`, for any `X`. Since the outputs are pairs, this will generally be pairs of morphisms; one for each constructor, mapping an input to an output.
+The first constructor, `nil`, doesn't depend on anything, so it's just `*`. `cons`, on the other hand, depends on a natural number. This means our functors are taking functions and returning other functions. This is what "fibrational" means in the original paper. The "dialgebra" part basically asserts that we need to make a morphism between `F(X)` and `G(X)`, for any `X`. Since the outputs are pairs, this will generally be pairs of morphisms; one for each constructor, mapping an input to an output.
 
 Let's move onto a second example; finite sets. `Fin n` has two constructors;
 ```
-Fin n
+Fin : ℕ → *
   zero :       1     → Fin (n + 1)
   succ : ∀ n . Fin n → Fin (n + 1)
 ``` 
@@ -55,7 +57,7 @@ we can give a few obvious alternative definitions by altering the functors;
 
 It's worth looking at a trivial case. We have the type of natural numbers
 ```
-ℕ
+ℕ : *
   zero : 1 → ℕ
   succ : ℕ → ℕ
 ```
@@ -93,7 +95,7 @@ Codata is essentially the same construction, but the inputs and outputs are swit
 
 Another example; partial streams over A of length n : ℕ∞ are defined as
 ```
-PStr A n
+PStr A : ℕ∞ → *
   hd : PStr A (succ n) → A
   tl : PStr A (succ n) → PStr A n
 ```
