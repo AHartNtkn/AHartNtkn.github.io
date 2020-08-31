@@ -75,7 +75,11 @@ It's worth looking at a trivial case. We have the type of natural numbers
   G = X ↦ X
 ```
 
-I do wonder what the generic principal relating these is. I think it may be a peculiar property of the universe of types. What I can say is that morphisms from `(1, X)` to `(X, X)` will be pairs of morphisms from `1` to `X` and from `X` to `X`. This can be written as `(1 → X) × (X → X)` which is isomorphic to `1 + X → X`. So the connection, in this case, is obvious, but it doesn't seem to me like this reasoning would generalize if our constructors required types with more exotic kinds of morphisms than functions.
+I do wonder what the generic principal relating these is. I think it may be a peculiar property of the universe of types. What I can say is that morphisms from `(1, X)` to `(X, X)` will be pairs of morphisms from `1` to `X` and from `X` to `X`. This can be written as
+```
+(1 → X) × (X → X)
+```
+which is isomorphic to `1 + X → X`. So the connection, in this case, is obvious, but it doesn't seem to me like this reasoning would generalize if our constructors required types with more exotic kinds of morphisms than functions.
 
 Codata is essentially the same construction, but the inputs and outputs are switched, and we take the final, rather than initial, dialgebra.
 
@@ -120,7 +124,7 @@ Now, it's not clear to me how this definition relates to a more conventional pre
 ```
 how would I write this using the above characterization? This, incidentally, has nothing to do with dialgebras, so I'll move on.
 
-One of my personal fixations is on impredicative encodings of datatypes, and I never fully grasped how to do them for dependent types. There's a close relationship between the initial algebra of an endofunctor characterization of types and their appropriate encodings. For example, ℕ is the initial algebra over `X ↦ 1 + X`, and we can give the impredicative encoding `∀ X . (1 + X → X) → X`. In general, initial algebras over an endofunctor `F` have the encoding `∀ X . (F X → X) → X`. That's pretty cool, and we can derive lambda encodings from them.
+One of my personal fixations is on impredicative encodings of datatypes, and I never fully grasped how to do them for dependent types. There's a close relationship between the initial algebra of an endofunctor characterization of types and their impredicative encodings. For example, ℕ is the initial algebra over `X ↦ 1 + X`, and we can give the impredicative encoding `∀ X . (1 + X → X) → X`. In general, initial algebras over an endofunctor `F` have the encoding `∀ X . (F X → X) → X`. That's pretty cool, and we can derive lambda encodings from them.
 
 ```
 zero : ∀ X . (1 + X → X) → X
@@ -189,11 +193,7 @@ this seems like a very reasonable encoding of vectors.
 
 As an example, to encode `['a', 'b', 'c'] : Vect Str 3`;
 ```
-  Λ X . λ (n : X 0) (c : ∀ k : ℕ . A → X k → X (k + 1)) . c -2 'a' (c -1 'b' (c -0 'c' n))
-```
-  which, after erasure, becomes;
-```
-  λ n c . c 'a' (c 'b' (c 'c' n))
+  Λ X . λ  n c . c -2 'a' (c -1 'b' (c -0 'c' n))
 ```
 
 Now this whole construction seems like it should have been obvious in retrospect.
