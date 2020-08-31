@@ -2,7 +2,7 @@ I've known for a while that dependent types can be defined as initial and final 
 
 I didn't understand it the first few times I read it. I read it again, probably for the fourth time now, and I finally feel I have a grasp on what it's saying, and this post is meant to express the basic point in my own words. This note will be a bit meandering.
 
-I won't explain what a dialgebra is. Look it up on the [nlab](https://ncatlab.org/nlab/show/dialgebra). Did you do that? Good. Now that you've seen the definition, let's define vectors as an (F, G)-dialgebra. Essentially, F will have all the information for the input requirements and G will have the output requirements. The dialgebra itself expresses the existence of a structure-preserving transformation from F Xs to G Xs; from inputs to outputs.
+I won't explain what a dialgebra is. Look it up on the [nlab](https://ncatlab.org/nlab/show/dialgebra). Did you do that? Good. Now that you've seen the definition, let's define dependent types as an (F, G)-dialgebra. Essentially, F will have all the information for the input requirements and G will have the output requirements. The dialgebra itself expresses the existence of a structure-preserving transformation from F Xs to G Xs; from inputs to outputs.
 
 Here's the first example; vectors have two constructors;
 
@@ -23,7 +23,7 @@ The outputs of our functors are going to match the dependencies of the input and
   G(X) = (X 0, λ n . X (n + 1))
 ```
 
-The first constructor, `nil`, doesn't depend on anything, so it's just needs a `*`. `cons`, on the other hand, depends on a natural number. This means our functors are taking functions and returning other functions. This is what "fibrational" means in the original paper. The "dialgebra" part basically asserts that we need to make a morphism between `F(X)` and `G(X)`, for any `X`. Since the outputs are pairs, this will generally be pairs of morphisms; one for each constructor, mapping an input to an output.
+The first constructor, `nil`, doesn't depend on anything, so it just needs a `*`. `cons`, on the other hand, depends on a natural number. This means our functors are taking functions and returning other functions. This is what "fibrational" means in the original paper. The "dialgebra" part basically asserts that we need to make a morphism between `F(X)` and `G(X)`, for any `X`. Since the outputs are pairs, this will generally be pairs of morphisms; one for each constructor, mapping an input to an output.
 
 Let's move onto a second example; finite sets. `Fin n` has two constructors;
 ```
