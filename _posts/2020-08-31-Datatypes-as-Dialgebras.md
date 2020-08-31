@@ -234,4 +234,4 @@ which is further equivalent to
                 → X i
 ```
 
-where n is the number of constructors. This seems very workable and should give a generic construction for something like a Church encoding for dependent types.
+where `n` is the number of constructors. This seems very workable and should give a generic construction for something like a Church encoding for dependent types.
