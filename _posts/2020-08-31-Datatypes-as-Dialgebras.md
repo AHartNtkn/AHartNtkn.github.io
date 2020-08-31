@@ -203,7 +203,7 @@ Now this whole construction seems like it should have been obvious in retrospect
 We can use this to try getting an impredicative encoding with a dependent eliminator.
 ```
   ι(v : Vect A n) .
-    ∀ (P : ∀ k : ℕ . Vect A k) .
+    ∀ (P : ∀ k : ℕ . Vect A k → *) .
     P -0 nil →
     (∀ (k : ℕ) (v : Vect A k) . Π (a : A) . P -k v → P -(k + 1) (cons -k a v)) →
     P -n v
