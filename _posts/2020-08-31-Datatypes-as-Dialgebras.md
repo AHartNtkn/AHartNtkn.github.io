@@ -209,6 +209,10 @@ We can use this to try getting an impredicative encoding with a dependent elimin
 
 Not too hard to work out. A more generic construction for dialgebras in general would have to address morphisms in general. However, the assertion that dependent types are *fibrational* dialgebras would seem to imply that any dependent type `T` over some other type `I` will all have base encodings of the form
 ```
-   T (i : I) = ∀ X : I → * . (∀ i : I . F[0] i → G[0] i) × (∀ i : I . F[1] i → G[1] i) × ... → X i
+   T (i : I) = ∀ X : I → * . 
+                (∀ i : I . F[0] i → G[0] i) ×
+                (∀ i : I . F[1] i → G[1] i) × 
+                ... 
+                → X i
 ```
 which seems workable.
