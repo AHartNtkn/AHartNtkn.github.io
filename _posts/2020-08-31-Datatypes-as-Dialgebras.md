@@ -85,7 +85,7 @@ which is isomorphic to `1 + X → X`. So the connection, in this case, is obviou
 
 Codata is essentially the same construction, but the inputs and outputs are switched, and we take the final, rather than initial, dialgebra.
 
-ℕ∞ is ℕ equipped with a point at infinity. It has the same constructors as ℕ, but it's codata.
+ℕ∞ is ℕ equipped with a point at infinity. Its destructors are the exact opposites of the constructors of ℕ.
 ℕ∞ is the final dialgebra over the functors
 ```
   F, G : * → * × *
@@ -107,7 +107,7 @@ PStr A : ℕ∞ → *
   G(X) = Δ (X ∘ (+1))
 ```
 
-The final example I'll give is pi types. As a coinductive type, they have one constructor;
+The final example I'll give is pi types. As a coinductive type, they have one destructor;
 ```
 Π (f : I → J) (B : I → *) : J → * 
   app : Π f B (f i) → B i
