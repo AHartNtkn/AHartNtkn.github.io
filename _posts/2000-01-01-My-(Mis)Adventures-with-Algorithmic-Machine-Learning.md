@@ -212,10 +212,8 @@ A pairing strategy is a set `P`
     - where `rx` and `ry` are partitions of `X` and `Y` made by out partitioning strategy
       - where each `rx` occurring in `P` must only occur once, though there is no similar restriction on `ry`.
         This just means that `P`, treated as a relation, is (non-totally) functional.
-    - where nx and ny are the "multiplicity of the objects" `rx` and `ry` within the partitionings of `X` and `Y`, respectively.
- 
-      The word "multiplicity" means "a large amount"; it's a noun, not an adjective. A multiplicity of `X`s is a large amount of `X`s, it's not an attribute of the `X`s. I assume what the authors want to say is that `nx` and `ny` are the count of occurrences of `rx` and `ry` in `nx` and `ny`, but I'm not sure as what the paper actually says doesn't mean this. However, this may be some obscure, non-standard usage of "multiplicity" which I'm unfamiliar with and it could mean literally anything.
- 
+    - where  `nx` and `ny` are the count of occurrences of `rx` and `ry` within the partitionings of `X` and `Y`, respectively.
+
 That's all it says on pairing strategies. As far as I can tell from this, a pairing strategy that pairs nothing and is just empty is valid, but I'm pretty sure it's not supposed to be.
 
 Assuming we have an understanding of what additional constraints a pairing strategy should have, we want to find the pairing strategy which minimizes the following quantity;
@@ -224,17 +222,9 @@ Assuming we have an understanding of what additional constraints a pairing strat
 
 The minimal value for this quantity will be `BDM(X|Y)`.
 
-This quantity will always be non-negative and we can always minimize it to zero by making `P` empty. This is obviously not intended. It also doesn't make much sense to me that we're taking the log of `nx` if `nx` is just the count of `rx`s rather than, say, the length of `rx` times the number of occurrences. And shouldn't that log term scale with the difference between `nx` and `ny` in some way? The paper offers no real intuition.
+This quantity will always be nonnegative and we can always minimize it to zero by making `P` empty. This is obviously not intended. It also doesn't make much sense to me that we're taking the log of `nx` if `nx` is just the count of `rx`s rather than, say, the length of `rx` times the number of occurrences. And shouldn't that log term scale with the difference between `nx` and `ny` in some way? The paper offers no real intuition.
 
-Maybe looking at the [original BDM paper](https://arxiv.org/abs/1609.00110) can offer clarification.
-
-...
-
-Indeed it does!
-
-Firstly, it says "`nx` is the number of times the object `x` occurs in `s`" (pg. 8). That seems to support my initial reading, assuming the notation is consistent. It even says "`ni` is the multiplicity of `si`" (pg. 14) indicating that the author did not learn what "multiplicity" means in between writing that paper and this one.
-
-The original BDM paper gives a nice example which I'll reproduce here. Let's say we're applying BDM to the string 
+Maybe looking at the [original BDM paper](https://arxiv.org/abs/1609.00110) can offer clarification. It gives a nice example which I'll reproduce here. Let's say we're applying BDM to the string 
 ```
 010101010101010101  
 ```
@@ -391,7 +381,7 @@ This definition isolates the unique information `X` while issuing additional pen
 
 > [the second sum] is important in cases where such multiplicity dominates the complexity of the objects
 
-, but, intuitively, it seems to me like the sum should only add a penalty if nx > ny; because, otherwise, we're penalizing the conditional complexity of `X` for content that's in `Y` but not in `X`. I'll have to think about this a bit more.
+, but, intuitively, it seems to me like the sum should only add a penalty if `nx > ny`; because, otherwise, we're penalizing the conditional complexity of `X` for content that's in `Y` but not in `X`. I'll have to think about this a bit more.
  
 The "coarse" BDM is, I guess, less accurate than the "strong" BDM that I first looked at; but, at least, it makes sense. The reason it's weaker is that it doesn't utilize conditional CTM. But without additional clarification on what a "pairing strategy" is, I just can't understand how the strong version works.
 
@@ -508,7 +498,7 @@ e^(- (x-μ)² / 2 σ²) / σ √(2 π)
 ```
 The "prediction" made by a Gaussian model will be the mean, `μ`, and the likelihood of a particular piece of data `x` will be that data fed into the PDF of a gaussian with the predicted mean. Substituting with those changes into our negative log-likelihood, this becomes
 ```
-- Σ(i) log(e ^ - (yi - y_pred)² / 2 σ²)  / σ √(2 π) = 1 / (2 σ³ √(2 π)) Σ(i) (yi - yi_pred)²
+- Σ(i) log(e ^ - (yi - y_pred)² / 2 σ²)  / σ √(2 π) = (1 / σ³ √(8 π)) Σ(i) (yi - yi_pred)²
 ```
 which is exactly the squared error, modulo some constants we don't care about. And getting the average by dividing by the number of data points will get us the mean squared error, MSE. This should also illustrate that if you don't think it's reasonable to assume your data were randomly sampled from a gaussian distribution, then you should also not think it's reasonable to use the squared error without a similar derivation.
 
@@ -549,7 +539,7 @@ This will be a bit of a digression, but if you read this far you probably don't 
 
 > For instance, in order to fit the output of the function `f` (Eq. 2) by means of the model M, we must optimize over two continuous parameters `s1` and `s2`. Therefore the space of parameters is composed of the pairs of real numbers `σ_i = [σ_i1, σ_i2]`. However,a computer cannot fully represent a real number, using instead an approximation by means of a fixed number of bits. Since this second space is finite, so is the parameter space and the search space which is composed of pairs of binary strings of finite size [...]
 
-This entire paragraph is rather head-scratching. Computers certainly can fully represent a real number. We can figure out how by following the same basic procedure I used before to figure out how to encode binary strings. You just state a universal property of the mathematical object you want to represent and derive a type of realizers. This is a bit squirrely with the real numbers as the exact universal properties diverge in constructive settings. Dedekind Reals and Cauchy Reals aren't isomorphic anymore, for instance. There are also practical questions about how to make calculating with them as easy as possible. That being said, the simplest universal property for any kind of real number I'm aware of is the following; the (non-negative) real numbers are the final coalgebra of the endofunctor `X ↦ ℕ × X`. There are a few places that say this in various guises. The most direct is [On coalgebra of real numbers](http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=9A564F2172717230E15D3F8EC5253423?doi=10.1.1.47.5204&rep=rep1&type=pdf) which is all about this observation. See [this](https://ncatlab.org/nlab/show/continued+fraction#half-open) as well.  This basically says that real numbers are an infinite stream of natural numbers. There are a few ways of viewing what this represents, and that will largely determine whether you see each number as representing a non-negative real or something isomorphic, like something in `[0, 1)`. For the latter, we can read each natural number as describing how many 1s we encounter before encountering a `0` in the binary expansion of a number. For example;
+This entire paragraph is rather head-scratching. Computers certainly can fully represent a real number. We can figure out how by following the same basic procedure I used before to figure out how to encode binary strings. You just state a universal property of the mathematical object you want to represent and derive a type of realizers. This is a bit squirrely with the real numbers as the exact universal properties diverge in constructive settings. Dedekind Reals and Cauchy Reals aren't isomorphic anymore, for instance. There are also practical questions about how to make calculating with them as easy as possible. That being said, the simplest universal property for any kind of real number I'm aware of is the following; the (nonnegative) real numbers are the final coalgebra of the endofunctor `X ↦ ℕ × X`. There are a few places that say this in various guises. The most direct is [On coalgebra of real numbers](http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=9A564F2172717230E15D3F8EC5253423?doi=10.1.1.47.5204&rep=rep1&type=pdf) which is all about this observation. See [this](https://ncatlab.org/nlab/show/continued+fraction#half-open) as well.  This basically says that real numbers are an infinite stream of natural numbers. There are a few ways of viewing what this represents, and that will largely determine whether you see each number as representing a nonnegative real or something isomorphic, like something in `[0, 1)`. For the latter, we can read each natural number as describing how many 1s we encounter before encountering a `0` in the binary expansion of a number. For example;
 ```
 0 = [0, 0, 0, ...]
 0.1 = [0, 0, 2, 0, 2, 0, 2, 0, 2, ...]
@@ -576,7 +566,7 @@ whichever interpretation we use will determine how we define, for instance, addi
 ```
 ∃ X . (X → ℕ × X) × X
 ```
-We can construct a real number by fixing a type, `X`, giving an `X` as a seed, and then defining a method of generating new digits and new seeds from an old seed. For example, we can construct an infinite stream of zeros by setting `X` to be `⊤`, the unit type, giving `•`, the only inhabitant of `⊤` as our seed, and defining our generator as `λ x . (0, •)`. In full, we'd have
+We can construct a real number by fixing a type, `X`, giving an `X` as a seed, and then defining a method of generating new digits and new seeds from an old seed. For example, we can construct an infinite stream of zeros by setting `X` to be `⊤`, the unit type, giving `•`, the only inhabitant of `⊤`, as our seed, and defining our generator as `λ x . (0, •)`. In full, we'd have
 ```
 0 : ℝ := λ x . (0, •), •
 ```
@@ -585,9 +575,9 @@ or, if we want to be explicit about all our encodings;
 0 : ∃ X . (X → (∀ Y . Y → (Y → Y) → Y) × X) × X
  := λ p . p (λ x . λ p . p (λ z . λ s . z) (λ x . x)) (λ x . x)
 ```
-This means that the real number zero has, at most, about 32.511 bits of complexity, surprisingly small for something which is supposedly infinitely large.
+This means that the real number zero has, at most, about 32.511 bits of complexity; surprisingly small for something which is supposedly infinitely large.
 
-The usual reason we'd want to use floating-point numbers over exact real numbers is efficiency; floating-point numbers are much faster to work with since our computers have hardware dedicated to computing with them. But this approach is representing the parameters as raw outputs of some virtual computer anyway, so that doesn't apply here. To use floating points, we'd have to convert them to some encoding of floats in our computational model. We get no efficiency in using floats here.
+The usual reason we'd want to use floating-point numbers over exact real numbers is efficiency; floating-point numbers are much faster to compute with since our computers have hardware dedicated to computing with them. But this approach is representing the parameters as raw outputs of some virtual computer anyway, so that doesn't apply here. To use floating points, we'd have to convert them to some encoding of floats in our computational model. We get no efficiency in using floats here.
 
 We can make our representation a bit more efficient. Following the [Coinductive function spaces page](http://www.dcs.ed.ac.uk/home/pgh/coit.html), we can use a few isomorphisms to change this representation. Notably, it's generally the case that
 ```
@@ -597,7 +587,7 @@ for any `A`. Since `ℕ` is the initial algebra over the endofunctor `X ↦ 1 + 
 ```
 ∃ X . (X → A × X) × X ≅ ℕ → A
 ```
-So we can redefine the positive reals as just functions from `ℕ → ℕ`. Neat! Following this, we can define zero instead as;
+So we can redefine the nonnegative reals as just functions from `ℕ → ℕ`. Neat! Following this, we can define zero instead as;
 ```
 0 := λ n . λ z . λ s . z
 ```
