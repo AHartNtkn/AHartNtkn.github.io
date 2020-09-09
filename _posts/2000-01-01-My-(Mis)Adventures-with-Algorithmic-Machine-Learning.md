@@ -110,7 +110,9 @@ The procedure is very simple. Start with a lambda expression.
 * Repeat until the expression stops shrinking.
 
 I honestly have a hard time believing this works. I'll have to think about it more carefully. To me, this doesn't seem like it should perform better than statistical compression, but, according to the paper [Functional Programs as Compressed Data](http://www-kb.is.s.u-tokyo.ac.jp/~koba/papers/hosc-fpcd.pdf);
->"our representation of compressed data in the form of λ-terms is optimal with respect to Kolmogorov complexity, up to an additive constant."
+
+>our representation of compressed data in the form of λ-terms is optimal with respect to Kolmogorov complexity, up to an additive constant.
+
 I don't buy the argument given in the paper, though, which just seems to argue that optimal compression should be possible in theory; it doesn't even mention the specifics of the algorithm they present. None the less, I want to include this here since it makes a specific and relevant claim. Some followup work seems to be doing something more computationally interesting, such as [Compaction of Church Numerals for Higher-Order Compression](https://arxiv.org/abs/1706.10061), so a future version of this might be better suited for the task at hand.
 
 Similar grammar-based methods should work for other structured models of computation. For example, using re-pair for graphs, as presented in [Grammar-Based Graph Compression](https://arxiv.org/abs/1704.05254). Using this, a version should be possible for interaction nets.
