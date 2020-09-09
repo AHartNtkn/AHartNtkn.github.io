@@ -128,21 +128,24 @@ While those methods allow approximating `K(X)`, we usually actually want to appr
   - In the ordinary case, `P` would be the database in CTM of output-input pairs.
 - The paper then states that we can then approximate `K(X|Y)` by taking the `log₂` of the sum, for all `(Y, X) ∈ P`, of `1/|P|`.
 
-However, since `P` is a set, any pair occurs in `P` at most once, meaning that this value is `log₂ (1/|P|)` if `(Y, X)` is in the database or `-∞` if it isn't. This is obviously not what's intended, but I also can't glean from the context what is. Furthermore, the full expression given in the paper is;
+The problems start when we realize that, since `P` is a set, any pair occurs in `P` at most once, meaning that this value is `log₂ (1/|P|)` if `(Y, X)` is in the database or `-∞` if it isn't. This is obviously not what's intended, but I also can't glean from the context what is. Furthermore, the full expression given in the paper is;
 ```
 CTM(X|Y) = log₂ Σ{(Y, X) ∈ P} 1/|P|
 ```
 Both `X` and `Y` are bound twice, once in defining CTM and once by the sum itself. It seems like the second bind is trying to reference the first, but that makes no sense, syntactically. Alternatively, if we interpret the binders as entirely separate, then CTM does nothing with its arguments, and just returns `0` on all inputs (since `log₂ |P|/|P| = 0`), which is obviously wrong.
 
-I'm pretty sure a lot of this confusion comes from over-familiarity with one specific model of computation. An approach (not even the only approach used by the Complexity Calculator project) is to use an enumeration for Turing machines which, to my knowledge, was originally devised for investigating busy beaver numbers. I believe that the authors are imagining that `M` as a function that enumerates all Turing machines, runs `x` on them all, and outputs a stream of all the `ys` that each Turing machine outputs. I think, then, that `P` is not supposed to be a set, but a multiset which may contain multiple copies of any given pair. The calculation should then be;
+The simplest fix is to simply make `P` a multiset which may contain multiple copies of any given pair. The calculation should then be;
 ```
-CTM(x|y) = log₂( |[ p ∈ P | p = (x, y) ]| / |P| )
+CTM(x|y) = log₂( |[ p ∈ P | p == (x, y) ]| / |P| )
+         = log₂ Σ{p ∈ P} if p == (x, y) then 1/|P| else 0
 ```
-This is not clearly explained in the original paper. As a consequence, this may be off.
+This is not clearly explained in the original paper. As a consequence, this may be off, but this is the closest thing to the original paper. It just calculates the log-likelihood of a random program covered by `P` outputing `x` on input `y`. Except, there are a few problems with this. Firstly, this quantity will always be negative since `log(X) < 0` when `0 < X < 1`. `K` can never be negative. Even if we fix this, there's still a bigger issue. This CTM definition assumes that all programs are uniformly random, but they aren't. Think of the procedure we'd go through when generating a random program. Assuming our choices are uniformly distibuted, the programs we generate won't be. If we assume our programs are binary strings, then we will, at each point, make one of three choices; add a `0`, add a `1`, or end the string. If each choice is uniformly sampled, then there will be a one third chance of generating the empty string, a one in nine chance of generating `1`, and about a one in 60,000 change of generating `001101001`. The change of generating a program decays exponentially with the length of the program. This observation is build into algorithmic probability, and it's weird that the CTM measure, as described in this paper, ignores that.
 
-Let's think of what this might mean for other models of computation. If we were using, say, lambda expressions instead, `M` should enumerate all lambda expressions, take another lambda expression as input, and output the normal forms of the input applied to all possible lambda expressions. This does seem like it makes sense for any model of computation, but I'm not sure it makes sense as a measure of algorithmic similarity.
+Digressing a bit, I feel like the authors may have some over-familiarity with one specific model of computation. One approach to define `M` used by the Complexity Calculator project is to use an enumeration for Turing machines which, to my knowledge, was originally devised for investigating busy beaver numbers. I believe that the authors are imagining that `M` as a function that enumerates all Turing machines, runs `x` on them all, and outputs a stream of all the `ys` that each Turing machine outputs. This will certainly be a function rather than some generic relation, though.
 
-The justification for this procedure comes from the coding theorem, which states that `K(X) + O(1) = -log₂(m(X))`, where `m(X)` is the sum over all programs `p` which output `X` of `2 ^ -l(p)`, where `l(p)` is the length of `p`.
+Let's think of what this measure means for other models of computation. If we were using, say, lambda expressions instead, `M` should enumerate all lambda expressions, take another lambda expression as input, and output the normal forms of the input applied to all possible lambda expressions. This does seem like it makes sense for any model of computation, but I'm not sure it makes sense as a measure of algorithmic similarity.
+
+The justification for this procedure comes is supposed to come from the coding theorem, which states that `K(X) + O(1) = -log₂(m(X))`, where `m(X)` is the sum over all programs `p` which output `X` of `2 ^ -l(p)`, where `l(p)` is the length of `p`. There's that exponential decay I was talking about.
 
 See: 
 - http://www.scholarpedia.org/article/Algorithmic_probability
@@ -172,47 +175,39 @@ where `m(X|Y)` is the sum, for all programs `p` such that `p(Y) = X`, of `2 ^ -l
 See: 
 - Theorem 4.3.4 and Definition 4.3.7 in "An Introduction to Kolmogorov Complexity and Its Applications"
 
-This is definitely not what that CTM measure said before. Because the original in the paper is so obviously wrong, and the nature of `M` is so poorly explained, it's hard to patch it up to whatever the author's intended. In fact, I'm not sure this is actually possible. The conditional coding theorem relies on the length of the program, `p`, which `Y` is being fed into. This would require us to incorporate the complexity of the Turing machine itself; but `P` doesn't store that information.
+This is definitely not what that CTM measure is approximating. Because the original in the paper is so obviously wrong, and the nature of `M` is so poorly explained, it's hard to patch it up to whatever the author's intended. In fact, I'm not sure this is actually possible. The conditional coding theorem relies on the length of the program, `p`, which `Y` is being fed into. This would require us to incorporate the complexity of the Turing machine itself; but `P` doesn't store that information.
 
-Let me try to offer a more sensible formulation of the CTM idea. Assume a computing function `M : x → y`. Let `P` be a finite subset of output-input pairs `(y, x)`. The input type should satisfy the smn theorem, so we can format programs like "`f(x)`"; have functions which can have variables substituted into them. For many well-behaved Turing machines, application is often just list concatonation (though, this becomes squirley if we want to represent functions which take multiple arguments, nested function application, etc.). For a more well-structured model of computation, such as the lambda calculus, application may be a fundamental operation. Regardless, we can then define our metric as;
+Let me try to offer a more sensible formulation of the CTM idea. Assume a computing function `M : x → y` which simply evaluates an input program into an output using a fixed computational model. Let `P` be a finite subset of output-input pairs `(y, x)`. The input type should satisfy the smn theorem, so we can format programs like `f(x)`; have functions which can have variables substituted into them. For some Turing machines, application is often just done as list concatonation, though, this becomes squirley if we want to represent functions which take multiple arguments, nested function application, etc. For a more well-structured model of computation, such as the lambda calculus, application may be a fundamental operation. Regardless, we can then define our metric as;
 
 ```
-CTM(x|y) = - log₂( Σ{ p | (x, p(y)) ∈ P } 2 ^ -l(p) )
+CTM(x|y) = - log₂( Σ{ p | (x, p(y)) ∈ P } 2 ^ -I(p) )
 ```
 
-So, this would also require us to be able to pattern match so as to detect `p(y)`. If application is just concatenation, then this is as simple as looking for the suffix `y`, which is pretty trivial.
+This would require us to be able to pattern match so as to detect `p(y)`. If application is just concatenation, then this is as simple as looking for the suffix `y`, which is pretty trivial.
 
 This doesn't much resemble what's in the paper, but it makes much more sense.
 
-The paper mentions that `CTM(x)`, which approximates non-conditional Kolmogorov complexity, can be defined as `CTM(x|"")`, `x` conditioned on the empty string. Well, actually is says that `CTM(""|x)` should do this, but that doesn't make any sense. It's unclear enough in the original, it should definitely be `CTM(x|"")` in my modified version since it would just be summing for every program `p = p ++ ""` which outputs `x`; hence it's eminently compatible with concatenation-as-application. In general, a separate measure would need to be made for other models of computation since application-as-concatenation doesn't even make sense in general for Turing machines (do you really think application should be associative?), much less other models of computation. More generically, we'd define;
+The paper mentions that `CTM(x)`, which approximates non-conditional Kolmogorov complexity, can be defined as `CTM(x|"")`, `x` conditioned on the empty string. Well, actually it says that `CTM(""|x)` should do this, but that doesn't make any sense. It's unclear enough in the original, it should definitely be `CTM(x|"")` in my modified version since it would just be summing for every program `p = p ++ ""` which outputs `x`; hence it's eminently compatible with concatenation-as-application. In general, a separate measure would need to be made for other models of computation since application-as-concatenation doesn't even make sense in general for Turing machines (do you really think application should be associative?), much less other models of computation. More generically, we'd define;
 
 ```
-CTM(x) = - log₂( Σ{ p | (x, p) ∈ P } 2 ^ -l(p) )
+CTM(x) = - log₂( Σ{ p | (x, p) ∈ P } 2 ^ -I(p) )
 ```
 
 <a name="heading3"></a>
 ## Block Decomposition
 
-I briefly explained the idea behind BDM at the beginning of the post, but I'll take the time to expand on it a bit here. Before I do that, the paper keeps calling things tensors, but it never explains what a tensor is. It definitely isn't in the ordinary mathematical sense since the only things described as tensors are just binary strings. A tensor can also mean a kind of muscle, but I don't think that's what the paper is trying to refer to. This does matter, as there are phrases like this;
+In the section on BDM (Block Decomposition Method), the authors keeps calling things "tensors", but it never explains what a tensor is. It definitely isn't in the ordinary mathematical sense since the only things described as tensors are just binary strings. The [original paper on BDM](https://arxiv.org/abs/1609.00110) talks about compressing tensors and vectors. However, neither of those two things are actually compressed in that paper. Instead, it seems like the authors think that any list is a vector and any list-of-lists is a tensor, which is what they actually compress. It's annoying when authors abuse terminology like this; it's just confusing. From that, I think "tensor" just means a 2-dimensional array of bits. Just call them arrays if that's what they are! This is a CS paper, after all.
 
-> The sub-objects `r_i` are called 'base objects' or 'base tensors' (when the object is a tensor)
+I have a suspicion that the segment on block decomposition was copy-pasted from somewhere else without any copyediting. Tensors aren't mentioned outside the section on BDM.
 
-When is an object a tensor? I have no idea, and it's never explained in the paper. 
+Setting that aside, we're trying to approximate `K(X|Y)` using `BDM(X|Y)`. Assume a fixed "partitioning strategy". The paper never explains what this is, but I read other sources (which I'll talk about later on) which informed me that a "partitioning strategy" is simply a method of splitting up a string into (possibly overlapping) substrings which are already in our CTM database. What BDM tries to do is then devise a "pairing strategy" which minimizes a quantity. The paper doesn't state what a "pairing strategy" is either, and no other source I read clarifies. It only says the following;
 
-The [original paper on BDM](https://arxiv.org/abs/1609.00110) talks about compressing tensors and vectors. However, neither of those two things is actually compressed in that paper. Instead, it seems like the authors think that any list is a vector and any list-of-lists is a tensor; which is what they actually compress. It's annoying when authors abuse terminology like this, it's just confusing. From that, I think "tensor" just means a 2-dimensional array of bits. Just call them arrays if that's what they are! I have a suspicion that the segment on block decomposition in the original paper was copy-pasted from somewhere without any editing, as tensors are not even mentioned outside the section on BDM.
-
-Setting that aside, there are certain specific assumptions about our underlying computational model which my original description makes. I said that it tries finding algorithmically compressible substrings using CTM, but that only makes sense if replacing a sub-expression with an equivalent one preserves behavior, which isn't guaranteed. Just because `000` and `011` evaluate to the same thing doesn't mean `1000` and `1011` will; the two programs may be utterly disconnected. In order for this to work, we need to make specific assumptions about our computational model which doesn't hold in general for Turing machines. That assumption is basically that there is no notion of global state. This prevents the activities of distant parts of a program from affecting each other. Turing machines have global state, as do most abstract machines. Some stack machines don't. Many abstract models of computations, such as the lambda calculus, combinatory logic, and interaction nets don't either. For those models, this replacement can be done with no ill effects.
-
-So, how would this work when we don't have this property? 
-
-We're trying to approximate `K(X|Y)` using `BDM(X|Y)`. Assume a fixed "partitioning strategy". The paper never explains what this is, though it seems like this refers to a method of splitting up inputs into sub-inputs which are already in out CTM database. What BDM tries to do is devise a "pairing strategy" which minimizes a quantity. The paper doesn't state what a pairing strategy is, but it clarifies the following;
-
-A pairing strategy is a set `P`
+A pairing strategy generates a set `P`
   - consisting of pairs of pairs `((rx, nx), (ry, ny))`
-    - where `rx` and `ry` are partitions of `X` and `Y` made by out partitioning strategy
+    - where `rx` and `ry` are partitions of `X` and `Y` made by our partitioning strategy
       - where each `rx` occurring in `P` must only occur once, though there is no similar restriction on `ry`.
         This just means that `P`, treated as a relation, is (non-totally) functional.
-    - where  `nx` and `ny` are the count of occurrences of `rx` and `ry` within the partitionings of `X` and `Y`, respectively.
+    - where  `nx` and `ny` are the occurrence counts of `rx` and `ry` within the partitionings of `X` and `Y`, respectively.
 
 That's all it says on pairing strategies. As far as I can tell from this, a pairing strategy that pairs nothing and is just empty is valid, but I'm pretty sure it's not supposed to be.
 
@@ -229,20 +224,15 @@ Maybe looking at the [original BDM paper](https://arxiv.org/abs/1609.00110) can 
 010101010101010101  
 ```
 
-We have a choice of partitioning strategy, but it gives the example of splitting the string into *overlapping* substrings of length 12. When we do this, we get 3 `101010101010`s and 4 `010101010101`s. According to CTM, both strings have a complexity of 26.99 bits (assuming we're using only 2-state binary Turing machines). This would indicate that the smallest program generating the 12 digit string is, at most, 26 digits long.  Also, there are no Turing complete 2-state binary Turing machines, so this choice seems doubly weird. We then calculate the BDM value as
+We have a choice of partitioning strategy, but it gives the example of splitting the string into substrings of length 12 which may overlap by, at most, 11 digits. When we do this, we get 3 `101010101010`s and 4 `010101010101`s. According to CTM, both strings have a complexity of 26.99 bits (assuming we're using only 2-state binary Turing machines). This would indicate that the smallest program generating the 12 digit string is, at most, 26 digits long.  Also, there are no Turing complete 2-state binary Turing machines, so this choice seems doubly weird. We then calculate the BDM value as
 ```
 26.99 + log(3) + 26.99 + log(4) ≈ 57.565
 ```
 ... Okay, but shouldn't it be way smaller? The original string wasn't even twice as long as its partitions, and it should be almost as easy to generate as the partitions. I thought this might be an idiosyncrasy of the specific kind of Turing machine which the paper uses, but the [complexity calculator website](https://www.complexitycalculator.com/) says almost the same thing, giving the "BDM algorithmic complexity estimation" as 57.5664 bits when we select a block size of 12 with an overlap of 11.
 
-Let's consider what happens in the case of the lambda calculus. The original string would be church-encoded as
-
+Let's digress of a while and think of `K` in the the lambda calculus. Firsly, we need a way to represent binary strings. We'll just encode these as lists of bits. The type of bits will be denited;
 ```
-λc . λn . 
-c 0 (c 1 (c 0 (c 1 (c 0 (c 1
-(c 0 (c 1 (c 0 (c 1 (c 0 (c 1
-(c 0 (c 1 (c 0 (c 1 (c 0 (c 1 n))))))
-)))))))))))
+2 = ∀ X . X → X → X = {0, 1}
 ```
 
 where
@@ -252,93 +242,106 @@ where
 1 = λ f . λ t . t
 ```
 
-If you're wondering why I chose this representation, it comes directly from one representation of the universal property of strings. Strings over
+Strings should have an appropriate elimination rule stating that, for any type family or predicate `P` over binary strings,
+
 ```
-Bits = {0, 1}
+∀ S : BinString . (∀ s : BinString . (b : 2) → P s → P (b :: s)) → P "" → P S
 ```
-should have an appropriate elimination rule stating that, for any type family or predicate `P` over binary strings,
+This is essentially the induction rule for binary strings. One form of it, anyway. We can replace that predicate with a polymorphic variable to get our representation.
 ```
-∀ S : BinString . (∀ s : BinString . (b : Bits) → P s → P (b :: s)) → P "" → P S
+BinString = ∀ X . (2 → X → X) → X → X
 ```
-This is essentially the induction rule for binary strings. One form of it, anyway.
+Compare
+```
+∀ S : BinString . ∀ P . (∀ s . (b : 2) → P s → P (b :: s)) → P "" → P S
+                  ∀ X . (           2  → X   → X         ) → X    → X
+```
+For any particular string, `S`, we can realize the induction principal using 
 ```
 λ c : ∀ s . (b : Bits) → P s → P (b :: s) . λ n : P "" . S c n
 ```
-realizes string induction for any particular string, S, under the chosen representation. I'll talk about alternate representations later on, but I think this is the most natural representation given the mathematical structure of the datatype. "Most natural" doesn't necessarily mean "best", though.
+See
+- [Generic Derivation of Induction for Impredicative Encodings in Cedille](https://homepage.divms.uiowa.edu/~astump/papers/cpp-2018.pdf), I guess, since I don't know of a better source on this topic.
 
-Getting back on topic, the correct representation has about 192.747 bits of information. That information count might seem like a lot, but the lambda calculus represents trees of any kind as efficiently as it can represent lists. In this case, the string is a list of characters, which is about as small as can be expected. 
+I'll talk about alternate representations later on, but I think this is among the most natural representations given the mathematical structure of the data type. "Most natural" doesn't necessarily mean "best", though. Unary natural numbers are more natural than binary representations since pretty much every simple representation of the universal property of ℕ suggests a unary representation. However, they're horribly inefficient.
+
+Using this representation, the original string would be encoded as
+
+```
+λc . λn . 
+  c 0 (c 1 (c 0 (c 1 (c 0 (c 1
+  (c 0 (c 1 (c 0 (c 1 (c 0 (c 1
+  (c 0 (c 1 (c 0 (c 1 (c 0 (c 1 n))))))
+  )))))))))))
+```
+
+This representation has about 192.747 bits of information. That information count might seem like a lot, but the lambda calculus represents trees of any kind as efficiently as it can represent lists. In this case, the string is a list of bits, which is about as small as can be expected. 
 
 However, it can be compressed to;
 
 ```
 λc . λn . 
-(λ f . λ x . f (f x))
-(λ f . λ x . f (f (f x)))
-(λ x . c 0 (c 1 x))
-n
+  (λ f . λ x . f (f x))
+  (λ f . λ x . f (f (f x)))
+  (λ x . c 0 (c 1 x))
+  n
 ```
 
-which has about 83.93 bits of info. The 12 character sub-partition can be compressed into
+which has about 83.93 bits of info. One of the 12 character sub-partition can be compressed into
 
 ```
 λc . λn . 
-(λ f . λ x . f (f x))
-((λ f . λ x . f (f (f x))) (λ x . c 0 (c 1 x)))
-n
+  (λ f . λ x . f (f x))
+  ((λ f . λ x . f (f (f x))) (λ x . c 0 (c 1 x)))
+  n
 ```
-
-which has about 83.93 bits; the exact same, in fact, as the full string. The reason why these are the same is that there are 9 repetitions of 01 in the full string and 9 = 3 ^ 2. In the substrings, there are 6 repetitions of 01 or 10, and 6 = 2 * 3. The information in multiplication is the same as the information in exponentiation, so the representations end up having the same amount of info. Of course, I don't know if these are actually the smallest possible representations; these are just the smallest I could come up with. They do illustrate my point, however. The two strings should have about the same information, maybe the original should have a little more. It seems extremely suspicious to me that the two strings have such dramatically different bit-counts according to BDM.
+For the other, just swap `0` and `1`. This has about 83.93 bits; the exact same, in fact, as the full string. The reason why these are the same is that there are 9 repetitions of `01` in the full string and `9 = 3 ^ 2`. In the substrings, there are 6 repetitions of `01` or `10`, and `6 = 2 * 3`. The information in multiplication is the same as the information in exponentiation, so the representations end up having the same amount of info. Of course, I don't know if these are actually the smallest possible representations; these are just the smallest I could come up with. They do illustrate my point, however. The two strings should have about the same information; maybe the original should have a little more. It seems extremely suspicious to me that the two strings have such dramatically different bit-counts according to BDM.
 
 This isn't the only way to represent binary strings. We can write the original string instead as;
 
 ```
 λ0 . λ1 . 
-0 (1 (0 (1 (0 (1
-(0 (1 (0 (1 (0 (1
-(0 (1 (0 (1 (0 (1 (λ x . x)))))))
-)))))))))))
+  0 (1 (0 (1 (0 (1
+  (0 (1 (0 (1 (0 (1
+  (0 (1 (0 (1 (0 (1 (λ x . x)))))))
+  )))))))))))
 ```
 
-To justify this representation we need to prove that its type is isomorphic to something satisfying the universal property of binary strings. Here, `1` and `0` are expected to take a function `X → X` and return another function of the same type. This means our representation has type;
+To justify this representation we need to prove that its type is isomorphic to something satisfying the universal property of binary strings. Here, `1` and `0` are expected to take a function `X → X` and return another function of the same type. This means our new representation has type;
 ```
 ∀ X . (X → X) → (X → X) → (X → X)
 ```
 we can rewrite this using a bit of type algebra;
 ```
-∀ X . (X → X) → (X → X) → (X → X)
+  ∀ X . (X → X) → (X → X) → (X → X)
 ≅ ∀ X . (X → X) × (X → X) × X → X
 ≅ ∀ X . (X → X) × (X → X) × (1 → X) → X
 ≅ ∀ X . (X + X + 1 → X) → X
 ≅ ∀ X . (2 × X + 1 → X) → X
 ```
-where `2` is just a type with two elements; isomorphic to Bits. Also, note that any type of the form `∀ X . (F(X) → X) → X` is the (weakly) initial algebra over the endofunctor `F`. Binary strings are the initial algebra over the endofunctor `X ↦ Bits × X + 1`, a special case of initially for lists in general. Continuing this calculation;
+Note that any type of the form `∀ X . (F(X) → X) → X` is the (weakly) initial algebra over the endofunctor `F`. Binary strings are the initial algebra over the endofunctor `X ↦ 2 × X + 1`, a special case of initially for lists in general. Continuing this calculation;
 ```
-∀ X . (2 × X + 1 → X) → X
+  ∀ X . (2 × X + 1 → X) → X
 ≅ ∀ X . (2 × X → X) → (1 → X) → X
 ≅ ∀ X . (2 → X → X) → X → X
 ```
-Which is the fully polymorphic type of the representation we started with. Compare;
-```
-∀ S : BinString . ∀ P . (∀ s . (b : Bits) → P s → P (b :: s)) → P "" → P S
-                  ∀ X . (           2     → X   → X         ) → X    → X
-```
-This justifies that the new representation is isomorphic to the old one and we can comfortably use it interchangeably with the old. See also;
-[Recursive types for free!](https://homepages.inf.ed.ac.uk/wadler/papers/free-rectypes/free-rectypes.txt)
-[The Algebra of Algebraic Data Types (Youtube)](https://www.youtube.com/watch?v=YScIPA8RbVE)
+Which is the representation we started with. This justifies that the new representation is isomorphic to the old one and we can comfortably use it interchangeably. See also;
+- [Recursive types for free!](https://homepages.inf.ed.ac.uk/wadler/papers/free-rectypes/free-rectypes.txt)
+- [The Algebra of Algebraic Data Types (Youtube)](https://www.youtube.com/watch?v=YScIPA8RbVE)
 
 Our new representation has about 78.9 bits of information, while the sub-strings have about 54.9 bits. We can compress our larger string to
 ```
 λ0 . λ1 . 
-(λ f . λ x . f (f x))
-(λ f . λ x . f (f (f x)))
-(λ x . 0 (1 x))
-(λ x . x)
+  (λ f . λ x . f (f x))
+  (λ f . λ x . f (f (f x)))
+  (λ x . 0 (1 x))
+  (λ x . x)
 ```
 which has about 57.27 bits of information, less even than what BDM states the Turing machine representation should have. And the lambda calculus has to represent every tree-like datatype! What's the Turing machine representation doing with all that space below 57 bits if it can't even fit 9 repetitions of `01`? As far as I can tell, the two 12 digit substrings can't be compressed any further, but my point from before still stands; both strings have similar amounts of algorithmic information. It's suspicious that BDM would say otherwise.
 
 ...
 
-Okay, I think I figured it out. I was confused about the partitioning strategy. I think it's essentially a selection of a block-size and overlap. Going back to the complexity calculator, if I set the block-size to 2 and the overlap to 1, it estimates the complexity to be 12.82 bits. Doing the calculation myself, we have 9 repetitions of `01` and 8 repetitions of `10`. The calculation would then be;
+Okay, I think I figured it out. I was confused about the partitioning strategy. It's up to us to find a good selection of a block-size and overlap. Going back to the complexity calculator, if I set the block-size to 2 and the overlap to 1, it estimates the complexity to be 12.82 bits. Doing the calculation myself, we have 9 repetitions of `01` and 8 repetitions of `10`. The calculation would then be;
 ```
 3.3274 + log(9) + 3.3274 + log(8) ≈ 12.8247
 ```
@@ -357,17 +360,17 @@ The appendix of the paper has a section on "The Impact of the Partition Strategy
 
 > BDM better approximates the universal measure `K(X)` as the number of elements resulting from applying the partition strategy to `X`.
 
-as the number of elements... what? Was this paper not copy edited!
+as the number of elements... what? Was this paper not copyedited!
 
 > `BDM(X|Y)` is a good approximation to `K(X|Y)` when the `Adj(X)` and `Adj(Y)` share a high number of base tensors.
 
-okay, and finally
+I assume that this doesn't actually rely on our data being tensors (or 2-dimenstional arrays).
 
 > We conjecture that there is no general strategy for finding a best partition strategy [...] Thus the partition strategy can be considered an hyperparameter that can be empirically optimized from the available data.
 
 Hmm... this seems like a big gap in the whole approach.
 
-So this clears up what a "partitioning strategy" is, at any rate. Its a choice of covering over the string into (possibly overlapping) substrings which are in our CTM database. But I wasn't so worried about the partitioning strategy, I wanted to know what a "pairing strategy" is. The original paper BDM isn't any help since it doesn't describe conditional BDM at all.
+So this clears up some things about the partitioning strategy, at any rate. But I wasn't worried about the partitioning strategy anyway; I wanted to know what a "pairing strategy" is! The original paper BDM isn't any help since it doesn't describe conditional BDM at all.
 
 Going back to the topic paper of this post, it does describe a "coarse conditional BDM of `X` with respect to the tensor `Y`". Again, tensors are not explained at all in the paper, and it's unclear if `Y` actually needs to be a tensor in any mathematical sense. As I stated before, I think the authors just mean a 2-dimensional array when they say "tensor", and it seems obvious that the construction doesn't rely on dimensionality at all. It defines `BDM(X|Y)` as
 
@@ -381,11 +384,15 @@ This definition isolates the unique information `X` while issuing additional pen
 
 > [the second sum] is important in cases where such multiplicity dominates the complexity of the objects
 
-, but, intuitively, it seems to me like the sum should only add a penalty if `nx > ny`; because, otherwise, we're penalizing the conditional complexity of `X` for content that's in `Y` but not in `X`. I'll have to think about this a bit more.
+but, intuitively, it seems to me like the sum should only add a penalty if `nx > ny`; because, otherwise, we're penalizing the conditional complexity of `X` for content that's in `Y` but not in `X`. I'll have to think about this a bit more.
  
-The "coarse" BDM is, I guess, less accurate than the "strong" BDM that I first looked at; but, at least, it makes sense. The reason it's weaker is that it doesn't utilize conditional CTM. But without additional clarification on what a "pairing strategy" is, I just can't understand how the strong version works.
+The "coarse" BDM is, I guess, less accurate than the "strong" BDM that I first looked at; but, at least, it makes sense. It's weaker since it doesn't utilize conditional CTM. But without additional clarification on what a "pairing strategy" is, I just can't understand how the strong version works.
 
-I've thought a lot about it and, while I'm not confident, I think I've figured out the most reasonable fix. If the pairing strategies must cover `X` then that solves the specific problem I pointed out. Also if P is supposed to be totally functional over the partitions of `X`, that would also solve my problem in an even nicer way. Neither of these conditions is hinted at in the paper, but it's the best I've got. The paper does say;
+I've thought a lot about it and, while I'm not confident, I think I've figured out the most reasonable fixes.
+- If the pairing strategies must cover `X` then that solves the specific problem I pointed out.
+Also
+- If P is supposed to be totally functional over the partitions of `X`.
+Neither of these conditions is hinted at in the paper, but it's the best I've got. The paper does say;
 
 > prior knowledge of the algorithmic structure of the objects can be used to facilitate the computation by reducing the number of possible pairings to be explored
 
@@ -502,7 +509,7 @@ The "prediction" made by a Gaussian model will be the mean, `μ`, and the likeli
 ```
 which is exactly the squared error, modulo some constants we don't care about. And getting the average by dividing by the number of data points will get us the mean squared error, MSE. This should also illustrate that if you don't think it's reasonable to assume your data were randomly sampled from a gaussian distribution, then you should also not think it's reasonable to use the squared error without a similar derivation.
 
-Okay, so, what's the justification for squaring K? Let's think about this, what are the probabilities in our likelihood? Well, they'll be the algorithmic probabilities; the probability that a random program will output the datapoint when given our model's prediction as an input. The coding theorem says exactly that (within an additive constant) the Kolmogorov complexity of a program is the negative logarithm of the algorithmic probability, meaning the appropriate negative log-likelihood is exactly the sum of Ks.
+Okay, so, what's the justification for squaring `K`? Let's think about this, what are the probabilities in our likelihood? Well, they'll be the algorithmic probabilities; the probability that a random program will output the datapoint when given our model's prediction as an input. The coding theorem says exactly that (within an additive constant) the Kolmogorov complexity of a program is the negative logarithm of the algorithmic probability, meaning the appropriate negative log-likelihood is exactly the sum of Ks.
 
 But, wait, I was looking for justification for squaring `K`. That's what the paper does. Does it say why?
 
