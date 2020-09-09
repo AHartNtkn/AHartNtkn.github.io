@@ -15,7 +15,7 @@ I've been researching, for quite some time, the prospect of universal machine le
 
 An alternative approach that has been bandied about for a while is the utilization of compression. It's not hard to find articles and talks about the relationship between compression and prediction. If you have a good predictor, then you can compress a sequence into a seed for that predictor and decompress by running said predictor. Going the other way is harder, but, broadly speaking, if you have a sequence that you want to make a prediction on and a good compressor, then whichever addition increases the compressed size the least should be considered the likeliest prediction. This approach is quite broad, applying to any information which can be represented on a computer and not requiring any assumptions whatsoever about the structure of our data beyond that. We could use this idea to, for example, fill in gaps in graphs, trees, sets of input-output pairs, etc.
 
-It's important to understand what's actually required here. We don't actually need to compress our training data; we only need a way to estimate the change in minimal-compression-size as we add a prediction. This minimal-compression-size is called the Kolmogorov Complexity, denoted `K(X)`. The minimal-compression-size of a program which outputs `X` on an input `Y` is called the Conditional Kolmogorov Complexity, denoted ``K(X|Y)``. The topic of Kolmogorov Complexity is quite broad, and I won't explain all its complexities here. A standard introduction is the textbook [An Introduction to Kolmogorov Complexity and Its Applications](https://www.springer.com/gp/book/9781489984456) by Li, Ming, Vitányi, and Paul. If we have a good method for calculating `K`, then we don't need to actually make use of compression.
+It's important to understand what's actually required here. We don't actually need to compress our training data; we only need a way to estimate the change in minimal-compression-size as we add a prediction. This minimal-compression-size is called the Kolmogorov Complexity, denoted `K(X)`. The minimal-compression-size of a program which outputs `X` on an input `Y` is called the Conditional Kolmogorov Complexity, denoted `K(X|Y)`. The topic of Kolmogorov Complexity is quite broad, and I won't explain all its complexities here. A standard introduction is the textbook [An Introduction to Kolmogorov Complexity and Its Applications](https://www.springer.com/gp/book/9781489984456) by Li, Ming, Vitányi, and Paul. If we have a good method for calculating `K`, then we don't need to actually make use of compression.
 
 Making this practical is quite hard and under-researched, and there aren't many papers on the topic. But there is this;
   [Algorithmic Probability-guided Supervised Machine Learning on Non-differentiable Spaces](https://arxiv.org/abs/1910.02758)
@@ -440,7 +440,7 @@ Such a scheme would generally perform no worse than a Shannon-optimal compressor
 ```
 1, 2, 3, ... 999999999, 1000000000
 ```
-Is easy to compress algorithmically, but I wouldn't expect BDM to do much better than statistical compression. I do believe that such things should be efficiently discoverable anyway, but not by CTM, as it stands.
+Is easy to compress algorithmically, but I wouldn't expect BDM to do much better than statistical compression. I do believe that such things should be efficiently discoverable anyway, but not by CTM, as it stands. This is an area which has been explored quite a bit; by the paper on [Universal almost optimal compression](https://arxiv.org/pdf/1911.04268.pdf) I mentioned earlier, for instance. I would like to explore this area in the future, and I beleive it will be of tremendous importance for making compression practical for machine learning.
 
 ---
 
@@ -620,5 +620,12 @@ The rest of the paper just goes through some usage examples. I don't feel the ne
 
 The conclusion section refers to the whole framework as a "symbolic inference engine" being integrated into traditional ML. I... wouldn't phrase it that way. There's not much inference and even less symbology. That being said, a type-sensitive version of these ideas might be better.
 
-I'm not satisfied with the methods presented in this paper. I'll keep a lot of its techniques in mind, but I think I'd want to look at other methods. I think I'll look at those evolutionary methods next.
+I'm not satisfied with the methods presented in this paper. Nothing in it connected back to that idea of "whichever addition increases the compressed size the least should be considered the likeliest prediction" I mentioned at the begining of this post. All the paper said, really, was "when tuning parameters, just look through them in order from least to most complex. Also, use Kolmogrov complexity, not Shannon entropy, to measure complexity." I'll keep that in mind, but I think I'd want to look at other methods. I think think something more carefully designed will need to be made for practical ML. I'll take a closer look at those evolutionary methods I mentioned. 
+
+I also suspect that some variation of a bandit algorithm may benifit from these ideas. The paper [Information-gain computation](https://arxiv.org/abs/1707.01550) and its [followups](https://scholar.google.com/scholar?cites=4074844082910455437&as_sdt=805&sciodt=0,3&hl=en&scioq=Information-gain+computation+in+the+Fifth+system) described a hypothetical system which uses a contextual bandit for exploring a logic-program like search space. The expert that the bandit uses simply calculates the Kullback–Leibler divergence, a statistical entropy metric, of the history for each branch to give reccomendations. The idea is that desirable histories should maximize the information gained about our goal as we go down it. A better system might use a `K` approximation rather than an entropy measure. Though, the paper also suggests using an RNN to do the history compression, which I'd expect to give a lower value than the entropy since it would be able to exploit the temporal structure of the history for compression in a way that statistical compression wouldn't be able to do.
+
+
+
+
+
 
