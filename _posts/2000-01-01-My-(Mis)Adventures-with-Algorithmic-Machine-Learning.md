@@ -15,7 +15,7 @@ I've been researching, for quite some time, the prospect of universal machine le
 
 An alternative approach which has been bandied about for a while is the utilization of compression. It's not hard to find articles and talks about the relationship between compression and prediction. If you have a good predictor, then you can compress a sequence into a seed for that predictor and decompress by running said predictor. Going the other way is harder, but, broadly speaking, if you have a sequence which you want to make a prediction on and a good compressor, then whichever addition increases the compressed size the least should be considered the likeliest prediction. This approach is quite broad, applying to any information which can be represented on a computer and not requiring any assumptions whatsoever about the structure of our data beyond that. We could use this idea to, for example, fill in gaps in graphs, trees, sets of input-output pairs, etc.
 
-It's important to understand what's actually required here. We don't actually need to compress our training data; we only need a way to estimate the change in minimal-compression-size as we add a prediction. This minimal-compression-size is called the Kolmogorov Complexity, denoted ``K(X)``. The minimal-compression-size of a program which outputs `X` on an input `Y` is called the Conditional Kolmogorov Complexity, denoted `K(`X`|Y)`. The topic of Kolmogorov Complexity is quite broad, and I won't explain all its complexities here. A standard introduction is the text book [An Introduction to Kolmogorov Complexity and Its Applications](https://www.springer.com/gp/book/9781489984456) by Li, Ming, Vitányi, and Paul. If we have a good method for calculating `K`, then we don't need to actually make use of compression.
+It's important to understand what's actually required here. We don't actually need to compress our training data; we only need a way to estimate the change in minimal-compression-size as we add a prediction. This minimal-compression-size is called the Kolmogorov Complexity, denoted `K(X)`. The minimal-compression-size of a program which outputs `X` on an input `Y` is called the Conditional Kolmogorov Complexity, denoted `K(`X`|Y)`. The topic of Kolmogorov Complexity is quite broad, and I won't explain all its complexities here. A standard introduction is the text book [An Introduction to Kolmogorov Complexity and Its Applications](https://www.springer.com/gp/book/9781489984456) by Li, Ming, Vitányi, and Paul. If we have a good method for calculating `K`, then we don't need to actually make use of compression.
 
 Making this practical is quite hard and under researched, and there aren't many papers on the topic. But there is this;
   [Algorithmic Probability-guided Supervised Machine Learning on Non-differentiable Spaces](https://arxiv.org/abs/1910.02758)
@@ -24,7 +24,7 @@ which reproduces some standard ML applications using this approach. I want to un
 <a name="heading1p5"></a>
 ## Why Not Use Ordinary Compression?
 
-One of the most common suggestions for approximating ``K(X)`` is to simply use an already existing compression algorithm. The problem is that most "optimal" compression algorithms such as arithmetic encoding are only optimal up to the Shannon Entropy of the data. That is, if we assume the data is sampled randomly from a distribution, the best we can do is estimate the shape of this distribution and give shorter encodings appropriately to more likely symbols. This is, asymptotically, about the same as counting substring occurrences to reduce redundancy. If our data is actually just randomly sampled, then this is great! But the real world isn't like this. Most real-world data has some noise which can be construed as being sampled from a distribution placed on top of an essentially deterministic computational process. Most compression potential comes from modeling this underlying process, not the noise.
+One of the most common suggestions for approximating `K(X)` is to simply use an already existing compression algorithm. The problem is that most "optimal" compression algorithms such as arithmetic encoding are only optimal up to the Shannon Entropy of the data. That is, if we assume the data is sampled randomly from a distribution, the best we can do is estimate the shape of this distribution and give shorter encodings appropriately to more likely symbols. This is, asymptotically, about the same as counting substring occurrences to reduce redundancy. If our data is actually just randomly sampled, then this is great! But the real world isn't like this. Most real-world data has some noise which can be construed as being sampled from a distribution placed on top of an essentially deterministic computational process. Most compression potential comes from modeling this underlying process, not the noise.
 
 Consider the sequence;
 ```
@@ -49,7 +49,7 @@ We, ultimately, need a way to approximate Kolmogorov complexity. The learning me
 
 This is the method the paper endorses, and so I'll talk about it in more detail later on.
 
-The idea is to enumerate all strings of a given length and run them as programs for some chosen model. We collect all the input-output pairs to a database. We then use the coding theorem to justify using this to estimate `K`. In particular, if we add together `2^-l(p)`, where `l(p)` is the length of `p`, for all programs `p` which output `X`, that will get us an estimate for ``K(X)``. This is basically what the coding theorem says, hence the name of the method.
+The idea is to enumerate all strings of a given length and run them as programs for some chosen model. We collect all the input-output pairs to a database. We then use the coding theorem to justify using this to estimate `K`. In particular, if we add together `2^-l(p)`, where `l(p)` is the length of `p`, for all programs `p` which output `X`, that will get us an estimate for `K(X)`. This is basically what the coding theorem says, hence the name of the method.
 
 #### BDM - Block Decomposition Method
 
@@ -67,7 +67,7 @@ List Approximation is based on optimizing a simple observation. While generating
 
 [Short lists with short programs in short time](https://arxiv.org/abs/1301.1547) (also an improved version in [Short lists for shortest descriptions in short time](https://arxiv.org/abs/1212.6104)) show that this list can be made quadratically large (and asymptotically no smaller) in the length of the input while guarenteedly containing the smallest program. This makes searching for `K(X)` much more practical as we only need to run a number of programs quadratic in the size of `X`.
 
-If we are willing to accept only approximating `K` with a list, we can incure an O(log(|`X`|)) penalty to our smallest generating program and make the list linear in the size of `X`, as shown in [Linear list-approximation for short programs](https://arxiv.org/abs/1311.7278).
+If we are willing to accept only approximating `K` with a list, we can incure an `O(log(|X|))` penalty to our smallest generating program and make the list linear in the size of `X`, as shown in [Linear list-approximation for short programs](https://arxiv.org/abs/1311.7278).
 
 These methods seem promising, but the algorithms themselves are quite abstruse and some require exponential space, making them impractical. However, improvements may be possible.
 
@@ -348,7 +348,7 @@ Going through all the options in the complexity calculator, the minimal is a blo
 ```
 
 The BDM paper states that 
-"[...] if `|Adj(X)|` is close to `1`, then `BDM(X) ≈ `K(X)``."
+"[...] if `|Adj(X)|` is close to `1`, then `BDM(X) ≈ `K(X)`."
 where `Adj(X)` is the set of pairs of substrings with their occurance counts. The block-size of 2 with an overlap of 0 gives an `|Adj(X)|` of exactly 1 since it only has one partition; `Adj(X) = {(01, 9)}`. This should, presumably, be as close to the actual Kolmogorov complexity as BDM can get. I suppose that means we're trying to find the partition strategy which minimizes the number of substrings which are covered by the CTM database.
 
 The apendix of the paper has a section on "The Impact of the Partition Strategy". It says the following;
