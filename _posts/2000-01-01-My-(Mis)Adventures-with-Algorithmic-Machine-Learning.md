@@ -47,7 +47,7 @@ We, ultimately, need a way to approximate Kolmogorov complexity. The learning me
 
 ### CTM - Coding Theorem Method
 
-This is the method the paper endorses, and so I'll talk about it in more detail later on.
+This is the method the paper endorses so I'll talk about it in more detail later on.
 
 The idea is to enumerate all strings of a given length and run them as programs for some chosen model. We collect all the input-output pairs to a database. We then use the coding theorem to justify using this to estimate `K`. In particular, if we add together `2^-l(p)`, where `l(p)` is the length of `p`, for all programs `p` which output `X`, that will get us an estimate for `K(X)`. This is basically what the coding theorem says, hence the name of the method.
 
@@ -63,34 +63,32 @@ See:
 
 ### List Approximation
 
-List Approximation is based on optimizing a simple observation. While generating the smallest program generating `X` is not computable, generating a list guarenteed to contain the smallest program is. In particular, we can return a list enumerating all strings below and containing `X`. This will definitely have the smallest program generating `X`, but it will be exponentially large in the length of `X`. How small can this list be?
+List Approximation is based on optimizing a simple observation. While generating the smallest program generating `X` is not computable, generating a list guaranteed to contain the smallest program is. In particular, we can return a list enumerating all strings below and containing `X`. This will definitely have the smallest program generating `X`, but it will be exponentially large in the length of `X`. How small can this list be?
 
-[Short lists with short programs in short time](https://arxiv.org/abs/1301.1547) (also an improved version in [Short lists for shortest descriptions in short time](https://arxiv.org/abs/1212.6104)) show that this list can be made quadratically large (and asymptotically no smaller) in the length of the input while guarenteedly containing the smallest program. This makes searching for `K(X)` much more practical as we only need to run a number of programs quadratic in the size of `X`.
+[Short lists with short programs in short time](https://arxiv.org/abs/1301.1547) (also an improved version in [Short lists for shortest descriptions in short time](https://arxiv.org/abs/1212.6104)) show that this list can be made quadratically large (and asymptotically no smaller) in the length of the input while guaranteedly containing the smallest program. This makes searching for `K(X)` much more practical as we only need to run a number of programs quadratic in the size of `X`.
 
 If we are willing to accept only approximating `K` with a list, we can incure an `O(log(|X|))` penalty to our smallest generating program and make the list linear in the size of `X`, as shown in [Linear list-approximation for short programs](https://arxiv.org/abs/1311.7278).
 
 These methods seem promising, but the algorithms themselves are quite abstruse and some require exponential space, making them impractical. However, improvements may be possible.
 
-It's also unclear how much labour is actually saved when using the approximation lists. It may be the case that both the smallest possible representations of programs and everything else in the list require an absurd amount of work to normalize. It may remove those programs which were already easy to dismiss when using brute-force while exclusively keeping the ones which are hard to assess anyway. The lists may also only have the smallest program which is hard to assess. If there's no second-best approximation to K, then we're stuck having to find the actual smallest value with no backup if that's impractical to assess. Without any practical demonstrations, it's hard to know if these are genuine problems.
+It's unclear how much labour is actually saved when using the approximation lists. It may be the case that both the smallest possible representations of programs and everything else in the list require an absurd amount of work to normalize. It may remove those programs which were already easy to dismiss when using brute-force while exclusively keeping the ones which are hard to assess anyway. The lists may also only have the smallest program which is hard to assess. If there's no second-best approximation to `K`, then we're stuck having to find the actual smallest value with no backup if that's impractical to know. Without any practical demonstrations, it's hard to know if these are genuine problems.
 
 ---
 
 ### Universal Almost Optimal Compression
 
-This method is based on a generic property of compression-decompression pairs. As it turns out, we can, while incurring polylogorithmic overhead in the size of the compressed string, replace a (potentially non-computable) compression algorithm and its decompressor with a pair consisting of an efficient compressor and a potentially inefficient decompressor. By fixing our compressor-decompressor pair to be `K` and E (the function that simply evaluates a program), we can get a new compression-decompression pair which will compress inputs to a length which differs, at most, polylogorithmically from `K`. This compressor would not get us smaller, equivalent programs, but, if our goal is to simply approximate the size of a hypothetical Kolmogorov-compressed program, this should work fine.
+This method is based on a generic property of compression-decompression pairs. As it turns out, we can, while incurring polylogarithmic overhead in the size of the compressed string, replace a (potentially non-computable) compression algorithm and its decompressor with a pair consisting of an efficient compressor and a potentially inefficient decompressor. By fixing our compressor-decompressor pair to be `K` and `E` (the function that simply evaluates a program), we can get a new compression-decompression pair which will compress inputs to a length which differs, at most, polylogarithmically from `K`. This compressor would not get us smaller, equivalent programs, but, if our goal is to simply approximate the size of a hypothetical Kolmogorov-compressed program, this should work fine.
 
 I don't yet understand the technical details, but the paper can be found here;
-  [Universal almost optimal compression and Slepian-Wolf coding inprobabilistic polynomial time](https://arxiv.org/abs/1911.04268)
+  - [Universal almost optimal compression and Slepian-Wolf coding inprobabilistic polynomial time](https://arxiv.org/abs/1911.04268)
 
 ---
 
 ### Incremental compression
 
-Instead of calculating `K(X)` all at once, it can usually be done peacemeal. The incremental compression is not computable, but it should be much quicher to approximate, on average, than `K(X)` while still approaching `K(X)`.
+Instead of calculating `K(X)` all at once, it can usually be done peacemeal. The idea is that, given some input `X`, we want to find a pair of functions `F`, `D`, such that `F(D(X)) = X` and `|F| + |D(X)| < |X|`. Specifically, we want to fined the smallest `F` meeting this requirement. The idea is that `D(X)` reduces the size of `X`, deleting whatever information is in `F` from `X`. `F` is then that information, isolated from `X`. By repeating this over and over again, we can decompose `X` into a series `F1(F2(F3(...(R))))`, where `R` is the residual which wasn't compressed. In the limit, `R` should basically consist of all the random information present in `X`, while the `F`s correspond to algorithmic "features" which can be isolated from `X`. So long as the `F`s are always as small as possible, this construction will approach the actual Kolmogorov complexity.
 
-The idea is that, given some input `X`, we want to find a pair of functions F, D, such that `F(D(X)) = X`, and `|F| + |D(X)| < |X|`. Specifically, we want to fine the smallest F meating this requirement. The idea is that `D(X)` reduces the size of `X`. D should essentially be deleting whatever information is not in F from `X`. F is then that information, isolated from `X`. By repeating this over and over again, we can decompose `X` into a series `F1(F2(F3(...(R))))`, where `R` is the residual which wasn't compressed. In the limit, R should basically consist of all the random information preasent in `X`, while the Fs correspond to algorithmic "features" which can be isolated from `X`. So long as the Fs are always as small as possible, this construction will approach the actual Kolmogorov complexity.
-
-I think this line of work hints towards a rich theory of "atomic" algorithmic information, but it's not ready for practical applications as of yet.
+I think this line of work hints towards a rich theory of "atomic" algorithmic information, but it's not ready for practical applications as of yet. The incremental compression is not computable, but it should be much quicker to approximate, on average, than `K(X)` while still approaching `K(X)`.
 
 See:
   [A theory of incremental compression](https://arxiv.org/abs/1908.03781)
@@ -102,14 +100,14 @@ See:
 This is a method of compressing lambda expressions by observing a connection between grammar-based compression and lambda binding.
 
 The procedure is very simple. Start with a lambda expression.
-1. Compress the expression using a tree-grammer (using re-pair, for instance). Convert this tree grammar back into a lambda expression.
+* Compress the expression using a tree-grammer (using re-pair, for instance). Convert this tree grammar back into a lambda expression.
 
-2. Run a "simplification procedure" which performes
-  - eta-reduction
-  - beta-reduction on linear lambda bindings
-  - beta-reduction on applications to bound variables
+* Run a "simplification procedure" which performes
+  * eta-reduction
+  * beta-reduction on linear lambda bindings
+  * beta-reduction on applications to bound variables
 
-Repeat 1 and 2 until the expression stops shrinking.
+* Repeat until the expression stops shrinking.
 
 I honestly have a hard time believing this works. I'll have to think about it more carefully. To me, this doesn't seem like it should perform better than statistical compression, but, according to the paper [Functional Programs as Compressed Data](http://www-kb.is.s.u-tokyo.ac.jp/~koba/papers/hosc-fpcd.pdf);
 >"our representation of compressed data in the form of λ-terms is optimal with respect to Kolmogorov complexity, up to an additive constant."
