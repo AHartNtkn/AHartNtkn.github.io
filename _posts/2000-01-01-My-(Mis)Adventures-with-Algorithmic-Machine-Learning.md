@@ -91,7 +91,7 @@ Instead of calculating `K(X)` all at once, it can usually be done peacemeal. The
 I think this line of work hints towards a rich theory of "atomic" algorithmic information, but it's not ready for practical applications as of yet. The incremental compression is not computable, but it should be much quicker to approximate, on average, than `K(X)` while still approaching `K(X)`.
 
 See:
-  [A theory of incremental compression](https://arxiv.org/abs/1908.03781)
+  - [A theory of incremental compression](https://arxiv.org/abs/1908.03781)
 
 ---
 
@@ -138,24 +138,24 @@ This is hinted at but not clearly explained in the original paper. As a consique
 
 Lets think of what this might mean for other models of computation. If we were using, say, lambda expressions instead, M should enumerate all lamdba expressions, take another lambda expresion as input, and output the normal forms of the input applied to all possible lambda expressions. This does seem like it makes sense for any model of computation, but I'm not sure it makes sense as a measure of algorithmic similarity.
 
-The justification for this procudure comes from the coding theorem, which states that `K(X)` + O(1) = -log₂(m(X)), where m(x) is the sum over all programs p of 2 ^ -l(p), such that x is ouputed when p is fed to some fixed, optimal universal turing machine U.  l(p) is the length of p.
+The justification for this procudure comes from the coding theorem, which states that `K(X) + O(1) = -log₂(m(X))`, where `m(x)` is the sum over all programs `p` of `2 ^ -l(p)`, such that `x` is ouputed when `p` is fed to some fixed, optimal universal turing machine `U`.  `l(p)` is the length of `p`.
 
 See: 
-http://www.scholarpedia.org/article/Algorithmic_probability
-Also, Theorem 4.3.3 of "An Introduction to Kolmogorov Complexity and Its Applications"
+- http://www.scholarpedia.org/article/Algorithmic_probability
+- Also, Theorem 4.3.3 of "An Introduction to Kolmogorov Complexity and Its Applications"
 
-Modifying this for lambda expressions, m(x) should be the sum over all lambda expression l which normalize to x of 2 ^ -I(l), where I(l) would be calculated
-
+Modifying this for lambda expressions, `m(x)` should be the sum over all lambda expression `l` which normalize to `x` of `2 ^ -I(l)`, where `I(l)` would be calculated
+```
 I(l) := I(l, 0)
 I(λ x . y, b) := log₂(2 + b) + I(y, b + 1)
 I(x y,     b) := log₂(2 + b) + I(x, b) + I(y, b)
 I(x,       b) := log₂(2 + b)
+```
+`I(l)` calculates the number of bits in `l`; approximately the number of binary decitions made when constructing `l`.
 
-I(l) calculates the number of bits in l; approximately the number of binary decitions made when constructing l.
+Incidently, the length of a binary string doesn't actually give the information content of that string. If a string's length isn't fixed beforehand, then each additional digit incurs one trit of information since at each stage of the construction we are choosing between one of three options; 0, 1, or stop constructing the string. From this, we can conclude that `l(s) = log₃(2 ^ -I(s)) - 1`; that is, the length of a string is one less than the number of trits in that string. If the strings length is fixed before hand, if we cannot choose to end the construction of a string at our leasure, then each choice is actually binary and `l(s) = I(s)`.
 
-Incidently, the length of a binary string doesn't actually give the information content of that string. If a string's length isn't fixed beforehand, then each additional digit incurs one trit of information since at each stage of the construction we are choosing between one of three options; 0, 1, or stop constructing the string. From this, we can conclude that l(s) = log₃(2 ^ -I(s)) - 1; that is, the length of a string is one less than the number of trits in that string. If the strings length is fixed before hand, if we cannot choose to end the construction of a string at our leasure, then each choice is actually binary and l(s) = I(s).
-
-I think that using I(s) to calculate the information rather than the length is more theoretically correct than the usuall expression in terms of length. It doesn't seem to matter too much in the case of strings because the sum over all 2 ^ (-l(s)-1) = the sum over all 2 ^ -I(s) = 1, so both are valid ways of making a probability distrobution over all programs with a similar exponentially decreasing probability profile. That -l(p)-1 is there so that the empty string isn't given 100% of the distribution. The real problem is generalizability; the length calculation generally fails to make a coherent distrobution if our computation model no longer accepts binary strings as inputs. The information, however, can always be addapted even if our computational model expects programs to be something esoteric, like graphs (e.g. interaction nets).
+I think that using I(s) to calculate the information rather than the length is more theoretically correct than the usuall expression in terms of length. It doesn't seem to matter too much in the case of strings because the sum over all `2 ^ (-l(s)-1)` = the sum over all `2 ^ -I(s)` = `1`, so both are valid ways of making a probability distrobution over all programs with a similar exponentially decreasing probability profile. That `-l(p)-1` is there so that the empty string isn't given 100% of the distribution. The real problem is generalizability; the length calculation generally fails to make a coherent distrobution if our computation model no longer accepts binary strings as inputs. The information, however, can always be addapted even if our computational model expects programs to be something esoteric, like graphs (e.g. interaction nets).
 
 As a side note, despite length being theoretically incorect, it's been used in some papers for measuring the information of a lambda expression. See "Computable Variants of AIXI which are More Powerful than AIXItl" for instance. But it seems like the theoretically wrong thing to do, esspecially since the actual information is so easy to calculate. I think many authors in this field don't think too carefully about the information content of the things they write about, which is quite ironic.
 
@@ -165,11 +165,12 @@ K(X|Y) + O(1) = -log₂(m(X|Y))
 ```
 where `m(X|Y)` is the sum, for all programs `p`, of `2 ^ -l(p)` such that `U(p, Y) = X` for some fixed universal turing machine.
 
-See Theorem 4.3.4 and Definition 4.3.7 in "An Introduction to Kolmogorov Complexity and Its Applications"
+See: 
+- Theorem 4.3.4 and Definition 4.3.7 in "An Introduction to Kolmogorov Complexity and Its Applications"
 
-This is definitely not what that CTM measure said before. Because the original in the paper is so obviously wrong, and the nature of M is so poorly explained, it's hard to patch it up to whatever the author's intended. In fact, I'm not sure this is actually possible. The conditional coding theorem relies on the length of the program, p, which `Y` is being fed into. This would require us to incorporate the complexity of the turing machine itself; but P doesn't store this information.
+This is definitely not what that CTM measure said before. Because the original in the paper is so obviously wrong, and the nature of `M` is so poorly explained, it's hard to patch it up to whatever the author's intended. In fact, I'm not sure this is actually possible. The conditional coding theorem relies on the length of the program, `p`, which `Y` is being fed into. This would require us to incorporate the complexity of the turing machine itself; but `P` doesn't store this information.
 
-Let me try to offer a more sensible formulation of the CTM idea. Assume a computing function M : x -> y. Let P be a finite subset of output-input pairs (y, x). The input type should satisfy the smn theorem, so we can format programs like "f(x)"; have functions which can have variables subtituted into them. I guess that would be the s01 theorem, but, whatever. For many well-behaved turing machines, application is often just list concatonation (though, this becomes squirley if we want to represent functions which take multiple arguments, nested function application, etc.). For a more well-structured model of computation, such as the lambda calculus, application may be a fundamental operation. Regardless, we can then define our metric as;
+Let me try to offer a more sensible formulation of the CTM idea. Assume a computing function `M : x → y`. Let `P` be a finite subset of output-input pairs `(y, x)`. The input type should satisfy the smn theorem, so we can format programs like "`f(x)`"; have functions which can have variables subtituted into them. I guess that would be the s01 theorem, but, whatever. For many well-behaved turing machines, application is often just list concatonation (though, this becomes squirley if we want to represent functions which take multiple arguments, nested function application, etc.). For a more well-structured model of computation, such as the lambda calculus, application may be a fundamental operation. Regardless, we can then define our metric as;
 
 ```
 CTM(x|y) = - log₂( Σ{ p | (x, p(y)) ∈ P } 2 ^ -l(p) )
@@ -380,7 +381,7 @@ plus
  
 the sum over all rx in both Adj(X) and Adj(Y) of if nx == ny then 0 else log(nx)
 
-This definition issolates the unique information `X` while issuing additional penalties if information shared between `X` and `Y` appears more or less often in `X` than in Y. I'm not sure if this make sense. The paper says;
+This definition issolates the unique information `X` while issuing additional penalties if information shared between `X` and `Y` appears more or less often in `X` than in `Y`. I'm not sure if this make sense. The paper says;
 "[the second sum] is important in cases where such multiplicity dominates the complexity of the objects"
 , but, intuitively, it seems to me like the sum should only add a penalty if nx > ny; because, otherwise, we're penalizing the conditional complexity of `X` for content that's in `Y` but not in `X`. I'll have to think about this a bit more.
  
@@ -406,29 +407,29 @@ This also seems similar to finding smaller extensionally equivalent expressions 
 ```
 This only ceeses to be a problem if you have some sort of typing dicipline which can allow you to infer the number of arguments an expression expects. You can then assess eta-equivalence up to that number of arguments while also gaurenteeing preservation of expected behaviour up to the type of the full expression you're compressing. This may be particularly relevant to incremental compression.
 
--
+---
 
 Generating programs with specific, even simple, types is highly nontrivial. It's just the proof synthesis problem where you want to enumerate all proofs (encoding programs) of a given theorem (encoding a type). Restricting to certain typing diciplines, such a simple types without intersection types, certain polymorphic typing diciplines, some refinement type diciplines, some diciplines heavily leaning on algebraic datatypes, and some others, can be searched fairly efficiently, however. The following papers seem particularly relevant;
 
-[Type-and-Example-Directed Program Synthesis](https://dl.acm.org/doi/pdf/10.1145/2813885.2738007)
-[Example-Directed Synthesis: A Type-Theoretic Interpretation](http://www.jfrankle.com/refinements-popl-16.pdf)
-[Program Synthesis from Polymorphic Refinement Types](https://dl.acm.org/doi/pdf/10.1145/2980983.2908093)
+- [Type-and-Example-Directed Program Synthesis](https://dl.acm.org/doi/pdf/10.1145/2813885.2738007)
+- [Example-Directed Synthesis: A Type-Theoretic Interpretation](http://www.jfrankle.com/refinements-popl-16.pdf)
+- [Program Synthesis from Polymorphic Refinement Types](https://dl.acm.org/doi/pdf/10.1145/2980983.2908093)
 
 This may be leveragable for some applications. In fact, I'd guess most applications could leverage this.
 
 It's also worth noting that this whole problem is just the inductive programming problem + a desire to minimize the induced program's size. Inductive programming is a whole field unto itself. There are algorithms which can exhaustively produce programs which have a particular output sequence;
 
 See;
-  https://scholar.google.com/scholar?hl=en&as_sdt=0%2C3&q=exhaustive+program+generation+inductive+programming&btnG=
+  - https://scholar.google.com/scholar?hl=en&as_sdt=0%2C3&q=exhaustive+program+generation+inductive+programming&btnG=
 
 These approaches can be used as compression methods. They're not gauranteed to approach the Kolmogorov complexity, but they should generally do a much, much better job than statistical compression methods while being much more efficient than methods attempting to approximate `K` directly.
 
--
+---
 
-Consider the possibility of an algorithm, C(X), and a shannon-optimal compressor, S(X), such that the sum over all `X` of C(X) - S(X) is negatively infinite. That is to say, C(X) tends to perform better infinitely much As shannon-optimal compressor while being no slower. BDM already does this, but is there an algorithm which can do this without keeping track of a large database which takes exponential effort beforhand to calculate.
+Consider the possibility of an algorithm, `C(X)`, and a shannon-optimal compressor, `S(X)`, such that the sum over all `X` of `C(X) - S(X)` is negatively infinite. That is to say, `C(X)` tends to perform better infinitely much As shannon-optimal compressor while being no slower. BDM already does this, but is there an algorithm which can do this without keeping track of a large database which takes exponential effort beforhand to calculate.
 
 It's actually fairly easy to outperform shannon-optimal compressors by infinitely much. Have a compressor do the following;
-If it detects a string encoding "0, 1, 2, 3, 4, 5, ...," replace it with a flag indicating such and a number indicating how far the sequence counts.
+If it detects a string encoding `0, 1, 2, 3, 4, 5, ...,` replace it with a flag indicating such and a number indicating how far the sequence counts.
 For all other strings, replace them with the output of a shannon-optimal compressor.
 Such a scheme would generally perform no worse than a shannon-optimal compressor while performing better by infinitely much; though the benifits clearly only apply to a small number of patterns overall, even if there are infinite many such patterns. This means that CTM will generally be able to improbe by infintiely much by adding entries to its database; but expanding this database takes exponential effort. Is there a way to do better? Is there a way to characterize how far this can go without exponential effort? Even if it doesn't cover as much of program space asymptotically, is there a way to grow the database forever using only, say, linear effort? Or quadratic? Or logorithmic? And could such things be efficiently sewed together so that we discover the easy things first and foremost, for even very large strings, and the hard things later?
 ```
@@ -436,13 +437,13 @@ Such a scheme would generally perform no worse than a shannon-optimal compressor
 ```
 Is easy to compress algorithmically, but I wouldn't expect BDM to do much better than statistical compression. I do believe that such things should be efficiently discoverable anyway, but not by CTM, as it stands.
 
--
+---
 
 I think we may need to start thinking about the amount of effort we'd be willing to expend during compression. `K` and its apternatives seem somewhat backwards in their definition. `K` is the minimal size of a program which can become our target if we're willing to expend an arbitrarily large effort *durring decompression*. Levin complexity is just `K` plus the log of the runtime of the smallest program. Essentially, levin complexity is the minimal size of a program which can become our target if we're willing to expend only an exponential amount of effort on decompression. But, shouldn't it be the other way around? Shouldn't we care more about the amount of effort we want to put into *compression*?
 
 For the purposes of ML, we don't care about decompression at all. What would be better to know is how small a program can be if we're only willing to spend exponential, quadratic, linear, etc. effort with respect to the length of the string we're compressing. Are these problems solvable? I have a suspicion that feedforward NNs are essentially solving a subset of the linear effort case.
 
--
+---
 
 Here another idea. This one is original to me, but I wouldn't be surprised if someone came up with something similar. Some models of computation can be ran backwards, nodeterministically. Specifically, models where every state can be reached in one step by only a finite number of transitions. This *can't* be done with the lambda calculus. If we were in a state λ x . λ f . f x x, that could have been reached in one step by
 ```
@@ -464,7 +465,7 @@ For parellel models of computation, such as interaction nets, we can optimize th
 
 A further optimization, which would make finding small prgrams easier but would make finding values verifyably close to `K` harder, is to itteritivly compress programs. We run a program backwards only until it shrinks. We then abandon all other search branches and start over with the new, smaller program. Doing this over and over may allow one to effectively find and run recursive programs which generate an output backwards much more efficiently than an unpruned search.
 
--
+---
 
 Ultimately, I think this whole problem should eat itself. If we're using a universal learning algorithm, then, certainly, it can learn to be better, somehow. Bootstrapping should be possible by some variation of the methods given in the paper.
 
@@ -475,7 +476,7 @@ Hey, wasn't this post supposed to be about machine learning? Oh ya! Let's finall
 
 For any standard ML tequnique, we need a definition of Loss which we want to minimize. The exact way this will be defined will depend on what our task is. Generally, we'll use some form of conditional kolmogriv complexity directly as our loss. Similar measures are already used in some applications. Cross-entropy is the most directly related loss, and using algorithmic complexity can be thought of as a more robust form of entropy.
 
-Generally our loss will try to capture how much of the data *isn't* captured by our model. We want our loss to answer the question, "given our model, how much of the data still needs to be explained?" To that end, our loss will generally be a function of the training data *conditioned on our predictions*. Given a datapoint y and a prediction Y, our loss on that point will be K(y|Y). To get a total loss we can just add all these measures together.
+Generally our loss will try to capture how much of the data *isn't* captured by our model. We want our loss to answer the question, "given our model, how much of the data still needs to be explained?" To that end, our loss will generally be a function of the training data *conditioned on our predictions*. Given a datapoint `y` and a prediction `Y`, our loss on that point will be `K(y|Y)`. To get a total loss we can just add all these measures together.
 
 But the paper suggests adding the *squared* losses together. Why should we do this? Why do we do this for normal ML? Well, we can't normally just add together the losses since they can often be negative. `K` can never give a negative value, so that's not a problem here. Why would we use the mean squared error rather than the mean abolute error? There are two explanations I've seen. Firstly, I've seen some say MSE is easier to differentiate than MAE. This isn't true outside of very simple models where you want to find the opimum in a single step, such as linear regression, and we aren't going to be differentiating `K` anyway, so this doesn't matter. The other reason comes from an assumption that we're modeling things sampled from a gaussean distrobution.
 
@@ -529,18 +530,18 @@ Great! So, we know how to assess a model, how do we actually do optimization? Pr
 - For each set of parameters, calculate the loss of the model with those parameters. If the loss is less than the current `minCost`, then set `minCost` to this value and set `param` to the parameters being used.
 - Keep going until you're board or satisfied or literally no reason at all; the paper doesn't care.
 
-That's it. There are some complications which makes me not entirely sure if this is right. It defines the cost function (the sum of squared Ks) to be `J_a(ˆ`X`, M)`, where `ˆ`X` is our dataset and `M` is the model we're assessing. However, the actual description of the algorithm tells us to use `J_a(ˆM, σ_i)`, where `σ_i` is the ith parameter in our parameter stream and `ˆM` is never defined. Presumedly, `ˆM` has something to do with our model, but it can't possibly be a replacement for `ˆ`X` since `ˆ`X` is just a collection of input-output pairs and our model is, obviously, not. Either there's an entirely separate loss function over models and parameters which is never defined, or there was a typo and the algrithm should have said `J_a(ˆ`X`, M{σ_i})`, or something like that. The version I wrote seems pretty intuitive (if overly simplistic), so I'm leaning toward the latter.
+That's it. There are some complications which makes me not entirely sure if this is right. It defines the cost function (the sum of squared Ks) to be `J_a(ˆX, M)`, where `ˆX` is our dataset and `M` is the model we're assessing. However, the actual description of the algorithm tells us to use `J_a(ˆM, σ_i)`, where `σ_i` is the ith parameter in our parameter stream and `ˆM` is never defined. Presumedly, `ˆM` has something to do with our model, but it can't possibly be a replacement for `ˆX` since `ˆX` is just a collection of input-output pairs and our model is, obviously, not. Either there's an entirely separate loss function over models and parameters which is never defined, or there was a typo and the algrithm should have said `J_a(ˆX, M{σ_i})`, or something like that. The version I wrote seems pretty intuitive (if overly simplistic), so I'm leaning toward the latter.
 
-The paper states that this algorithm "can ['minimizes K(M) and minimize the cost function'] in anefficient amount of time". But, uhh, no it doesn't. It does as bad as a brute force search, because it is a brute force search. It goes on to say "the algorithmic parameter optimization always finds the lowest algorithmically complex parameters that fit the data ˆ`X` within the halting condition [...] algorithmic parameter optimization will naturally be a poor performer when inferring models of high algorithmic complexity." Ya think? I'm not confident that this would work on anything but toy models, but, who knows, maybe I'm wrong and this actually works suprisingly well on realworld data, but I doubt it. The algorithm doesn't even try taking advantage of what it knows about good parameters.
+The paper states that this algorithm "can ['minimizes K(M) and minimize the cost function'] in anefficient amount of time". But, uhh, no it doesn't. It does as bad as a brute force search, because it is a brute force search. It goes on to say "the algorithmic parameter optimization always finds the lowest algorithmically complex parameters that fit the data `ˆX` within the halting condition [...] algorithmic parameter optimization will naturally be a poor performer when inferring models of high algorithmic complexity." Ya think? I'm not confident that this would work on anything but toy models, but, who knows, maybe I'm wrong and this actually works suprisingly well on realworld data, but I doubt it. The algorithm doesn't even try taking advantage of what it knows about good parameters.
 
 As an aside, the paper mentions that "In the context of artificial evolution and genetic algorithms, it hasbeen previously shown that, by using an algorithmic probability distribution, the exponential random search can be sped up to quadratic", giving a few citations. This seems more reasonable to me, as such methods aren't just brute-force searching.
 
 This will be a bit of a digression, but if you read this far you probably don't care about that. The first example it uses is a regression problem on two variables. It says the following on the ability to enumerate the parameter space;
 
 
-> For instance, in order to fit the output of the function f (Eq. 2) by means of the model M, we must optimize over two continuous parameters s1 and s2. Therefore the space of parameters is composed of the pairs of real numbers σ_i = [σ_i1, σ_i2]. However,a computer cannot fully represent a real number, using instead an approximation by means of a fixed number of bits. Since this second space is finite, so is the parameter space and the search space which is composed of pairs of binary strings of finite size [...]
+> For instance, in order to fit the output of the function `f` (Eq. 2) by means of the model M, we must optimize over two continuous parameters `s1` and `s2`. Therefore the space of parameters is composed of the pairs of real numbers `σ_i = [σ_i1, σ_i2]`. However,a computer cannot fully represent a real number, using instead an approximation by means of a fixed number of bits. Since this second space is finite, so is the parameter space and the search space which is composed of pairs of binary strings of finite size [...]
 
-This entire paragraph is rather head scratching. Computers certainly can fully represent a real number. We can figure out how by following the same basic procedure I used before to figure out how to encode binary strings. You just state a universal property of the mathematical object you want to represent and derive a type of realizers. This is a bit squirly with the real numbers as the exact universal properties diverge in constructive settings, Dedikind Reals and Cauchy Reals aren't isomorphic anymore, for instance. There are also practical questions about how to make calculating with them as easy as possible. That being said, the simplest universal property for any kind of real number I'm aware of is the following; the (non-negative) real numbers are the final coalgebra of the endofunctor `X` ↦ ℕ × `X`. There are a few places that say this in various guises. The most direct is [On coalgebra of real numbers](http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=9A564F2172717230E15D3F8EC5253423?doi=10.1.1.47.5204&rep=rep1&type=pdf) which is all about this observation. See [this](https://ncatlab.org/nlab/show/continued+fraction#half-open) as well.  This basically says that real numbers are an infinite stream of natural numbers. There are a few ways of viewing what this represents, and that will largely determine whether you see each number as represeting a non-negative real or something isomorphic, like something in `[0, 1)`. For the latter, we can read each natural number as describing how many 1s we encounter before encountering a 0 in the binary expansion of a number. For example;
+This entire paragraph is rather head scratching. Computers certainly can fully represent a real number. We can figure out how by following the same basic procedure I used before to figure out how to encode binary strings. You just state a universal property of the mathematical object you want to represent and derive a type of realizers. This is a bit squirly with the real numbers as the exact universal properties diverge in constructive settings, Dedikind Reals and Cauchy Reals aren't isomorphic anymore, for instance. There are also practical questions about how to make calculating with them as easy as possible. That being said, the simplest universal property for any kind of real number I'm aware of is the following; the (non-negative) real numbers are the final coalgebra of the endofunctor `X ↦ ℕ × X`. There are a few places that say this in various guises. The most direct is [On coalgebra of real numbers](http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=9A564F2172717230E15D3F8EC5253423?doi=10.1.1.47.5204&rep=rep1&type=pdf) which is all about this observation. See [this](https://ncatlab.org/nlab/show/continued+fraction#half-open) as well.  This basically says that real numbers are an infinite stream of natural numbers. There are a few ways of viewing what this represents, and that will largely determine whether you see each number as represeting a non-negative real or something isomorphic, like something in `[0, 1)`. For the latter, we can read each natural number as describing how many 1s we encounter before encountering a `0` in the binary expansion of a number. For example;
 ```
 0 = [0, 0, 0, ...]
 0.1 = [0, 0, 2, 0, 2, 0, 2, 0, 2, ...]
@@ -584,7 +585,7 @@ We can make our representation a bit more efficient. Following the [Coinductive 
 ```
 ∃ X . (X → A × X) × X ≅ (∀ X . (1 + X → X) → X) → A
 ```
-for any `A`. Since ℕ is the initial algebra over the endofunctor `X ↦ 1 + X`, the above can be rewritten as;
+for any `A`. Since `ℕ` is the initial algebra over the endofunctor `X ↦ 1 + X`, the above can be rewritten as;
 ```
 ∃ X . (X → A × X) × X ≅ ℕ → A
 ```
