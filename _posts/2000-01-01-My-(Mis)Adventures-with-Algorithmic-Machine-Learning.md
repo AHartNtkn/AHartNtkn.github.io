@@ -151,11 +151,11 @@ I(λ x . y, b) := log₂(2 + b) + I(y, b + 1)
 I(x y,     b) := log₂(2 + b) + I(x, b) + I(y, b)
 I(x,       b) := log₂(2 + b)
 ```
-`I(l)` calculates the number of bits in `l`; approximately the number of binary decitions made when constructing `l`.
+`I(l)` calculates the number of bits in `l`; approximately the number of binary decisions made when constructing `l`.
 
-Incidently, the length of a binary string doesn't actually give the information content of that string. If a string's length isn't fixed beforehand, then each additional digit incurs one trit of information since at each stage of the construction we are choosing between one of three options; 0, 1, or stop constructing the string. From this, we can conclude that `l(s) = log₃(2 ^ -I(s)) - 1`; that is, the length of a string is one less than the number of trits in that string. If the strings length is fixed before hand, if we cannot choose to end the construction of a string at our leasure, then each choice is actually binary and `l(s) = I(s)`.
+Incidently, the length of a binary string doesn't actually give the information content of that string. If a string's length isn't fixed beforehand, then each additional digit incurs one trit of information since at each stage of the construction we are choosing between one of three options; `0`, `1`, or stop constructing the string. From this, we can conclude that `l(s) = log₃(2 ^ -I(s)) - 1`; that is, the length of a string is one less than the number of trits in that string. If the strings length is fixed before hand, if we cannot choose to end the construction of a string at our leasure, then each choice is actually binary and `l(s) = I(s)`.
 
-I think that using I(s) to calculate the information rather than the length is more theoretically correct than the usuall expression in terms of length. It doesn't seem to matter too much in the case of strings because the sum over all `2 ^ (-l(s)-1)` = the sum over all `2 ^ -I(s)` = `1`, so both are valid ways of making a probability distrobution over all programs with a similar exponentially decreasing probability profile. That `-l(p)-1` is there so that the empty string isn't given 100% of the distribution. The real problem is generalizability; the length calculation generally fails to make a coherent distrobution if our computation model no longer accepts binary strings as inputs. The information, however, can always be addapted even if our computational model expects programs to be something esoteric, like graphs (e.g. interaction nets).
+I think that using `I(s)` to calculate the information rather than the length is more theoretically correct than the usuall expression in terms of length. It doesn't seem to matter too much in the case of strings because the sum over all `2 ^ (-l(s)-1)` = the sum over all `2 ^ -I(s)` = `1`, so both are valid ways of making a probability distrobution over all programs with a similar exponentially decreasing probability profile. That `-l(p)-1` is there so that the empty string isn't given 100% of the distribution. The real problem is generalizability; the length calculation generally fails to make a coherent distrobution if our computation model no longer accepts binary strings as inputs. The information, however, can always be addapted even if our computational model expects programs to be something esoteric, like graphs (e.g. interaction nets).
 
 As a side note, despite length being theoretically incorect, it's been used in some papers for measuring the information of a lambda expression. See "Computable Variants of AIXI which are More Powerful than AIXItl" for instance. But it seems like the theoretically wrong thing to do, esspecially since the actual information is so easy to calculate. I think many authors in this field don't think too carefully about the information content of the things they write about, which is quite ironic.
 
@@ -176,7 +176,7 @@ Let me try to offer a more sensible formulation of the CTM idea. Assume a comput
 CTM(x|y) = - log₂( Σ{ p | (x, p(y)) ∈ P } 2 ^ -l(p) )
 ```
 
-So, this would also require us to be able to pattern match so as to detect `p(y)`. If application is just concatenation, then this is as simple as looking for the suffix "`y`", which is pretty trivial.
+So, this would also require us to be able to pattern match so as to detect `p(y)`. If application is just concatenation, then this is as simple as looking for the suffix `y`, which is pretty trivial.
 
 This doesn't much resemble what's in the paper, but it makes much more sense.
 
@@ -191,7 +191,7 @@ CTM(x) = - log₂( Σ{ p | (x, p) ∈ P } 2 ^ -l(p) )
 
 I breifly explained the idea behind BDM at the begining of the post, but I'll take the time to expand on it a bit here. Before I do that, the paper keeps calling things tensors, but it never explains what a tensor is. It definitely isn't in the ordinary mathematical sense since the only things described as tesors are just binary strings. A tensor can also mean a kind of muscle, but I don't think that's what the paper is trying to refer to. This does matter, as there are phrases like this;
 
-"The sub-objects r_i are called 'base objects' or 'base tensors' (when the object is a tensor)"
+> The sub-objects `r_i` are called 'base objects' or 'base tensors' (when the object is a tensor)
 
 When is an object a tensor? I have no idea, and it's never explained in the paper. 
 
@@ -228,7 +228,7 @@ Maybe looking at the [original BDM paper](https://arxiv.org/abs/1609.00110) can 
 
 Indeed it does!
 
-Firstly, it says "nx is the number of times the object x occurs in s" (pg. 8). That seems to support my initial reading, assuming the notation is consistent. It even says "ni is the multiplicity of si" (pg. 14) indicating that the author did not learn what "multiplicity" means in between writing the that paper and this one.
+Firstly, it says "`nx` is the number of times the object `x` occurs in `s`" (pg. 8). That seems to support my initial reading, assuming the notation is consistent. It even says "`ni` is the multiplicity of `si`" (pg. 14) indicating that the author did not learn what "multiplicity" means in between writing the that paper and this one.
 
 The original BDM paper gives a nice example which I'll reproduce here. Let's say we're applying BDM to the string 
 ```
@@ -360,7 +360,9 @@ The BDM paper states that
 where `Adj(X)` is the set of pairs of substrings with their occurance counts. The block-size of 2 with an overlap of 0 gives an `|Adj(X)|` of exactly 1 since it only has one partition; `Adj(X) = {(01, 9)}`. This should, presumably, be as close to the actual Kolmogorov complexity as BDM can get. I suppose that means we're trying to find the partition strategy which minimizes the number of substrings which are covered by the CTM database.
 
 The apendix of the paper has a section on "The Impact of the Partition Strategy". It says the following;
-"BDM better approximates the universal measure `K(X)` as the number of elements resulting from applying the partition strategy to `X`."
+
+> BDM better approximates the universal measure `K(X)` as the number of elements resulting from applying the partition strategy to `X`.
+
 as the number of elements... what? Was this paper not copy edited!
 
 > `BDM(X|Y)` is a good approximation to `K(X|Y)` when the `Adj(X)` and `Adj(Y)` share a high number of base tensors.
@@ -373,23 +375,25 @@ Hmm... this seems like a big gap in the whole approach.
 
 So this clears up what a "partitioning strategy" is, at any rate. Its a choice of covering over the string into (possibly overlaping) substrings which are in our CTM database. But I wasn't so worried about the paritioning strategy, I wanted to know what a "pairing strategy" is. The original paper BDM isn't any help since it doesn't describe conditional BDM at all.
 
-Going back to the topic paper of this post, it does describe a "coarse conditional BDM of `X` with respect to the tensor Y". Again, tensors are not explained at all in the paper, and it's unclear if `Y` actually needs to be a tensor in any mathematical sense. As I stated before, I think the authors just mean 2-dimensional array when they say "tensor", and it seems obvious that the construction doesn't rely on dimensionality at all. It defines BDM(`X`|Y) as
+Going back to the topic paper of this post, it does describe a "coarse conditional BDM of `X` with respect to the tensor `Y`". Again, tensors are not explained at all in the paper, and it's unclear if `Y` actually needs to be a tensor in any mathematical sense. As I stated before, I think the authors just mean 2-dimensional array when they say "tensor", and it seems obvious that the construction doesn't rely on dimensionality at all. It defines `BDM(X|Y)` as
 
-the sum over all `(rx, nx) ∈ Adj(X)` where `rx ∉ Adj(Y)` of `CTM(rx) + log(nx)`
+- the sum over all `(rx, nx) ∈ Adj(X)` where `rx ∉ Adj(Y)` of `CTM(rx) + log(nx)`
 
 plus
  
-the sum over all rx in both Adj(X) and Adj(Y) of if nx == ny then 0 else log(nx)
+- the sum over all `rx` in both `Adj(X)` and `Adj(Y)` of `if nx == ny then 0 else log(nx)`
 
 This definition issolates the unique information `X` while issuing additional penalties if information shared between `X` and `Y` appears more or less often in `X` than in `Y`. I'm not sure if this make sense. The paper says;
-"[the second sum] is important in cases where such multiplicity dominates the complexity of the objects"
+
+> [the second sum] is important in cases where such multiplicity dominates the complexity of the objects
+
 , but, intuitively, it seems to me like the sum should only add a penalty if nx > ny; because, otherwise, we're penalizing the conditional complexity of `X` for content that's in `Y` but not in `X`. I'll have to think about this a bit more.
  
 The "coarse" BDM is, I guess, less accurate than the "strong" BDM that I first looked at; but, at least, it makes sense. The reason it's weaker is that it doesn't utilize conditional CTM. But without additional clearification on what a "pairing strategy" is, I just can't understand how the strong version works.
 
 I've thought a lot about it and, while I'm not confident, I think I've figured out the most reasonable fix. If the pairing strategies must cover `X` then that solves the specific problem I pointed out. Also if P is supposed to be totally functional over the partitions of `X`, that would also solve my problem in an even nicer way. Neither of these conditions is hinted at in the paper, but it's the best I've got. The paper does say;
 
-"prior knowledge of the algorithmic structure of the objects can be used to facilitatethe computation by reducing the number of possible pairings to be explored"
+> prior knowledge of the algorithmic structure of the objects can be used to facilitatethe computation by reducing the number of possible pairings to be explored
 
 So, at the very least, the pairing strategy is supposed to be determined by some algorithm which isn't described in any detail. I'm frustrated by this whole thing.
 
@@ -508,7 +512,7 @@ Okay, so, what's the justification for squaring K? Let's think about this, what 
 
 But, wait, I was looking for justification for squaring `K`. That's what the paper does. Does it say why?
 
-"[...] in order to remain congruent with the most widely used cost functions, we will, for the purpose of illustration, use thesum of the squared algorithmic differences."
+> [...] in order to remain congruent with the most widely used cost functions, we will, for the purpose of illustration, use thesum of the squared algorithmic differences.
 
 Oh, so there is no reason. To be clear, there is a clearly right thing to do here; use the sum of Ks, not squared Ks. We may also want to divide by our number of datapoints to get the mean `K` error rather than just the total error. I don't think the author's thought very hard about what the loss should be. For much of the paper this odd, clearly wrong loss function will be used.
 
