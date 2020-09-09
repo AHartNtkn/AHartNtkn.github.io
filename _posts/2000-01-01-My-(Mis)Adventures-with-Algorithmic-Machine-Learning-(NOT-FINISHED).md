@@ -11,98 +11,109 @@
 <a name="heading1"></a>
 ## Introduction
 
-I've been researching, for quite some time, the prospect of universal machine learning. By this, I don't mean AGI, I just mean more conventional machine learning algorithms which can be applied on a wider variety of data types than normally considered; e.g. things other than tables of numbers and categories. In particular, I want to do ML for program and proof synthesis which requires, at the very least, learning the structures of trees or graphs which don't come from a differentiable domain. Normal ML algorithms can't handle these; though some resent methods, such a graph neural networks and transformers, can be addapted to this domain with some promising results. However, these methods still rely on differentiable methods. Is this really required? Are we forever doomed to map all our data onto a differentiable domain if we want to learn with it?
+I've been researching, for quite some time, the prospect of universal machine learning. By this I don't mean AGI, I just mean more conventional machine learning algorithms which can be applied on a wider variety of data types than normally considered; e.g. things other than tables of numbers and categories. In particular, I want to do ML for program and proof synthesis which requires, at the very least, learning the structures of trees or graphs which don't come from a differentiable domain. Normal ML algorithms can't handle these; though some recent methods, such a graph neural networks and transformers, can be adapted to this domain with some promising results. However, these methods still rely on differentiation. Is this really required? Are we forever doomed to map all our data onto a differentiable domain if we want to learn with it?
 
-An alternative approach which has been bandies about for a while is the utilization of compression. It's not hard to find articles and talks about the relationship between compression and prediction. If you have a good predictor, then you can compress a sequence into a seed for that predictor and decompress by running said predictor. Going the other way is harder, but, broadly speaking, if you have a sequence which you want to make a prediction on and a good compressor, then whichever addition you make to that sequence which increases the compressed size of the sequence the least should be considered the likeliest prediction. This approach is quite broad, applying to any information which can be represented on a computer and not requiring any assumptions whatsoever about the structure of our data beyond that. We could use this idea to, for example, fill in gaps in graphs, trees, sets of input-output pairs, etc.
+An alternative approach which has been bandied about for a while is the utilization of compression. It's not hard to find articles and talks about the relationship between compression and prediction. If you have a good predictor, then you can compress a sequence into a seed for that predictor and decompress by running said predictor. Going the other way is harder, but, broadly speaking, if you have a sequence which you want to make a prediction on and a good compressor, then whichever addition increases the compressed size the least should be considered the likeliest prediction. This approach is quite broad, applying to any information which can be represented on a computer and not requiring any assumptions whatsoever about the structure of our data beyond that. We could use this idea to, for example, fill in gaps in graphs, trees, sets of input-output pairs, etc.
 
-It's important to understand what's actually required here. We don't actually need to compress our training data; we only need a way to estimate the change in minimal-compression-size as we add a prediction. This minimal-compression-size is called the Kolmogorov Complexity, denoted K(X). The minimal-compression-size of a program which outputs `X` on an input `Y` is called the Conditional Kolmogorov Complexity, denoted `K(X|Y)`. The topic of Kolmogorov Complexity is quite broad, and I won't explain all its complexities here. A standard introduction is the text book [An Introduction to Kolmogorov Complexity and Its Applications](https://www.springer.com/gp/book/9781489984456) by Li, Ming, Vitányi, and Paul.
-  
+It's important to understand what's actually required here. We don't actually need to compress our training data; we only need a way to estimate the change in minimal-compression-size as we add a prediction. This minimal-compression-size is called the Kolmogorov Complexity, denoted `K(X)`. The minimal-compression-size of a program which outputs `X` on an input `Y` is called the Conditional Kolmogorov Complexity, denoted `K(X|Y)`. The topic of Kolmogorov Complexity is quite broad, and I won't explain all its complexities here. A standard introduction is the text book [An Introduction to Kolmogorov Complexity and Its Applications](https://www.springer.com/gp/book/9781489984456) by Li, Ming, Vitányi, and Paul. If we have a good method for calculating `K`, then we don't need to actually make use of compression.
+
 Making this practical is quite hard and under researched, and there aren't many papers on the topic. But there is this;
-    [Algorithmic Probability-guided Supervised Machine Learning on Non-differentiable Spaces](https://arxiv.org/abs/1910.02758)
-which reproduces some standard ML applications using this approach. I want to understand how doing ML this way works, and this post will basically be a collection of my notes I made while reading the paper. If I refer to "the paper" in this post, this is what I'm refering to. These notes will digress quite often and I'm also quite critical of some aspects of the paper. This post was also written somewhat as a stream of consciousness, so I'll often say something which I correct later on. This post isn't intended to summarize the paper, but to describe what I learned and thought as I read it. Hopefully you'll learn stuff too.
+  [Algorithmic Probability-guided Supervised Machine Learning on Non-differentiable Spaces](https://arxiv.org/abs/1910.02758)
+which reproduces some standard ML applications using this approach. I want to understand how doing ML this way works, and this post will basically be a collection of my notes I made while reading the paper. If I refer to "the paper", "this paper", etc. in this post, this is what I'm referring to. These notes will digress quite often and I'm also quite critical of some aspects of the paper. This post was also written somewhat as a stream of consciousness, so I'll often say something which I correct later on. This post isn't intended to summarize the paper, but to describe what I learned and thought as I read it. Hopefully you'll learn stuff too.
 
 <a name="heading1p5"></a>
 ## Why Not Use Ordinary Compression?
 
-One of the most common suggestions for approximating K(X) is to simply use an already existing compression algorithm. The problem is that most "optimal" compression algorithms such as arithmetic encoding are only optimal up to the Shannon Entropy of the data. That is, if we assume the data is sampled randomly from a distribution, the best we can do is estimate the shape of this distribution and give shorter encodings appropriately to more likely symbols. This is, asymptotically, about the same as counting substring occurrences so reduce redundancy. If our data is actually just randomly sampled, then this is great! But the real world isn't like this. Most data has some noise which can be construed as being sampled from a distribution placed on top of an essentially deterministic process. Most compression potential comes from modeling this underlying process, not the noise.
+One of the most common suggestions for approximating `K(X)` is to simply use an already existing compression algorithm. The problem is that most "optimal" compression algorithms such as arithmetic encoding are only optimal up to the Shannon Entropy of the data. That is, if we assume the data is sampled randomly from a distribution, the best we can do is estimate the shape of this distribution and give shorter encodings appropriately to more likely symbols. This is, asymptotically, about the same as counting substring occurrences to reduce redundancy. If our data is actually just randomly sampled, then this is great! But the real world isn't like this. Most real-world data has some noise which can be construed as being sampled from a distribution placed on top of an essentially deterministic computational process. Most compression potential comes from modeling this underlying process, not the noise.
 
 Consider the sequence;
-  1, 2, 3, 4, ..., 1000
+```
+1, 2, 3, 4, ..., 1000
+```
+This is, obviously, very compressible. An optimal (truly optimal, not Shannon-entropy-optimal) compressor would be able to compress this into a program producing this output. Maybe `Range@1000`, or something even smaller, depending on what language it's using. But statistical compression will just try to find repetitive substrings. Even if we represent this list in binary and compress, statistical methods won't be able to compress this much better than a truly random string since there are few repetitious patterns.
 
-This is, obviously, very compressible. An optimal (truly optimal, not Shannon-entropy-optimal) compressor would be able to compress this into a program producing this output. Maybe "Range@1000", or something even smaller, depending on what language it's using. But statistical compression will just try to find repetitive substrings. Even if we represent this list in binary and compress, statistical methods won't be able to compress this much better than a truly random string.
-
-There are lots of natural examples of this. Compressing the digits of π, compressing the coordinates of regular geometric figures, compressing a list of positions for a simple physical system simulation. It's obvious that these can have small algorithmic complexity; that they should be compressible into small programs which generate them, and yet statistical compression methods won't be able to take advantage of this.
+There are lots of natural examples of this. Compressing the digits of π, compressing the coordinates of regular geometric figures, compressing a list of positions for a simple physical system simulation. It's obvious that these can have small algorithmic complexity, that they should be compressible into small programs which generate them, and yet statistical compression methods won't be able to take advantage of this.
 
 As a consequence, we must use compression methods which do something more sophisticated than statistical compression. Unfortunately, essentially all general purpose compression methods are like this. There are some ML based methods which probably aren't. A lot of the text-compression algorithms which participated in the [Large Text Compression Benchmark](http://mattmahoney.net/dc/text.html) use RNNs which are definitely doing something other than statistical compression.
 
-Much of the paper is dedicated to explaining one method for approximating Kolmogorov Complexity. Kolmogorov Complexity isn't computable, and getting a good approximation is very hard. Some cleaver methods have been divised, but we can't get a good grasp of it as easily as we can perform statistical compression.
+Much of the paper is dedicated to explaining one method for approximating Kolmogorov Complexity. Kolmogorov Complexity isn't computable, and getting a good approximation is very hard. Some clever methods have been devised, but we can't get a good grasp of it as easily as we can perform statistical compression.
 
 <a name="heading2"></a>
 ## Methods for Approximating Kolmogorov Complexity
 
 We, ultimately, need a way to approximate Kolmogorov complexity. The learning methods themselves should be largely independent of this, but choosing a method is essential for real-world application. Here are a few methods I've found in the lituriture;
 
-  CTM - Coding Theorem Method =========
+---
 
-  This is the method the paper endorsed, and so I'll talk about it in more detail later on.
+### CTM - Coding Theorem Method
 
-  The idea is to enumerate all strings of a given length and run them as programs for some chosen model. If the normalized output is larger than the initial program, we add it to a database which maps outputs to their smaller representations. For small generating programs, this can get us exact values for K for some very easy to generate strings; but, pretty early on, we start seeing strings whose halting behaviour is nontrivial, and, as such, we can't reasonably know K. This means our database will, for most strings, only have small upper-bounds on K. Similar methods can be used to approximate other measures of complexity, such as Levin complexity.
+This is the method the paper endorsed, and so I'll talk about it in more detail later on.
 
-  BDM - Block Decomposition Method - utilizes an existing CTM database to estimate Kolmogorov Complexity. It first tries finding algorithmically compressible substrings using CTM and then uses that information in conjunction with a shannon-entropy like calculation to estimate the complexity of the whole string. For small strings, BDM is close to the performance of CTM, for large strings its average case performance is close to statistical compression. Many large strings in practice, however, tend to be compresed better than with statistical methods.
+The idea is to enumerate all strings of a given length and run them as programs for some chosen model. If the normalized output is larger than the initial program, we add it to a database which maps outputs to their smaller representations. For small generating programs, this can get us exact values for K for some very easy to generate strings; but, pretty early on, we start seeing strings whose halting behaviour is nontrivial, and, as such, we can't reasonably know K. This means our database will, for most strings, only have small upper-bounds on K. Similar methods can be used to approximate other measures of complexity, such as Levin complexity.
 
-  See:
-    [Numerical Evaluation of Algorithmic Complexity for Short Strings](https://arxiv.org/abs/1101.4795)
-    [A Decomposition Method for Global Evaluation of Shannon Entropy and Local Estimations ofAlgorithmic Complexity](https://arxiv.org/abs/1609.00110)
+BDM - Block Decomposition Method - utilizes an existing CTM database to estimate Kolmogorov Complexity. It first tries finding algorithmically compressible substrings using CTM and then uses that information in conjunction with a shannon-entropy like calculation to estimate the complexity of the whole string. For small strings, BDM is close to the performance of CTM, for large strings its average case performance is close to statistical compression. Many large strings in practice, however, tend to be compresed better than with statistical methods.
 
-  List Approximation ========= 
+See:
+  [Numerical Evaluation of Algorithmic Complexity for Short Strings](https://arxiv.org/abs/1101.4795)
+  [A Decomposition Method for Global Evaluation of Shannon Entropy and Local Estimations ofAlgorithmic Complexity](https://arxiv.org/abs/1609.00110)
 
-  List Approximation is based on optimizing a simple observation. While generating the smallest program generating X is not computable, generating a list guarenteed to contain the smallest program is. In particular, we can return a list enumerating all strings below and containing X. This will definitely have the smallest program generating X, but it will be exponentially large in the length of X. How small can this list be?
+--- 
 
-  [Short lists with short programs in short time](https://arxiv.org/abs/1301.1547) (also an improved version in [Short lists for shortest descriptions in short time](https://arxiv.org/abs/1212.6104)) show that this list can be made quadratically large (and asymptotically no smaller) in the length of the input while guarenteedly containing the smallest program. This makes searching for K(X) much more practical as we only need to run a number of programs quadratic in the size of X.
+### List Approximation
 
-  If we are willing to accept only approximating K with a list, we can incure an O(log(|X|)) penalty to our smallest generating program and make the list linear in the size of X, as shown in [Linear list-approximation for short programs](https://arxiv.org/abs/1311.7278).
+List Approximation is based on optimizing a simple observation. While generating the smallest program generating X is not computable, generating a list guarenteed to contain the smallest program is. In particular, we can return a list enumerating all strings below and containing X. This will definitely have the smallest program generating X, but it will be exponentially large in the length of X. How small can this list be?
 
-  These methods seem promising, but the algorithms themselves are quite abstruse and some require exponential space, making them impractical. However, improvements may be possible.
+[Short lists with short programs in short time](https://arxiv.org/abs/1301.1547) (also an improved version in [Short lists for shortest descriptions in short time](https://arxiv.org/abs/1212.6104)) show that this list can be made quadratically large (and asymptotically no smaller) in the length of the input while guarenteedly containing the smallest program. This makes searching for K(X) much more practical as we only need to run a number of programs quadratic in the size of X.
 
-  It's also unclear how much labour is actually saved when using the approximation lists. It may be the case that both the smallest possible representations of programs and everything else in the list require an absurd amount of work to normalize. It may remove those programs which were already easy to dismiss when using brute-force while exclusively keeping the ones which are hard to assess anyway. The lists may also only have the smallest program which is hard to assess. If there's no second-best approximation to K, then we're stuck having to find the actual smallest value with no backup if that's impractical to assess. Without any practical demonstrations, it's hard to know if these are genuine problems.
+If we are willing to accept only approximating K with a list, we can incure an O(log(|X|)) penalty to our smallest generating program and make the list linear in the size of X, as shown in [Linear list-approximation for short programs](https://arxiv.org/abs/1311.7278).
 
-  Universal Almost Optimal Compression ===========
+These methods seem promising, but the algorithms themselves are quite abstruse and some require exponential space, making them impractical. However, improvements may be possible.
 
-  This method is based on a generic property of compression-decompression pairs. As it turns out, we can, while incurring polylogorithmic overhead in the size of the compressed string, replace a (potentially non-computable) compression algorithm and its decompressor with a pair consisting of an efficient compressor and a potentially inefficient decompressor. By fixing our compressor-decompressor pair to be K and E (the function that simply evaluates a program), we can get a new compression-decompression pair which will compress inputs to a length which differs, at most, polylogorithmically from K. This compressor would not get us smaller, equivalent programs, but, if our goal is to simply approximate the size of a hypothetical Kolmogorov-compressed program, this should work fine.
+It's also unclear how much labour is actually saved when using the approximation lists. It may be the case that both the smallest possible representations of programs and everything else in the list require an absurd amount of work to normalize. It may remove those programs which were already easy to dismiss when using brute-force while exclusively keeping the ones which are hard to assess anyway. The lists may also only have the smallest program which is hard to assess. If there's no second-best approximation to K, then we're stuck having to find the actual smallest value with no backup if that's impractical to assess. Without any practical demonstrations, it's hard to know if these are genuine problems.
 
-  I don't yet understand the technical details, but the paper can be found here;
-    [Universal almost optimal compression and Slepian-Wolf coding inprobabilistic polynomial time](https://arxiv.org/abs/1911.04268)
+---
 
-  Incremental compression ============
+### Universal Almost Optimal Compression
 
-  Instead of calculating K(X) all at once, it can usually be done peacemeal. The incremental compression is not computable, but it should be much quicher to approximate, on average, than K(X) while still approaching K(X).
+This method is based on a generic property of compression-decompression pairs. As it turns out, we can, while incurring polylogorithmic overhead in the size of the compressed string, replace a (potentially non-computable) compression algorithm and its decompressor with a pair consisting of an efficient compressor and a potentially inefficient decompressor. By fixing our compressor-decompressor pair to be K and E (the function that simply evaluates a program), we can get a new compression-decompression pair which will compress inputs to a length which differs, at most, polylogorithmically from K. This compressor would not get us smaller, equivalent programs, but, if our goal is to simply approximate the size of a hypothetical Kolmogorov-compressed program, this should work fine.
 
-  The idea is that, given some input X, we want to find a pair of functions F, D, such that F(D(X)) = X, and |F| + |D(X)| < |X|. Specifically, we want to fine the smallest F meating this requirement. The idea is that D(X) reduces the size of X. D should essentially be deleting whatever information is not in F from X. F is then that information, isolated from X. By repeating this over and over again, we can decompose X into a series F1(F2(F3(...(R)))), where R is the residual which wasn't compressed. In the limit, R should basically consist of all the random information preasent in X, while the Fs correspond to algorithmic "features" which can be isolated from X. So long as the Fs are always as small as possible, this construction will approach the actual Kolmogorov complexity.
+I don't yet understand the technical details, but the paper can be found here;
+  [Universal almost optimal compression and Slepian-Wolf coding inprobabilistic polynomial time](https://arxiv.org/abs/1911.04268)
 
-  I think this line of work hints towards a rich theory of "atomic" algorithmic information, but it's not ready for practical applications as of yet.
+--
 
-  See:
-    [A theory of incremental compression](https://arxiv.org/abs/1908.03781)
+### Incremental compression
 
-  Higher-order compression ==============
+Instead of calculating K(X) all at once, it can usually be done peacemeal. The incremental compression is not computable, but it should be much quicher to approximate, on average, than K(X) while still approaching K(X).
 
-  This is a method of compressing lambda expressions by observing a connection between grammar-based compression and lambda binding.
+The idea is that, given some input X, we want to find a pair of functions F, D, such that F(D(X)) = X, and |F| + |D(X)| < |X|. Specifically, we want to fine the smallest F meating this requirement. The idea is that D(X) reduces the size of X. D should essentially be deleting whatever information is not in F from X. F is then that information, isolated from X. By repeating this over and over again, we can decompose X into a series F1(F2(F3(...(R)))), where R is the residual which wasn't compressed. In the limit, R should basically consist of all the random information preasent in X, while the Fs correspond to algorithmic "features" which can be isolated from X. So long as the Fs are always as small as possible, this construction will approach the actual Kolmogorov complexity.
 
-  The procedure is very simple. Start with a lambda expression.
-  1. Compress the expression using a tree-grammer (using re-pair, for instance). Convert this tree grammar back into a lambda expression.
+I think this line of work hints towards a rich theory of "atomic" algorithmic information, but it's not ready for practical applications as of yet.
 
-  2. Run a "simplification procedure" which performes
-    - eta-reduction
-    - beta-reduction on linear lambda bindings
-    - beta-reduction on applications to bound variables
+See:
+  [A theory of incremental compression](https://arxiv.org/abs/1908.03781)
 
-  Repeat 1 and 2 until the expression stops shrinking.
+---
 
-  I honestly have a hard time believing this works. I'll have to think about it more carefully. To me, this doesn't seem like it should perform better than statistical compression, but, according to the paper [Functional Programs as Compressed Data](http://www-kb.is.s.u-tokyo.ac.jp/~koba/papers/hosc-fpcd.pdf);
-  >"our representation of compressed data in the form of λ-terms is optimal with respect to Kolmogorov complexity, up to an additive constant."
-  I don't buy the argument given in the paper, though, which just seems to argue that optimal compression should be possible in theory; it doesn't even mention the specifics of the algorithm they present. None the less, I want to include this here since it makes a specific and relevant claim. Some followup work seems to be doing something more computationally interesting, such as [Compaction of Church Numerals for Higher-Order Compression](https://arxiv.org/abs/1706.10061), so a future version of this might be better suited for the task at hand.
+### Higher-order compression
 
-  Similar grammar-based methods should work for other structured models of computation. For example, using re-pair for graphs, as presented in [Grammar-Based Graph Compression](https://arxiv.org/abs/1704.05254). Using this, a version should be possible for interaction nets.
+This is a method of compressing lambda expressions by observing a connection between grammar-based compression and lambda binding.
+
+The procedure is very simple. Start with a lambda expression.
+1. Compress the expression using a tree-grammer (using re-pair, for instance). Convert this tree grammar back into a lambda expression.
+
+2. Run a "simplification procedure" which performes
+  - eta-reduction
+  - beta-reduction on linear lambda bindings
+  - beta-reduction on applications to bound variables
+
+Repeat 1 and 2 until the expression stops shrinking.
+
+I honestly have a hard time believing this works. I'll have to think about it more carefully. To me, this doesn't seem like it should perform better than statistical compression, but, according to the paper [Functional Programs as Compressed Data](http://www-kb.is.s.u-tokyo.ac.jp/~koba/papers/hosc-fpcd.pdf);
+>"our representation of compressed data in the form of λ-terms is optimal with respect to Kolmogorov complexity, up to an additive constant."
+I don't buy the argument given in the paper, though, which just seems to argue that optimal compression should be possible in theory; it doesn't even mention the specifics of the algorithm they present. None the less, I want to include this here since it makes a specific and relevant claim. Some followup work seems to be doing something more computationally interesting, such as [Compaction of Church Numerals for Higher-Order Compression](https://arxiv.org/abs/1706.10061), so a future version of this might be better suited for the task at hand.
+
+Similar grammar-based methods should work for other structured models of computation. For example, using re-pair for graphs, as presented in [Grammar-Based Graph Compression](https://arxiv.org/abs/1704.05254). Using this, a version should be possible for interaction nets.
 
 <a name="heading2p5"></a>
 ## Approximating Conditional Kolmogorov Complexity using CTM
@@ -118,7 +129,7 @@ CTM(X|Y) = log₂ Σ{(Y, X) ∈ P} 1/|P|
 Both X and Y are bound twice, once in defining CTM and once by the sum itself. It seems like the second bind is trying to reference the first, but that makes no sense, syntactically. Alternitively, if we interpret the binders as entirely separate, then CTM does nothing with its arguments, and just returns 0 on all inputs, which is obviously wrong.
 
 I'm pretty sure a lot of this confusion comes from over-familiarity with one specific model of computation. An approach (not even the only approach used by the Complexity Calculator project) is to use an enumeration for turing machines, which to my knowledge was originally devised for investigating busy beaver numbers. I believe that the authors are imagining that M is a function which enumerates all turing machines, runs x on them all, and outputs a list of all the ys that each turing machine outputs. I think, then, that P is not supposed to be a set, but a multiset which may contain multiple copies of any given pair. The calculation should then be;
-  CTM(x|y) = log₂( |[ p ∈ P | p = (x, y) ]| / |P| )
+CTM(x|y) = log₂( |[ p ∈ P | p = (x, y) ]| / |P| )
 
 This is hinted at but not clearly explained in the original paper. As a consiquence, this may be off.
 
@@ -127,15 +138,15 @@ Lets think of what this might mean for other models of computation. If we were u
 The justification for this procudure comes from the coding theorem, which states that K(X) + O(1) = -log₂(m(X)), where m(x) is the sum over all programs p of 2 ^ -l(p), such that x is ouputed when p is fed to some fixed, optimal universal turing machine U.  l(p) is the length of p.
 
 See: 
-  http://www.scholarpedia.org/article/Algorithmic_probability
-  Also, Theorem 4.3.3 of "An Introduction to Kolmogorov Complexity and Its Applications"
+http://www.scholarpedia.org/article/Algorithmic_probability
+Also, Theorem 4.3.3 of "An Introduction to Kolmogorov Complexity and Its Applications"
 
 Modifying this for lambda expressions, m(x) should be the sum over all lambda expression l which normalize to x of 2 ^ -I(l), where I(l) would be calculated
 
-  I(l) := I(l, 0)
-  I(λ x . y, b) := log₂(2 + b) + I(y, b + 1)
-  I(x y,     b) := log₂(2 + b) + I(x, b) + I(y, b)
-  I(x,       b) := log₂(2 + b)
+I(l) := I(l, 0)
+I(λ x . y, b) := log₂(2 + b) + I(y, b + 1)
+I(x y,     b) := log₂(2 + b) + I(x, b) + I(y, b)
+I(x,       b) := log₂(2 + b)
 
 I(l) calculates the number of bits in l; approximately the number of binary decitions made when constructing l.
 
@@ -151,13 +162,13 @@ K(X|Y) + O(1) = -log₂(m(X|Y))
 
 where m(X|Y) is the sum, for all programs p, of 2 ^ -l(p) such that U(p, Y) = X for some fixed universal turing machine.
 
-  See Theorem 4.3.4 and Definition 4.3.7 in "An Introduction to Kolmogorov Complexity and Its Applications"
+See Theorem 4.3.4 and Definition 4.3.7 in "An Introduction to Kolmogorov Complexity and Its Applications"
 
 This is definitely not what that CTM measure said before. Because the original in the paper is so obviously wrong, and the nature of M is so poorly explained, it's hard to patch it up to whatever the author's intended. In fact, I'm not sure this is actually possible. The conditional coding theorem relies on the length of the program, p, which Y is being fed into. This would require us to incorporate the complexity of the turing machine itself; but P doesn't store this information.
 
 Let me try to offer a more sensible formulation of the CTM idea. Assume a computing function M : x -> y. Let P be a finite subset of output-input pairs (y, x). The input type should satisfy the smn theorem, so we can format programs like "f(x)"; have functions which can have variables subtituted into them. I guess that would be the s01 theorem, but, whatever. For many well-behaved turing machines, application is often just list concatonation (though, this becomes squirley if we want to represent functions which take multiple arguments, nested function application, etc.). For a more well-structured model of computation, such as the lambda calculus, application may be a fundamental operation. Regardless, we can then define our metric as;
 
-  CTM(x|y) = - log₂( Σ{ p | (x, p(y)) ∈ P } 2 ^ -l(p) )
+CTM(x|y) = - log₂( Σ{ p | (x, p(y)) ∈ P } 2 ^ -l(p) )
 
 So, this would also require us to be able to pattern match so as to detect p(y). If application is just concatenation, then this is as simple as looking for a suffix "y", which is pretty trivial.
 
@@ -165,14 +176,14 @@ This doesn't much resemble what's in the paper, but it makes much more sense.
 
 The paper mentions that CTM(x), which approximates non-conditional Kolmogorov complexity, can be defined as CTM(x|""), x conditioned on the empty string. Well, actually is says that CTM(""|x) should do this, but that doesn't make any sense. It's unclear enough in the original, it should definitely be CTM(x|"") in my modified version since it would just be summing for every program p = p ++ "" which outputs x; hence it's eminatly compatible with conncatonation-as-application. In general, a separate measure would need to be made for other models of computation since application-as-conncationation doesn't even make sense in general for turing machines (do you really think application should be associative?), much less other models of computation. More generically, we'd define;
 
-  CTM(x) = - log₂( Σ{ p | (x, p) ∈ P } 2 ^ -l(p) )
+CTM(x) = - log₂( Σ{ p | (x, p) ∈ P } 2 ^ -l(p) )
 
 <a name="heading3"></a>
 ## Block Decomposition
 
 I breifly explained the idea behind BDM at the begining of the post, but I'll take the time to expand on it a bit here. Before I do that, the paper keeps calling things tensors, but it never explains what a tensor is. It definitely isn't in the ordinary mathematical sense since the only things described as tesors are just binary strings. A tensor can also mean a kind of muscle, but I don't think that's what the paper is trying to refer to. This does matter, as there are phrases like this;
 
-  "The sub-objects r_i are called 'base objects' or 'base tensors' (when the object is a tensor)"
+"The sub-objects r_i are called 'base objects' or 'base tensors' (when the object is a tensor)"
 
 When is an object a tensor? I have no idea, and it's never explained in the paper. 
 
@@ -184,20 +195,20 @@ So, how would this work when we don't have this property?
 
 We're trying to approximage K(X|Y) using BDM(X|Y). Assume a fixed "partitioning strategy". The paper never explaines what this is, though it seems like this refers to a method of splitting up inputs into sub-inputs which are already in out CTM database. What BDM tries to do is devise a "pairing strategy" which minimizes a quantity. The paper doesn't state what a pairing strategy is, but it clearifies the following;
 
-  A pairing strategy is a set P
-    - consisting of pairs of pairs ((rx, nx), (ry, ny))
-      - where rx and ry are partitions of X and Y made by out partitioning strategy
-        - where each rx occuring in P must only occure once, though there is no similar restriciton on ry.
-          This just means that P, treated as a relation, is (non-totally) functional.
-      - where nx and ny are the "multiplicity of the objects" rx and ry within the partitionings of X and Y, respectively.
+A pairing strategy is a set P
+  - consisting of pairs of pairs ((rx, nx), (ry, ny))
+    - where rx and ry are partitions of X and Y made by out partitioning strategy
+      - where each rx occuring in P must only occure once, though there is no similar restriciton on ry.
+        This just means that P, treated as a relation, is (non-totally) functional.
+    - where nx and ny are the "multiplicity of the objects" rx and ry within the partitionings of X and Y, respectively.
  
-        The word "multiplicity" means "a large amount"; it's a noun, not an adjictive. A multiplicity of Xs is a large amount of Xs, it's not an attribute of the Xs. I assume what the authors want to say is that nx and ny are the count of occurrences of rx and ry in nx and ny, but I'm not sure as what the paper actually says doesn't mean this. However, this may be some obscure, non-standard usage of "multiplicity" which I'm unfamilar with and it could mean literally anything.
+      The word "multiplicity" means "a large amount"; it's a noun, not an adjictive. A multiplicity of Xs is a large amount of Xs, it's not an attribute of the Xs. I assume what the authors want to say is that nx and ny are the count of occurrences of rx and ry in nx and ny, but I'm not sure as what the paper actually says doesn't mean this. However, this may be some obscure, non-standard usage of "multiplicity" which I'm unfamilar with and it could mean literally anything.
  
 That's all it says on pairing strategies. As far as I can tell from this, a pairing strategy which pairs nothing and is just empty is valid, but I'm pretty sure it's not supposed to be.
 
 Assuming we have an understanding of what additional constraints a pairing strategy should have, we want to find the pairing strategy which minimizes the following quantity;
 
-    the sum over all ((rx, nx), (ry, ny)) ∈ P of CTM(rx|ry) + if nx == ny then 0 else log(nx)
+  the sum over all ((rx, nx), (ry, ny)) ∈ P of CTM(rx|ry) + if nx == ny then 0 else log(nx)
 
 The minimal value for this quantity will be BDM(X|Y).
 
@@ -226,10 +237,10 @@ Let's consider what happens in the case of the lambda calculus. The original str
 
 ```
 λc . λn . 
-  c 0 (c 1 (c 0 (c 1 (c 0 (c 1
-  (c 0 (c 1 (c 0 (c 1 (c 0 (c 1
-  (c 0 (c 1 (c 0 (c 1 (c 0 (c 1 n))))))
-  )))))))))))
+c 0 (c 1 (c 0 (c 1 (c 0 (c 1
+(c 0 (c 1 (c 0 (c 1 (c 0 (c 1
+(c 0 (c 1 (c 0 (c 1 (c 0 (c 1 n))))))
+)))))))))))
 ```
 
 where
@@ -259,19 +270,19 @@ Getting back on topic, the correct representation has about 192.747 bits of info
 
 ```
 λc . λn . 
-  (λ f . λ x . f (f x))
-  (λ f . λ x . f (f (f x)))
-  (λ x . c 0 (c 1 x))
-  n
+(λ f . λ x . f (f x))
+(λ f . λ x . f (f (f x)))
+(λ x . c 0 (c 1 x))
+n
 ```
 
 which has about 83.93 bits of info. The 12 character sub-partition can be compressed into
 
 ```
 λc . λn . 
-  (λ f . λ x . f (f x))
-  ((λ f . λ x . f (f (f x))) (λ x . c 0 (c 1 x)))
-  n
+(λ f . λ x . f (f x))
+((λ f . λ x . f (f (f x))) (λ x . c 0 (c 1 x)))
+n
 ```
 
 which has about 83.93 bits; the exact same, in fact, as the full string. The reason why these are the same is that there are 9 repititions of 01 in the full string and 9 = 3 ^ 2. In the substrings, there are 6 repetitions of 01 or 10, and 6 = 2 * 3. The information in multiplication is the same as the information in exponentiation, so the representations end up having the same amount of info. Of course, I don't know if these are actually the smallest possible representations; these are just the smallest I could come up with. They do illistrate my point, however. The two strings should have about the same information, maybe the original should have a little more. It seems extremely suspiscious to me that the two strings have such dramatically different bit-counts according to BDM.
@@ -280,10 +291,10 @@ This isn't the only way to represent binary strings. We can write the original s
 
 ```
 λ0 . λ1 . 
-  0 (1 (0 (1 (0 (1
-  (0 (1 (0 (1 (0 (1
-  (0 (1 (0 (1 (0 (1 (λ x . x)))))))
-  )))))))))))
+0 (1 (0 (1 (0 (1
+(0 (1 (0 (1 (0 (1
+(0 (1 (0 (1 (0 (1 (λ x . x)))))))
+)))))))))))
 ```
 
 In order to justify this representation we need to prove that its type is isomorphic to something satisfying the universal property of binary strings. Here, `1` and `0` are expected to take a function `X → X` and return another function of the same type. This means our representation has type;
@@ -307,19 +318,19 @@ where `2` is just a type with two elements; isomorphic to Bits. Also note that a
 Which is the fully polymorphic type of the repsresentation we started with. Compare;
 ```
 ∀ S : BinString . ∀ P . (∀ s . (b : Bits) → P s → P (b :: s)) → P "" → P S
-                  ∀ X . (           2     → X   → X         ) → X    → X
+                ∀ X . (           2     → X   → X         ) → X    → X
 ```
 This justifies that the new representation is isomorphic to the old one and we can comfortablly use it interchangably with the old. See also;
-  [Recursive types for free!](https://homepages.inf.ed.ac.uk/wadler/papers/free-rectypes/free-rectypes.txt)
-  [The Algebra of Algebraic Data Types (Youtube)](https://www.youtube.com/watch?v=YScIPA8RbVE)
+[Recursive types for free!](https://homepages.inf.ed.ac.uk/wadler/papers/free-rectypes/free-rectypes.txt)
+[The Algebra of Algebraic Data Types (Youtube)](https://www.youtube.com/watch?v=YScIPA8RbVE)
 
 Our new representation has about 78.9 bits of information, while the sub-strings have about 54.9 bits. We can compress our larger string to
 ```
 λ0 . λ1 . 
-  (λ f . λ x . f (f x))
-  (λ f . λ x . f (f (f x)))
-  (λ x . 0 (1 x))
-  (λ x . x)
+(λ f . λ x . f (f x))
+(λ f . λ x . f (f (f x)))
+(λ x . 0 (1 x))
+(λ x . x)
 ```
 which has about 57.27 bits of information, less even than what BDM states the the turing machine representation should have. And the lambda calculus has to represent every tree-like datatype! What's the turing machine representation doing with all that space below 57 bits if it can't even fit 9 repretitions of "01"? As far as I can tell, the two 12 digit substrings can't be compressed any further, but my point from before still stands; both strings have similar amounts of algorithmic information. It's suspicious that BDM would say otherwise.
 
@@ -351,14 +362,14 @@ So this clears up what a "partitioning strategy" is, at any rate. Its a choice o
 
 Going back to the topic paper of this post, it does describe a "coarse conditional BDM of X with respect to the tensor Y". Again, tensors are not explained at all in the paper, and it's unclear if Y actually needs to be a tensor in any mathematical sense. As I stated before, I think the authors just mean 2-dimensional array when they say "tensor", and it seems obvious that the construction doesn't rely on dimensionality at all. It defines BDM(X|Y) as
 
-  the sum over all `(rx, nx) ∈ Adj(X)` where `rx ∉ Adj(Y)` of `CTM(rx) + log(nx)`
+the sum over all `(rx, nx) ∈ Adj(X)` where `rx ∉ Adj(Y)` of `CTM(rx) + log(nx)`
 
 plus
  
-  the sum over all rx in both Adj(X) and Adj(Y) of if nx == ny then 0 else log(nx)
+the sum over all rx in both Adj(X) and Adj(Y) of if nx == ny then 0 else log(nx)
 
 This definition issolates the unique information X while issuing additional penalties if information shared between X and Y appears more or less often in X than in Y. I'm not sure if this make sense. The paper says;
-  "[the second sum] is important in cases where such multiplicity dominates the complexity of the objects"
+"[the second sum] is important in cases where such multiplicity dominates the complexity of the objects"
 , but, intuitively, it seems to me like the sum should only add a penalty if nx > ny; because, otherwise, we're penalizing the conditional complexity of X for content that's in Y but not in X. I'll have to think about this a bit more.
  
 The "coarse" BDM is, I guess, less accurate than the "strong" BDM that I first looked at; but, at least, it makes sense. The reason it's weaker is that it doesn't utilize conditional CTM. But without additional clearification on what a "pairing strategy" is, I just can't understand how the strong version works.
@@ -378,8 +389,8 @@ The CTM database only keeps track of string reductions, but it may be possible t
 
 This also seems similar to finding smaller extensionally equivalent expressions to certain programs. That is, finding programs which don't normalize to the same term, but do normalize to the same term when given the same inputs. Programs which are not the same but are behaviourally indistinguishable. I wrote a program a while ago in Mathematica which enumerated SKI expressions, applied 30 or so variable arguments to them, and collected them into pairs which normalized to the same expression after application. In this way, I built up a database which I used to make expressions smaller by replacing expressions with smaller eta-equivalent ones. In practice, this ran into some issues. Namely, two extensionally equivalent expressions are not gaurenteed to have the same behaviour since one may start evaluating after two arguments while the other will evaluate after three. For example, the following two expressions are extensionally equivalent, but they only normalize to the same term after two arguments are applied despite the first fully normalizing after only one application.
 ```
-  λ f . f
-  λ f . λ x . f x
+λ f . f
+λ f . λ x . f x
 ```
 This only ceeses to be a problem if you have some sort of typing dicipline which can allow you to infer the number of arguments an expression expects. You can then assess eta-equivalence up to that number of arguments while also gaurenteeing preservation of expected behaviour up to the type of the full expression you're compressing. This may be particularly relevant to incremental compression.
 
@@ -387,16 +398,16 @@ This only ceeses to be a problem if you have some sort of typing dicipline which
 
 Generating programs with specific, even simple, types is highly nontrivial. It's just the proof synthesis problem where you want to enumerate all proofs (encoding programs) of a given theorem (encoding a type). Restricting to certain typing diciplines, such a simple types without intersection types, certain polymorphic typing diciplines, some refinement type diciplines, some diciplines heavily leaning on algebraic datatypes, and some others, can be searched fairly efficiently, however. The following papers seem particularly relevant;
 
-  [Type-and-Example-Directed Program Synthesis](https://dl.acm.org/doi/pdf/10.1145/2813885.2738007)
-  [Example-Directed Synthesis: A Type-Theoretic Interpretation](http://www.jfrankle.com/refinements-popl-16.pdf)
-  [Program Synthesis from Polymorphic Refinement Types](https://dl.acm.org/doi/pdf/10.1145/2980983.2908093)
+[Type-and-Example-Directed Program Synthesis](https://dl.acm.org/doi/pdf/10.1145/2813885.2738007)
+[Example-Directed Synthesis: A Type-Theoretic Interpretation](http://www.jfrankle.com/refinements-popl-16.pdf)
+[Program Synthesis from Polymorphic Refinement Types](https://dl.acm.org/doi/pdf/10.1145/2980983.2908093)
 
 This may be leveragable for some applications. In fact, I'd guess most applications could leverage this.
 
 It's also worth noting that this whole problem is just the inductive programming problem + a desire to minimize the induced program's size. Inductive programming is a whole field unto itself. There are algorithms which can exhaustively produce programs which have a particular output sequence;
 
-  See;
-    https://scholar.google.com/scholar?hl=en&as_sdt=0%2C3&q=exhaustive+program+generation+inductive+programming&btnG=
+See;
+  https://scholar.google.com/scholar?hl=en&as_sdt=0%2C3&q=exhaustive+program+generation+inductive+programming&btnG=
 
 These approaches can be used as compression methods. They're not gauranteed to approach the Kolmogorov complexity, but they should generally do a much, much better job than statistical compression methods while being much more efficient than methods attempting to approximate K directly.
 
@@ -405,11 +416,11 @@ These approaches can be used as compression methods. They're not gauranteed to a
 Consider the possibility of an algorithm, C(X), and a shannon-optimal compressor, S(X), such that the sum over all X of C(X) - S(X) is negatively infinite. That is to say, C(X) tends to perform better infinitely much As shannon-optimal compressor while being no slower. BDM already does this, but is there an algorithm which can do this without keeping track of a large database which takes exponential effort beforhand to calculate.
 
 It's actually fairly easy to outperform shannon-optimal compressors by infinitely much. Have a compressor do the following;
-  If it detects a string encoding "0, 1, 2, 3, 4, 5, ...," replace it with a flag indicating such and a number indicating how far the sequence counts.
-  For all other strings, replace them with the output of a shannon-optimal compressor.
+If it detects a string encoding "0, 1, 2, 3, 4, 5, ...," replace it with a flag indicating such and a number indicating how far the sequence counts.
+For all other strings, replace them with the output of a shannon-optimal compressor.
 Such a scheme would generally perform no worse than a shannon-optimal compressor while performing better by infinitely much; though the benifits clearly only apply to a small number of patterns overall, even if there are infinite many such patterns. This means that CTM will generally be able to improbe by infintiely much by adding entries to its database; but expanding this database takes exponential effort. Is there a way to do better? Is there a way to characterize how far this can go without exponential effort? Even if it doesn't cover as much of program space asymptotically, is there a way to grow the database forever using only, say, linear effort? Or quadratic? Or logorithmic? And could such things be efficiently sewed together so that we discover the easy things first and foremost, for even very large strings, and the hard things later?
 ```
-  1, 2, 3, ... 999999999, 1000000000
+1, 2, 3, ... 999999999, 1000000000
 ```
 Is easy to compress algorithmically, but I wouldn't expect BDM to do much better than statistical compression. I do believe that such things should be efficiently discoverable anyway, but not by CTM, as it stands.
 
@@ -423,13 +434,13 @@ For the purposes of ML, we don't care about decompression at all. What would be 
 
 Here another idea. This one is original to me, but I wouldn't be surprised if someone came up with something similar. Some models of computation can be ran backwards, nodeterministically. Specifically, models where every state can be reached in one step by only a finite number of transitions. This *can't* be done with the lambda calculus. If we were in a state λ x . λ f . f x x, that could have been reached in one step by
 ```
-  λx . (λ y . λ f . f y y) x
-  (λx . x) (λ x . λ f . f x x)
-  λ x . λ f . (λx . x) (f x x)
-  (λ x . λ y . x) (λ x . λ f . f x x) (λx . x)
-  (λ x . λ y . x) (λ x . λ f . f x x) (λx . x x)
-  (λ x . λ y . x) (λ x . λ f . f x x) (λx . x x x)
-  ...
+λx . (λ y . λ f . f y y) x
+(λx . x) (λ x . λ f . f x x)
+λ x . λ f . (λx . x) (f x x)
+(λ x . λ y . x) (λ x . λ f . f x x) (λx . x)
+(λ x . λ y . x) (λ x . λ f . f x x) (λx . x x)
+(λ x . λ y . x) (λ x . λ f . f x x) (λx . x x x)
+...
 ```
 and infinitely many other things. This means that running a lambda expression backwards implies enumerating infinite many possibilities at each step. The same applies for combinator logic.
 
@@ -589,11 +600,5 @@ The rest of the paper just goes through some usage examples. I don't feel the ne
 
 The conclusion section refers to the whole framework as a "symbolic inference engine" being integrated into traditional ML. I... wouldn't phrase it that way. There's not much inference and even less symbology. That being said, a type-sensitive version of these ideas might be better.
 
-
-
-
-
-
-
-
+I'm not satisfied with the methods presented in this paper. I'll keep a lot of its tequniques in mind, but I think I'd want to look at other methods. I think I'll look at those evolutionary methods next.
 
