@@ -537,9 +537,17 @@ Great! So, we know how to assess a model, how do we actually do optimization? Pr
 
 That's it. However, there are some complications that make me not entirely sure if this is right. It defines the cost function (the sum of squared Ks) to be `J_a(ˆX, M)`, where `ˆX` is our dataset, and `M` is the model we're assessing. However, the actual description of the algorithm tells us to use `J_a(ˆM, σ_i)`, where `σ_i` is the ith parameter in our parameter stream and `ˆM` is never defined. Presumedly, `ˆM` has something to do with our model, but it can't possibly be a replacement for `ˆX` since `ˆX` is just a collection of input-output pairs and our model is, obviously, not. Either there's an entirely separate loss function over models and parameters which is never defined, or there was a typo and the algorithm should have said `J_a(ˆX, M{σ_i})`, or something like that. The version I wrote seems pretty intuitive (if overly simplistic), so I'm leaning toward the latter.
 
-The paper states that this algorithm "can ['minimizes K(M) and minimize the cost function'] in an efficient amount of time". But, uh, no it doesn't. It does as bad as a brute force search because it is a brute force search. It goes on to say "the algorithmic parameter optimization always finds the lowest algorithmically complex parameters that fit the data `ˆX` within the halting condition [...] algorithmic parameter optimization will naturally be a poor performer when inferring models of high algorithmic complexity." Ya think? I'm not confident that this would work on anything but toy models, but, who knows, maybe I'm wrong and this actually works surprisingly well on real-world data, but I doubt it. The algorithm doesn't even try taking advantage of what it knows about good parameters.
+The paper states that this algorithm "can ['minimizes K(M) and minimize the cost function'] in an efficient amount of time". But, uh, no it doesn't. It does as bad as a brute force search because it is a brute force search. It goes on to say 
 
-As an aside, the paper mentions that "In the context of artificial evolution and genetic algorithms, it has been previously shown that, by using an algorithmic probability distribution, the exponential random search can be sped up to quadratic", giving a few citations. This seems more reasonable to me, as such methods aren't just brute-force searching.
+> the algorithmic parameter optimization always finds the lowest algorithmically complex parameters that fit the data `ˆX` within the halting condition [...] algorithmic parameter optimization will naturally be a poor performer when inferring models of high algorithmic complexity.
+
+Ya think? I'm not confident that this would work on anything but toy problems, but, who knows, maybe I'm wrong and this actually works surprisingly well on real-world data, but I doubt it. The algorithm doesn't even try taking advantage of what it knows about good parameters.
+
+As an aside, the paper mentions that
+
+> In the context of artificial evolution and genetic algorithms, it has been previously shown that, by using an algorithmic probability distribution, the exponential random search can be sped up to quadratic
+
+giving a few citations. This seems more reasonable to me, as such methods aren't just brute-force searching.
 
 This will be a bit of a digression, but if you read this far you probably don't care about that. The first example it uses is a regression problem on two variables. It says the following on the ability to enumerate the parameter space;
 
@@ -555,7 +563,7 @@ This entire paragraph is rather head-scratching. Computers certainly can fully r
 √2 - 1 = [2, 1, 1, 0, 0, 0, 0, 1, 0, 4, ...]
 π - 3 = [0, 1, 0, 1, 0, 0, 0, 6, 2, 1, 1, ... ]
 ```
-Alternatively, we can imagine each entry in a sequence `[a0, a1, a2, ...]` as representing a number as a continued fraction of the form
+Alternatively, we can imagine each entry in a sequence `[a0, a1, a2, ...]` as representing a number as a simple continued fraction of the form
 ```
 a0 - 1/ (a1 - 1/(a2 - 1/ ...))
 ```
@@ -609,7 +617,7 @@ so the authors know that π (and presumably other real numbers), in all of its i
 ```
 ℝ := (∀ X . X → (X → X) → X) → (∀ Y . Y → (Y → Y) → Y)
 ```
-generating them in order of algorithmic complexity is another story, but it's no harder than doing so for floating-point numbers.
+the output of such a procedure, if it were done in some breadth-first manner, would output real numbers in essentially algorithmic order.
 
 I think the authors need a crash course in [higher-type computability](https://www.springer.com/gp/book/9783662479919). There's a whole wide world that you're missing out on if you really believe computers can only represent discrete data types.
 
