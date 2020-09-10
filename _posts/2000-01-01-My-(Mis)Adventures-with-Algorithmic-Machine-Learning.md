@@ -507,7 +507,7 @@ The "prediction" made by a Gaussian model will be the mean, `μ`, and the likeli
 ```
 - Σ(i) log(e ^ - (yi - y_pred)² / 2 σ²)  / σ √(2 π) = (1 / σ³ √(8 π)) Σ(i) (yi - yi_pred)²
 ```
-which is exactly the squared error, modulo some constants we don't care about. And getting the average by dividing by the number of data points will get us the mean squared error, MSE. This should also illustrate that if you don't think it's reasonable to assume your data were randomly sampled from a gaussian distribution, then you should also not think it's reasonable to use the squared error without a similar derivation.
+which is exactly the squared error, modulo some constant we don't care about. And getting the average by dividing by the number of data points will get us the mean squared error, MSE. This should also illustrate that if you don't think it's reasonable to assume your data were randomly sampled from a gaussian distribution, then you should also not think it's reasonable to use the squared error without a similar derivation.
 
 Okay, so, what's the justification for squaring `K`? Let's think about this, what are the probabilities in our likelihood? Well, they'll be the algorithmic probabilities; the probability that a random program will output the datapoint when given our model's prediction as an input. The coding theorem says exactly that (within an additive constant) the Kolmogorov complexity of a program is the negative logarithm of the algorithmic probability, meaning the appropriate negative log-likelihood is exactly the sum of Ks.
 
@@ -587,8 +587,7 @@ We can construct a real number by fixing a type, `X`, giving an `X` as a seed, a
 ```
 or, if we want to be explicit about all our encodings;
 ```
-0 : ∃ X . (X → (∀ Y . Y → (Y → Y) → Y) × X) × X
- := λ p . p (λ x . λ p . p (λ z . λ s . z) (λ x . x)) (λ x . x)
+0 := λ p . p (λ x . λ p . p (λ z . λ s . z) (λ x . x)) (λ x . x)
 ```
 This means that the real number zero has, at most, about 32.511 bits of complexity; surprisingly small for something which is supposedly infinitely large.
 
