@@ -577,7 +577,9 @@ This can represent any nonnegative real number.
 √2 = [1, 2, 2, 2, 2, 2, ...]
 π - 3 = [3, 7, 15, 1, 292, 1, 1, ... ]
 ```
-whichever interpretation we use will determine how we define, for instance, addition, multiplication, etc. Following [Recursive types for free!](https://homepages.inf.ed.ac.uk/wadler/papers/free-rectypes/free-rectypes.txt), the (weak) final coalgebra of `X ↦ ℕ × X` can simply be defined as
+whichever interpretation we use will determine how we define, for instance, addition, multiplication, etc. Note that there are some complications with representing real numbers as continued fractions in this way. Notably, that some numbers don't have unique representations. While I understand these caveats, I don't understand how to solve them, though I've been told that such solutions are "various".
+
+Following [Recursive types for free!](https://homepages.inf.ed.ac.uk/wadler/papers/free-rectypes/free-rectypes.txt), the (weak) final coalgebra of `X ↦ ℕ × X` can simply be defined as
 ```
 ∃ X . (X → ℕ × X) × X
 ```
@@ -605,18 +607,25 @@ So we can redefine the nonnegative reals as just functions from `ℕ → ℕ`. N
 ```
 0 := λ n . λ z . λ s . z
 ```
-as the constant function which just returns `0` for any input. This has only about 6.9 bits! Not bad for representing infinite many digits. It would actually be MORE complex if we truncated it to finitely many digits.
+as the constant function which just returns `0` for any input. This has only about 6.9 bits! Not bad for representing infinite many digits. It would actually be MORE complex if we truncated it to finitely many digits. We may even notice that the least complex real number will simply be encoded by the identity function. This will be the number who's continued fraction is `[0, 1, 2, 3, 4, ...]`. As it turns out, this number is
+```
+I₁(2)/I₀(2) ≈ 0.697775
+```
+where the `I`s are [Bessel I](https://en.wikipedia.org/wiki/Bessel_function#Modified_Bessel_functions:_I%CE%B1,_K%CE%B1) functions. This is called the "Continued Fraction Constant". Or, if we were interpreting the number as representing the binary expansion, this would be
+```
+2 - ϑ₂(1 / √2) / 2 ^ (7/8) ≈ 0.358367
+```
+Where ϑ is an [elliptic theta](https://mathworld.wolfram.com/JacobiThetaFunctions.html) function. I don't know if this constant has a name, but I couldn't find it anywhere.
 
 Anyway, my whole point with this exercise was to show we can represent real numbers, and many other mathematical structures besides, just fine on computers. We don't, and, in fact, shouldn't use floating-point numbers if we're going to take algorithmic complexity seriously. The original BDM paper mentions π a few times, saying, for instance,
 
 > the digits of π have been shown to be independent (at least in powers of 2) from each other [1] and only algorithmic in the way they are produced from any of the many known generating formulas
 
-
 so the authors know that π (and presumably other real numbers), in all of its infinite digits, can be represented by an algorithm. But in this paper, they insist on using floating-point numbers. Why? The paper just says that the parameter space becomes enumerable, but we can effectively enumerate the (constructive) reals by enumerating all the inhabitants of the type
 ```
 ℝ := (∀ X . X → (X → X) → X) → (∀ Y . Y → (Y → Y) → Y)
 ```
-the output of such a procedure, if it were done in some breadth-first manner, would output real numbers in essentially algorithmic order.
+the output of such a procedure, if it were done in some breadth-first manner, would output encodings for real numbers in essentially algorithmic order.
 
 I think the authors need a crash course in [higher-type computability](https://www.springer.com/gp/book/9783662479919). There's a whole wide world that you're missing out on if you really believe computers can only represent discrete data types.
 
