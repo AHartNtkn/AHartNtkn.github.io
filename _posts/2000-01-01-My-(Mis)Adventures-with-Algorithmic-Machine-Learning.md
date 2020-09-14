@@ -79,7 +79,12 @@ It's unclear how much labor is actually saved when using the approximation lists
 
 This method is based on a generic property of compression-decompression pairs. As it turns out, we can, while incurring polylogarithmic overhead in the size of the compressed string, replace a (potentially non-computable) compression algorithm and its decompressor with a pair consisting of an efficient compressor and a potentially inefficient decompressor. By fixing our compressor-decompressor pair to be `K` and `E` (the function that simply evaluates a program), we can get a new compression-decompression pair that will compress inputs to a length which differs, at most, polylogarithmically from `K`. This compressor would not get us smaller, equivalent programs, but, if our goal is to simply approximate the size of a hypothetical Kolmogorov-compressed program, this should work fine.
 
-I don't yet understand the technical details, but the paper can be found here;
+The basic idea is the following; rather than trying to find the actual smallest compressed string, instead only generate a small "fingerprint" which would allow you to identify what the smallest compressed string might be. The decompressor then just generates a list of candidates, perhaps exhaustively, and uses the fingerprint to find and run it by brute force.
+
+Depending on how much work we're willing to put into making this fingerprint, we can get it down to a pretty small size. According to the paper, it can be made within `K(X) + O(log(X))` with only polynomial effort in the size of the string.
+
+I don't fully understand how this technique works. It's tied up in a lot of the theory that List Approximation uses as well. It's concepts come from the theory of pseudorandomness; something I'll have to become more familiar with.
+See
   - [Universal almost optimal compression and Slepian-Wolf coding in probabilistic polynomial time](https://arxiv.org/abs/1911.04268)
 
 ---
@@ -563,6 +568,16 @@ This entire paragraph is rather head-scratching. Computers certainly can fully r
 √2 - 1 = [2, 1, 1, 0, 0, 0, 0, 1, 0, 4, ...]
 π - 3 = [0, 1, 0, 1, 0, 0, 0, 6, 2, 1, 1, ... ]
 ```
+Of course, we can map this back on to the non-negative reals by interpreting each number `x` as `1/(1-x) - 1` instead. Then we'd have
+```
+0 = [0, 0, 0, ...]
+0.1 = [0, 0, 0, 1, 3, 1, 0, 0, 1, 3, 1, 0,...]
+0.2 = [0, 1, 1, 1, 1, 1, 1, 1 ...]
+3 = [2, 0, 0, 0, 0, 0 ...]
+√2 = [1, 0, 1, 1, 5, 2, 0, 0, ...]
+π = [2, 0, 0, 0, 1, 0, 0, 2, 0, 0 ... ]
+e = [1, 3, 2, 0, 1, 0, 2, 1, ... ]
+```
 Alternatively, we can imagine each entry in a sequence `[a0, a1, a2, ...]` as representing a number as a simple continued fraction of the form
 ```
 a0 - 1/ (a1 - 1/(a2 - 1/ ...))
@@ -615,7 +630,7 @@ where the `I`s are [Bessel I](https://en.wikipedia.org/wiki/Bessel_function#Modi
 ```
 2 - ϑ₂(1 / √2) / 2 ^ (7/8) ≈ 0.358367
 ```
-Where ϑ is an [elliptic theta](https://mathworld.wolfram.com/JacobiThetaFunctions.html) function. I don't know if this constant has a name, but I couldn't find it anywhere.
+Where ϑ is an [elliptic theta](https://mathworld.wolfram.com/JacobiThetaFunctions.html) function. I don't know if this constant has a name, but I couldn't find it anywhere. When using our previous map to get the full reals, this becomes `≈ 0.558524`.
 
 Anyway, my whole point with this exercise was to show we can represent real numbers, and many other mathematical structures besides, just fine on computers. We don't, and, in fact, shouldn't use floating-point numbers if we're going to take algorithmic complexity seriously. The original BDM paper mentions π a few times, saying, for instance,
 
