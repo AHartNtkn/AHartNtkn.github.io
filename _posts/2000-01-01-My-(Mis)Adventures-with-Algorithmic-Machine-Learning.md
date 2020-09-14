@@ -426,6 +426,7 @@ Generating programs with specific, even simple, types is highly nontrivial. It's
 - [Type-and-Example-Directed Program Synthesis](https://dl.acm.org/doi/pdf/10.1145/2813885.2738007)
 - [Example-Directed Synthesis: A Type-Theoretic Interpretation](http://www.jfrankle.com/refinements-popl-16.pdf)
 - [Program Synthesis from Polymorphic Refinement Types](https://dl.acm.org/doi/pdf/10.1145/2980983.2908093)
+- [Generating Constrained Test Data using Datatype Generic Programming](https://dspace.library.uu.nl/bitstream/handle/1874/383386/thesis.pdf?sequence=2)
 
 This may be leverageable for some applications. In fact, I'd guess most applications could leverage this.
 
