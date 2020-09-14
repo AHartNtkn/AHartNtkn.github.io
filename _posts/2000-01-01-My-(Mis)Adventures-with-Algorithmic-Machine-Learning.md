@@ -573,8 +573,8 @@ Of course, we can map this back on to the non-negative reals by interpreting eac
 0 = [0, 0, 0, ...]
 0.1 = [0, 0, 0, 1, 3, 1, 0, 0, 1, 3, 1, 0,...]
 0.2 = [0, 1, 1, 1, 1, 1, 1, 1 ...]
-3 = [2, 0, 0, 0, 0, 0 ...]
 √2 = [1, 0, 1, 1, 5, 2, 0, 0, ...]
+3 = [2, 0, 0, 0, 0, 0 ...]
 π = [2, 0, 0, 0, 1, 0, 0, 2, 0, 0 ... ]
 e = [1, 3, 2, 0, 1, 0, 2, 1, ... ]
 ```
@@ -590,7 +590,7 @@ This can represent any nonnegative real number.
 0.2 = [0, 5, 0, 0, 0, ...]
 1/3 = [0, 3, 0, 0, 0, ...]
 √2 = [1, 2, 2, 2, 2, 2, ...]
-π - 3 = [3, 7, 15, 1, 292, 1, 1, ... ]
+π = [3, 7, 15, 1, 292, 1, 1, ... ]
 ```
 whichever interpretation we use will determine how we define, for instance, addition, multiplication, etc. Note that there are some complications with representing real numbers as continued fractions in this way. Notably, that some numbers don't have unique representations. While I understand these caveats, I don't understand how to solve them, though I've been told that such solutions are "various".
 
