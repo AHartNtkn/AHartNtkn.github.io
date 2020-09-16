@@ -141,7 +141,7 @@ Both `X` and `Y` are bound twice, once in defining CTM and once by the sum itsel
 
 The simplest fix is to simply make `P` a multiset which may contain multiple copies of any given pair. The calculation should then be;
 ```
-CTM(x|y) = log₂( |[ p ∈ P | p == (x, y) ]| / |P| )
+CTM(x|y) = log₂( |[ p ∈ P : p == (x, y) ]| / |P| )
          = log₂ Σ{p ∈ P} if p == (x, y) then 1/|P| else 0
 ```
 This may be off, but this is the closest thing to the original paper I could think of. It just calculates the log-likelihood of a random program covered by `P` outputing `x` on input `y`. Except, there are a few problems with this. Firstly, this quantity will always be negative since `log(X) < 0` when `0 < X < 1`. `K` can never be negative. Even if we fix this, there's still a bigger issue. This CTM definition assumes that all programs are uniformly random, but they aren't. Think of the procedure we'd go through when generating a random program. Assuming our choices are uniformly distributed, the programs we generate won't be. If we assume our programs are binary strings, then we will, at each point, make one of three choices; add a `0`, add a `1`, or end the string. If each choice is uniformly sampled, then there will be a one third chance of generating the empty string, a one in nine chance of generating `1`, and about a one in 60,000 chance of generating `001101001`. The chance of generating a program decays exponentially with the length of the program. This observation is build into algorithmic probability, and it's weird that the CTM measure, as described in this paper, ignores that.
@@ -417,7 +417,7 @@ This also seems similar to finding smaller extensionally equivalent expressions 
 λ f . f
 λ f . λ x . f x
 ```
-This only ceases to be a problem if you have some sort of typing discipline which can allow you to infer the number of arguments an expression expects. You can then assess eta-equivalence up to that number of arguments while also guaranteeing preservation of expected behavior up to the type of the full expression you're compressing. This may be particularly relevant to incremental compression.
+This only ceases to be a problem if you have some sort of typing discipline which can allow you to infer the number of arguments an expression expects. You can then assess extensional equivalence up to that number of arguments while also guaranteeing the preservation of expected behavior up to the type of the full expression you're compressing. This, of course, doesn't work on extensional equivalences which require some elimination principle to justify; e.g. the equivalence of merge sort with quicksort. This may be particularly relevant to incremental compression.
 
 ---
 
@@ -479,6 +479,12 @@ Start with our output string. Enumerate every end-state involving this machine. 
 For parallel models of computation, such as interaction nets, we can optimize this further by treating the (backward) transformations of different segments of the program independently and only combine the timelines when they start interacting.
 
 A further optimization, which would make finding small programs easier but would make finding values verifiably close to `K` harder, is to iteratively compress programs. We run a program backward only until it shrinks. We then abandon all other search branches and start over with the new, smaller program. Doing this over and over may allow one to effectively find and run recursive programs that generate an output backward much more efficiently than an unpruned search.
+
+---
+
+Here's another idea. In CTM, we're enumerating all programs and seeing what they output. It may, instead, be better to enumerate programs and then filter them for randomness. Essentially, we'd build up a database by looking at each program in algorithmic order. We'd try building that program from the programs already in the database. If we can't build it using the existing elements in the database in a way that's smaller than what we're trying to build the thing we're looking at is algorithmically random and we add it to the database as a random "atom". This should significantly cut down on the combinatorial explosion, though, I'm pretty sure it would still be exponential.
+
+There may be a simple way to do this while exploiting existing ATP technology. Generate every program. Give each program a simple type. Treat this type as a theorem of intuitionistic propositional logic. Do the previously described procedure, trying to find the proof who's dependencies have the smallest collective information. If this total information is greater than the information in the theorem being proved then the theorem represents an algorithmically random program. This would also work up to extensional equivalence. 
 
 ---
 
