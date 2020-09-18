@@ -195,11 +195,11 @@ is not a valid context since `b` is bound after it's mentioned in `f`. We need t
 Category context formation rules
 ⊢ Γ ps (x : *)                        ⊢ Γ ps (f : x → y)
 --------------  --------------------  ------------------
-   ⊢ Γ ctx      ⊢ (x : *) ps (x : *)    ⊢ Γ ps (y : *)
+   ⊢ Γ ctx      ⊢ [x : *] ps (x : *)    ⊢ Γ ps (y : *)
 
            ⊢ Γ ps (x : *)                      
 ----------------------------------------
-⊢ Γ, (y : *), (f : x → y) ps (f : x → y)
+⊢ [Γ, y : *, f : x → y] ps (f : x → y)
 ```
 The `ps` judgement, standing for "pasting scheme", allows us to locate the source of any prospective morphisms we might want to add to our context. This will, thankfully, only need to be barely modified when we go to higher dimensions. Substitution is identical to the rule used for monoids;
 ```
@@ -219,7 +219,7 @@ Category operation formation rule
 `tar(Γ)` will be the last thing of type `*` mentioned, while `src(Γ)` will just be the first thing in the list. The only difference between this rule and the one for ω-categories will be how sources and targets of pasting schemes are calculated. 
 We'll also need an extra one for identity morphisms;
 ```
-Category operation formation rule
+Category identity formation rule
               Δ ⊢ A : *
 ----------------------------------
 Δ ⊢ op [x : *] [A] (x → x) : A → A
@@ -234,7 +234,6 @@ Category coherence formation rule
 ```
 Using this, we can derive the unbiased versions of any ordinary conherence of a category.
 
-
 Like with monoids, we can formulate the infinite many unbiased operations we might define for composing morphisms.
 
 ```
@@ -246,35 +245,229 @@ coh [x : *, y : *, f : x → y] [a, b, v] (f ∘ id y = f) : v ∘ id b = v
 ...
 ```
 
-The only equations of a category are the associativitiy and identity cancelation laws. These are just the monoid laws, but with extra conditions on how compositions are allowed to be formed. In particular, the canonical representti
+Now, we're finally prepared to go for the full ω-categorical case. We now not only have objects and morphisms between them, but higher n-cells between any (n-1)-cells. This means we need to generalize our type formation rules;
 
+```
+ω-Category type formation rules
+           ⊢ a : A    ⊢ b : A
+--------   ------------------
+⊢ * type      ⊢ a → b type
+```
 
+We are ultimately going to represent the higher compositions as lists with restricted formation rules; just like with regular categories. Consider this diagram of a pasting scheme in a 2-category.
 
+![Labeled 2-Cell](../img/omegacat/Labeled2Cell.png)
 
+We can give a canonical ordering to each of the cells simply by placing each cell in between its source and target;
+```
+[x,
+   f, 
+     a, 
+   g,
+     b, 
+   h, 
+ y, 
+   f',
+      a', 
+   g', 
+      b', 
+   h', 
+ z]
+```
+Like before, if we turn this into a context it will be ill-formed. As such, we need to rearange this list so that its target is stated beforhand.
+```
+[x : *,
+ y : *, f  : x → y, 
+        g  : x → y, a  : f → g, 
+        h  : x → y, b  : g → h, 
+ z : *, f' : y → z, 
+        g' : y → z, a' : f' → g', 
+        h' : y → z, b' : g' → h']
+```
+The rules neccessary to parse this context is barely different then that for ordinary categories;
+```
+ω-Category context formation rules
+⊢ Γ ps (x : *)                        ⊢ Γ ps (f : x → y)
+--------------  --------------------  ------------------
+   ⊢ Γ ctx      ⊢ [x : *] ps (x : *)    ⊢ Γ ps (y : A)
 
+           ⊢ Γ ps (x : A)                      
+----------------------------------------
+⊢ [Γ, y : A, f : x → y] ps (f : x → y)
+```
+To construct the above context, we'd do, roughly, the following;
+```
+------------------
+[x : *] ps (x : *)
+--------------------------------------
+[x : *, y : *, f : x → y] ps f : x → y
+------------------------------------------------------------
+[x : *, y : *, f : x → y, g : x → y, a : f → g] ps a : f → g
+------------------------------------------------------------
+[x : *, y : *, f : x → y, g : x → y, a : f → g] ps g : x → y
+----------------------------------------------------------------------------------
+[x : *, y : *, f : x → y, g : x → y, a : f → g, h : x → y, b : g → h] ps b : g → h
 
+...
 
+..., a' : f' → g'] ps g' : y → z
+------------------------------------------------------------
+..., a' : f' → g', h' : y → z, b' : g' → h'] ps b' : g' → h'
+------------------------------------------------------------
+..., a' : f' → g', h' : y → z, b' : g' → h'] ps h' : y → z
+----------------------------------------------------------
+..., a' : f' → g', h' : y → z, b' : g' → h'] ps z : *
+-----------------------------------------------------
+..., a' : f' → g', h' : y → z, b' : g' → h'] ctx
+```
+In practice, this calculation would be run in reverse by a computer, as a form of parsing.
 
+Substitution is, verbatum, identical to that for categories;
+```
+ω-Category substitution formation rules
+                  Δ ⊢ σ sub Γ     Δ ⊢ a : A[σ/Γ]
+-------------     ------------------------------
+Δ ⊢ [] sub []         Δ ⊢ σ, a sub Γ, (x : A)
+```
+The operation formation rule is also, nearly, the same.
+```
+ω-Category operation formation rule
+⊢ Γ ctx    Δ ⊢ σ sub Γ    FV(tar(Γ)) = FV(Γ)
+   Γ ⊢ S → T type      FV(src(Γ)) = FV(S)    
+--------------------------------------------
+    Δ ⊢ op Γ σ (S → T) : S[σ/Γ] → T[σ/Γ]
+```
+However, we need to be clear on how to calculate the source and target of a context. It may help to look at the previous picture of a pasting scheme. The pasting scheme has a dimension, `dim(Γ)`. The pictured example is of dimension 2. All its component cells have a particular dimension. 
 
+The targets of the whole scheme consists of all the cells which have dimension `< dim(Γ) - 1` (in this case, that's just the 0 dimensional cells, `x`, `y`, and `z`) and all cells of dimension `dim(Γ) - 1` which *don't* appear as the *source* of any other cells (in this case, that's the two 1 dimensional cells `h` and `h'`).
 
+The targets of the whole scheme consists of all the cells which have dimension `< dim(Γ) - 1` (in this case, that's just the 0 dimensional cells, `x`, `y`, and `z`) and all cells of dimension `dim(Γ) - 1` which *don't* appear as the *target* of any other cells (in this case, that's the two 1 dimensional cells `f` and `f'`).
 
+On a computer, calculating the source and target is a simple filtering program.
 
+We don't need a dedicated identity formation rule. In ω-categories, all the equations become equivalences; cells in our category which are invertable. As a consiquence, we only need a single formation rule to cover all the invertable cells; this includes identities.
+```
+ω-Category coherence formation rule
+  ⊢ Γ ctx    Δ ⊢ σ sub Γ
+Γ ⊢ A type    FV(A) = FV(Γ)
+---------------------------
+  Δ ⊢ coh Γ σ A : A[σ/Γ]
+```
+As you can see, the rule is much simpler than before as we've now generalized and consolidated much of the reasoning which was specialized for ordinary categories.
 
+And that's it! That's the whole definition of an ω-Category. We can now use it to derive all the prinipals we want. Here are the basic ones;
+```
+id(a) = coh [x : *] [a] (x → x)
+u ∘ v = op [x : *, y : *, f : x → y, z : *, g : y → z] [_,_,u,_,v] (x → z)
 
+id-canc-ll = coh [x : *, y : *, f : x → y] [...] (id(x) ∘ f → f)
+id-canc-rl = coh [x : *, y : *, f : x → y] [...] (f ∘ id(y) → f)
+id-canc-lr = coh [x : *, y : *, f : x → y] [...] (f → id(x) ∘ f)
+id-canc-rr = coh [x : *, y : *, f : x → y] [...] (f → f ∘ id(y))
+...
 
+assoc-lr =
+  coh [x : *,
+       y : *, f : x → y,
+       z : *, g : y → z,
+       w : *, h : z → w]
+      [...]
+      ((f ∘ g) ∘ h → f ∘ (g ∘ h))
 
+assoc-rl =
+  coh [x : *,
+       y : *, f : x → y,
+       z : *, g : y → z,
+       w : *, h : z → w]
+      [...]
+      (f ∘ (g ∘ h) → (f ∘ g) ∘ h)
+...
+```
+We can go on to define the higher-dimensional compositions
+```
+vert(al, be) =
+  op [x : *,
+      y : *, f : x → y,
+           , g : x → y, a : f → g
+           , h : x → y, b : g → h]
+      [_,_,_,_,al,_,be]
+      (f → h)
+  
+horiz(al, be) =
+  op [x : *,
+      y : *, f : x → y,
+           , g : x → y, a : f → g
+      z : *, h : y → z, 
+             i : y → z, b : h → i]
+      [_,_,_,_,al,_,_,_,be]
+      (f ∘ g → h ∘ i)
+```
+and we can finally make use of our original context to prove the exchange law; that horizontal and vertical composition commute;
+```
+exchange =
+  coh [x : *,
+       y : *, f  : x → y, 
+              g  : x → y, a  : f → g, 
+              h  : x → y, b  : g → h, 
+       z : *, f' : y → z, 
+              g' : y → z, a' : f' → g', 
+              h' : y → z, b' : g' → h']
+  [...]
+  (vert(horiz(a, a'), horiz(b, b')) → horiz(vert(a, b), vert(a', b')))
+```
+And the verification of this is litterally just making sure the context is a valid pasting scheme that shares all its variables with the ouput type. We don't even need to do any geometric reasoning; it's all a trivial syntactic check.
 
+This system is called "CaTT". There are a few implementions of it, the most developed being [this one](https://github.com/ericfinster/catt.io). You will likely find the examples in that repository useful.
 
+At this point, I'd like to end on a few miscilanious thoughts. Firstly, we can keep going. By modifying our notion of pasting scheme futher we can get other mathematical structures. The [periodic table of n-categories](https://ncatlab.org/nlab/show/periodic+table) tells us, among other things, that trivializing the first dimension of our context will turn our categories into monoidial categories. This, in essence, just means cutting our pasting schemes up at their first dimension so our contexts become lists of pasting schemes. With that, we have all the infinite dimensional algebra plus some canonical ways to construct new objects;
+```
+a × b =
+  op [[x : *], [y : *]]
+     [[a], [b]]
+     *
 
+1 = op [] [] *
+
+1-cancl = coh [[x : *]] [_] (1 × x → x)
+1-cancr = coh [[x : *]] [_] (x × 1 → x)
+...
+```
+This is fully expanded upon in
+  - [Monoidal weak ω-categories as models of a type theory](http://www.lix.polytechnique.fr/~tbenjamin/articles/publications/monoidal.pdf)
+
+Futher k-tuply monoidal ω-categories could certainly be made by furthering this construction. More speculatively, I do wonder how sophisticated we can make this. If, hypothetically, we could devise a way to construct canonical contexts in the shape of objects in a topos, then it would basically become an unbiased presentation of ordinary intuitionistic type theory with Pi-types, Sigma-types, etc. I don't think that would be possible, but that paper speculates on at least having closed-monoidal ω-categories, which should be structurally very rich. 
 
 Incidently, it is possible to present globular ω-categories in a biased manner. We'd need to define two infinite families of composition and identity operations for every direction in every dimension. This is done, for instance, in 
  - [Steps toward the weak higher category of weak higher categories in the globular setting](http://cgasa.sbu.ac.ir/article_11180_b13cacfd9afe5780932141c269d0add6.pdf)
 
+Lastly, I'd like to make a point about free theorems, functors, and natural transformations. After all this higher-category stuff became intuitive, some properties of structure-preserving maps became obvious special cases of cell properties in higher categories. Functors `F : C → D` have the property that, given a morphism between objects `a` and `b` in the category `C`, we have a morphism between `F(a)` and `F(b)`. Functors are just morphisms in `Cat`, the category of categories. Objects are morphisms from the unit category, `𝟙`, to the object `C` in `Cat`. Morphisms in `C` are then 2-cells between maps between `𝟙` and `C`. We can define the functor map as an operation out of the context defined by the pasting scheme
 
+![Functor Map Pasting Scheme](../img/omegacat/FMapPS.png)
 
+The operation will have type `a ∘ F → b ∘ F`, where `a ∘ F` is the internal cell of `Cat` corresponding to `F(a)`. Hence, the map out of `F` is exactly a right-whiskering by `F`.
 
+The identity `fmap (id a) → id (F(a))` is derivable as a coherence out of the pasting scheme
 
+![Functor Identity Pasting Scheme](../img/omegacat/FMapIdPS.png)
 
+The identity `fmap (f ∘ g) → F(f) ∘ F(g)` is derivable as a coherence out of the pasting scheme
 
+![Functor Composition Pasting Scheme](../img/omegacat/FMapCompPS.png)
 
+The basic rules for natural transformations come from the same place. The basic naturality property states that, given a natural transformation `α : F → G`, we have a canonical natural map `α(a) : F(a) → G(a)`, generated as an operation out of the pasting scheme;
 
+![Natural Map Pasting Scheme](../img/omegacat/NatMapPS.png)
+
+So the naturality map is just right-whisterking by the thing we're maping over. The basic naturality property, that
+```
+fmap(F) ∘ α(b) = α(a) ∘ fmap(G)
+```
+is a coherence generated by the pasting scheme
+
+![Naturallity Pasting Scheme](../img/omegacat/NatPS.png)
+
+It's all quite astonishing to me that these structural principals emerge as mere syntactic properties. I suspect that other structural principals can be defined similarly, though I haven't figured out how to do so. For the moment, I'm thinking about doing this for internal monoid homomorphisms.
+
+...
+
+And that's all I have to say.
