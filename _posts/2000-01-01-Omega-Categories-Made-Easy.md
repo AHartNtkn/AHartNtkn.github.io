@@ -341,9 +341,9 @@ The operation formation rule is also, nearly, the same.
 ```
 However, we need to be clear on how to calculate the source and target of a context. It may help to look at the previous picture of a pasting scheme. The pasting scheme has a dimension, `dim(Γ)`. The pictured example is of dimension 2. All its component cells have a particular dimension. 
 
-The targets of the whole scheme consists of all the cells which have dimension `< dim(Γ) - 1` (in this case, that's just the 0 dimensional cells, `x`, `y`, and `z`) and all cells of dimension `dim(Γ) - 1` which *don't* appear as the *source* of any other cells (in this case, that's the two 1 dimensional cells `h` and `h'`).
+The target of the whole scheme consists of all the cells which have dimension `< dim(Γ) - 1` (in this case, that's just the 0 dimensional cells, `x`, `y`, and `z`) and all cells of dimension `dim(Γ) - 1` which *don't* appear as the *source* of any other cells (in this case, that's the two 1 dimensional cells `h` and `h'`).
 
-The targets of the whole scheme consists of all the cells which have dimension `< dim(Γ) - 1` (in this case, that's just the 0 dimensional cells, `x`, `y`, and `z`) and all cells of dimension `dim(Γ) - 1` which *don't* appear as the *target* of any other cells (in this case, that's the two 1 dimensional cells `f` and `f'`).
+The source of the whole scheme consists of all the cells which have dimension `< dim(Γ) - 1` (in this case, that's just the 0 dimensional cells, `x`, `y`, and `z`) and all cells of dimension `dim(Γ) - 1` which *don't* appear as the *target* of any other cells (in this case, that's the two 1 dimensional cells `f` and `f'`).
 
 On a computer, calculating the source and target is a simple filtering program.
 
@@ -404,7 +404,7 @@ horiz(al, be) =
       [_,_,_,_,al,_,_,_,be]
       (f ∘ g → h ∘ i)
 ```
-and we can finally make use of our original context to prove the exchange law; that horizontal and vertical composition commute;
+and we can finally make use of our original context to prove the exchange law; that horizontal and vertical composition commute
 ```
 exchange =
   coh [x : *,
