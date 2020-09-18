@@ -422,21 +422,21 @@ This system is called "CaTT". There are a few implementions of it, the most deve
 
 At this point, I'd like to end on a few miscilanious thoughts. Firstly, we can keep going. By modifying our notion of pasting scheme futher we can get other mathematical structures. The [periodic table of n-categories](https://ncatlab.org/nlab/show/periodic+table) tells us, among other things, that trivializing the first dimension of our context will turn our categories into monoidial categories. This, in essence, just means cutting our pasting schemes up at their first dimension so our contexts become lists of pasting schemes. With that, we have all the infinite dimensional algebra plus some canonical ways to construct new objects;
 ```
-a × b =
+a ⨂ b =
   op [[x : *], [y : *]]
      [[a], [b]]
      *
 
 1 = op [] [] *
 
-1-cancl = coh [[x : *]] [_] (1 × x → x)
-1-cancr = coh [[x : *]] [_] (x × 1 → x)
+1-cancl = coh [[x : *]] [_] (1 ⨂ x → x)
+1-cancr = coh [[x : *]] [_] (x ⨂ 1 → x)
 ...
 
-×-assoc = coh [[x : *], [y : *], [z : *]] [...] ((x × y) × z → x × (y × z))
+⨂-assoc = coh [[x : *], [y : *], [z : *]] [...] ((x ⨂ y) ⨂ z → x ⨂ (y ⨂ z))
 ...
 
-×-func-1 = coh [[x : *, y : *, f : x → y], [z : *]] [...] (x × z → y × z)
+⨂-func-1 = coh [[x : *, y : *, f : x → y], [z : *]] [...] (x ⨂ z → y ⨂ z)
 ...
 ```
 This is fully expanded upon in
