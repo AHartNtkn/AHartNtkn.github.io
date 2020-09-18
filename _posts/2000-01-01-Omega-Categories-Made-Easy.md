@@ -38,14 +38,14 @@ These equations can then be used to justify other, more sophisticated equations.
 ```
 The presentation I've just given is called a "biased" presentation. This is because I'm prioritizing a single operation and especting all others to be formed out of it. Monoids have an infinite number of n-ary operations which can be defined out of multiplication.
 ```
-3∘1(a, b, c)    = (a ∘ b) ∘ c 
-3∘2(a, b, c)    = a ∘ (b ∘ c)
-4∘1(a, b, c, d) = 3∘1(a, b, c) ∘ d
+prod31(a, b, c)    = (a ∘ b) ∘ c 
+prod32(a, b, c)    = a ∘ (b ∘ c)
+prod41(a, b, c, d) = prod31(a, b, c) ∘ d
 ...
 ```
 and an infinite number of coherence equations to go along with them. For example;
 ```
-a ∘ 3∘2(b, c, d) = 4∘(a, b, c, d)
+a ∘ prod32(b, c, d) = prod4(a, b, c, d)
 ```
 A presentation of a monoid in terms of these infinite operators and coherences is said to be "unbiased". While doing this isn't so useful for monoids, it is neccesary for more sophisticated algebras, like ω-categories, where one can't generate all the operations and equations from a small subset. It will be helpful to see how to do this for monoids since its one of the simplest cases.
 
@@ -116,27 +116,28 @@ That's it. We now have a canonical way to construct any and all infinite equatio
 1               = op [] []
 a ∘ b           = op [x : *, y : *] [a, b]
 
-coh [x : *] [a] (x ∘ 1 = x) : a ∘ 1 = a
+idcanc =
+  coh [x : *] [_] (x ∘ 1 = x)
 
-3∘1(a, b, c)    = (a ∘ b) ∘ c 
-3∘2(a, b, c)    = a ∘ (b ∘ c)
-4∘1(a, b, c, d) = 3∘1(a, b, c) ∘ d
+prod31(a, b, c)    = (a ∘ b) ∘ c 
+prod32(a, b, c)    = a ∘ (b ∘ c)
+prod41(a, b, c, d) = prod31(a, b, c) ∘ d
 
-coh [x : *, y : *, z : *, w : *]
-    [a, b, c, d]
-    (x ∘ 3∘2(y, z, w) = 4∘1(x, y, z, w))
-   : a ∘ 3∘2(b, c, d) = 4∘1(a, b, c, d)
+example = 
+  coh [x : *, y : *, z : *, w : *]
+      [_, _, _, _]
+      (x ∘ prod32(y, z, w) = prod41(x, y, z, w))
 ```
 The justification for that final rule is super duper simple. Literally all we do is check that the expressions are well formed and that both sides of the equation mention all the variables in the context. This will also be the only thing we need going all the way to ω-categories. Before we get there, let me digress a bit.
 
 Let's make a type theory where every object is a magma. Objects within a magma can only be constructed in one way, via a multiplication operation. This operation satisfies no equations whatsoever. However, in the unbiased theory, there are equations. For example;
 ```
-3∘1(a, b, c)    = (a ∘ b) ∘ c 
-4∘1(a, b, c, d) = (a ∘ b) ∘ (c ∘ d)
+prod31(a, b, c)    = (a ∘ b) ∘ c 
+prod42(a, b, c, d) = (a ∘ b) ∘ (c ∘ d)
 ```
 gives us
 ```
-4∘1(a, b, c, d) = 3∘1(a, b, c ∘ d)
+prod42(a, b, c, d) = prod31(a, b, c ∘ d)
 ```
 Magmas, despite their triviality, do have an equational theory. This comes form the fact that binary trees can be used as a canonical representation of terms in a magma in much the same way lists are for terms in a monoid. If we modify the context formation rules so they are built like trees;
 ```
@@ -155,12 +156,12 @@ Magma substitution formation rules.
 The operation and coherence rules are exactly the same. Using them, we can expose the interesting equational theory of an unbiased magma.
 ```
 a ∘ b        = op ((x : *) ∘ (y : *)) (a ∘ b)
-3∘1(a, b, c) = op (((x : *) ∘ (y : *)) ∘ (z : *)) ((a ∘ b) ∘ c) 
+prod31(a, b, c) = op (((x : *) ∘ (y : *)) ∘ (z : *)) ((a ∘ b) ∘ c) 
 
-coh (((x : *) ∘ (y : *)) ∘ (z : *))
-    ((a ∘ b) ∘ c)
-    (3∘1(x, y, z) = (x ∘ y) ∘ z)
-  : 3∘1(a, b, c) = (a ∘ b) ∘ c
+example =
+  coh (((x : *) ∘ (y : *)) ∘ (z : *))
+    ((_ ∘ _) ∘ _)
+    (prod31(x, y, z) = (x ∘ y) ∘ z)
 ```
 We can summarize the general procedure for getting unbiased theories as follows;
 
@@ -237,11 +238,12 @@ Using this, we can derive the unbiased versions of any ordinary conherence of a 
 Like with monoids, we can formulate the infinite many unbiased operations we might define for composing morphisms.
 
 ```
-id a  = op [x : *] [a] : a → a
-u ∘ v = op [x : *, y : *, f : x → y, z : *, g : y → z] [a, b, u, c, v] : a → c
+id a  = op [x : *] [a] (x → x)
+u ∘ v = op [x : *, y : *, f : x → y, z : *, g : y → z] [_, _, u, _, v] (x → z)
 (note that this is in compositional order rather than applicative order)
 
-coh [x : *, y : *, f : x → y] [a, b, v] (f ∘ id y = f) : v ∘ id b = v
+idcancR = 
+  coh [x : *, y : *, f : x → y] [...] (f ∘ id y = f)
 ...
 ```
 
@@ -431,6 +433,12 @@ a × b =
 1-cancl = coh [[x : *]] [_] (1 × x → x)
 1-cancr = coh [[x : *]] [_] (x × 1 → x)
 ...
+
+×-assoc = coh [[x : *], [y : *], [z : *]] [...] ((x × y) × z → x × (y × z))
+...
+
+×-func-1 = coh [[x : *, y : *, f : x → y], [z : *]] [...] (x × z → y × z)
+...
 ```
 This is fully expanded upon in
   - [Monoidal weak ω-categories as models of a type theory](http://www.lix.polytechnique.fr/~tbenjamin/articles/publications/monoidal.pdf)
@@ -439,6 +447,8 @@ Futher k-tuply monoidal ω-categories could certainly be made by furthering this
 
 Incidently, it is possible to present globular ω-categories in a biased manner. We'd need to define two infinite families of composition and identity operations for every direction in every dimension. This is done, for instance, in 
  - [Steps toward the weak higher category of weak higher categories in the globular setting](http://cgasa.sbu.ac.ir/article_11180_b13cacfd9afe5780932141c269d0add6.pdf)
+
+I suppose I should also state somewhere that, throughout this presentation, I've been using globes as my [fundamental shape](https://ncatlab.org/nlab/show/geometric+shape+for+higher+structures). In most publications on higher categories, simplices are used instead. I do think what I've described here could be done with simplices, though I'm not sure how to define the pasting scheme contexts. Globes are by far the simplest shape, so using anything else makes things fundamentally more complex. However, some operations, particularly those close in geometry to other geometric shapes, are easier to work with using other shapes.
 
 Lastly, I'd like to make a point about free theorems, functors, and natural transformations. After all this higher-category stuff became intuitive, some properties of structure-preserving maps became obvious special cases of cell properties in higher categories. Functors `F : C → D` have the property that, given a morphism between objects `a` and `b` in the category `C`, we have a morphism between `F(a)` and `F(b)`. Functors are just morphisms in `Cat`, the category of categories. Objects are morphisms from the unit category, `𝟙`, to the object `C` in `Cat`. Morphisms in `C` are then 2-cells between maps between `𝟙` and `C`. We can define the functor map as an operation out of the context defined by the pasting scheme
 
@@ -458,7 +468,7 @@ The basic rules for natural transformations come from the same place. Given a na
 
 ![Natural Map Pasting Scheme](../img/omegacat/NatMapPS.png)
 
-So the naturality map is just right-whisterking by the thing we're maping over. The basic naturality property states that
+So the naturality map is just right-whiskering by the thing we're maping over. The basic naturality property states that
 ```
 F(f) ∘ α(b) = α(a) ∘ G(f)
 ```
