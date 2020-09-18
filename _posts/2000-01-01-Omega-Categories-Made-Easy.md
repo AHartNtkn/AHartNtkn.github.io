@@ -455,11 +455,11 @@ Lastly, I'd like to make a point about free theorems, functors, and natural tran
 
 The operation will have type `a ∘ F → b ∘ F`, where `a ∘ F` is the internal cell of `Cat` corresponding to `F(a)`. Hence, the map out of `F` is exactly a right-whiskering by `F`.
 
-The identity `F(id a) → id (F(a))` is derivable as a coherence out of the pasting scheme
+The identity `F(id a) = id (F(a))` is derivable as a coherence out of the pasting scheme
 
 ![Functor Identity Pasting Scheme](../img/omegacat/FMapIdPS.png)
 
-The identity `F(f ∘ g) → F(f) ∘ F(g)` is derivable as a coherence out of the pasting scheme
+The identity `F(f ∘ g) = F(f) ∘ F(g)` is derivable as a coherence out of the pasting scheme
 
 ![Functor Composition Pasting Scheme](../img/omegacat/FMapCompPS.png)
 
