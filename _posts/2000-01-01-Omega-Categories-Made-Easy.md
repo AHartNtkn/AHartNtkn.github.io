@@ -116,8 +116,7 @@ That's it. We now have a canonical way to construct any and all infinite equatio
 1               = op [] []
 a ∘ b           = op [x : *, y : *] [a, b]
 
-idcanc =
-  coh [x : *] [_] (x ∘ 1 = x)
+idcanc = coh [x : *] [_] (x ∘ 1 = x)
 
 prod31(a, b, c)    = (a ∘ b) ∘ c 
 prod32(a, b, c)    = a ∘ (b ∘ c)
