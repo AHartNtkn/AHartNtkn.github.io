@@ -11,7 +11,7 @@
 <a name="heading1"></a>
 ## Introduction
 
-I've been researching, for quite some time, the prospect of machine learning on a wider variety of data types than normally considered; things other than tables of numbers and categories. In particular, I want to do ML for program and proof synthesis which requires, at the very least, learning the structures of trees or graphs which don't come from a differentiable domain. Normal ML algorithms can't handle these; though some recent methods, such as graph neural networks and transformers can be adapted to this domain with some promising results. However, these methods still rely on differentiation. Is this really required? Are we forever doomed to map all our data onto a differentiable domain if we want to learn with it?
+I've been researching, for quite some time, the prospect of machine learning on a wider variety of data types than normally considered; things other than tables of numbers and categories. In particular, I want to do ML for program and proof synthesis which requires, at the very least, learning the structures of trees or graphs which don't come from a differentiable domain. Normal ML algorithms can't handle these; though some recent methods, such as graph neural networks and transformers, can be adapted to this domain with some promising results. However, these methods still rely on differentiation. Is this really required? Are we forever doomed to map all our data onto a differentiable domain if we want to learn with it?
 
 An alternative approach that has been bandied about for a while is the utilization of compression. It's not hard to find articles and talks about the relationship between compression and prediction. If you have a good predictor, then you can compress a sequence into a seed for that predictor and decompress by running said predictor. Going the other way is harder, but, broadly speaking, if you have a sequence that you want to make a prediction on and a good compressor, then whichever addition increases the compressed size the least should be considered the likeliest prediction. This approach is quite broad, applying to any information which can be represented on a computer and not requiring any assumptions whatsoever about the structure of our data beyond that. We could use this idea to, for example, fill in gaps in graphs, trees, sets of input-output pairs, etc.
 
@@ -24,13 +24,13 @@ which reproduces some standard ML applications using this approach. I want to un
 <a name="heading1p5"></a>
 ## Why Not Use Ordinary Compression?
 
-One of the most common suggestions for approximating `K(X)` is to simply use an already existing compression algorithm. The problem is that most "optimal" compression algorithms such as arithmetic encoding are only optimal up to the Shannon Entropy of the data. That is if we assume the data is sampled randomly from a distribution, the best we can do is estimate the shape of this distribution and give shorter encodings appropriately to more likely symbols. This is, asymptotically, about the same as counting substring occurrences to reduce redundancy. If our data is actually just randomly sampled, then this is great! But the real world isn't like this. Most real-world data has some noise that can be construed as being sampled from a distribution placed on top of an essentially deterministic computational process. Most compression potential comes from modeling this underlying process, not the noise.
+One of the most common suggestions for approximating `K(X)` is to simply use an already existing compression algorithm. The problem is that most "optimal" compression algorithms such as arithmetic encoding are only optimal up to the Shannon Entropy of the data. That is if we assume the data is sampled randomly from a distribution, the best we can do is estimate the shape of this distribution and give shorter encodings appropriately to more likely symbols. This is, asymptotically, about the same as counting substring occurrences to reduce redundancy. If our data is actually just randomly sampled, then this is great! But the real world isn't like this. Most real-world data can be construed as an essentially deterministic process with some added noise. Most compression potential comes from modeling this underlying process, not the noise.
 
 Consider the sequence;
 ```
 1, 2, 3, 4, ..., 1000
 ```
-This is, obviously, very compressible. An optimal (truly optimal, not Shannon-entropy-optimal) compressor would be able to compress this into a program producing this output. Maybe `Range@1000`, or something even smaller, depending on what language it's using. But statistical compression will just try to find repetitive substrings. Even if we represent this list in binary and compress, statistical methods won't be able to compress this much better than a truly random string since there are few repetitious patterns.
+This is, obviously, very compressible. An optimal (truly optimal, not Shannon entropy-optimal) compressor would be able to compress this into a program producing this output. Maybe `Range@1000`, or something even smaller, depending on what language it's using. But statistical compression will just try to find repetitive substrings. Even if we represent this list in binary and compress, statistical methods won't be able to compress this much better than a truly random string since there are few repetitious patterns.
 
 There are lots of natural examples of this. Compressing the digits of π, compressing the coordinates of regular geometric figures, compressing a list of positions for a simple physical system simulation. It's obvious that these can have small algorithmic complexity, that they should be compressible into small programs that generate them, and yet statistical compression methods won't be able to take advantage of this.
 
@@ -53,7 +53,7 @@ The idea is to enumerate all strings of a given length and run them as programs 
 
 #### BDM - Block Decomposition Method
 
-This utilizes an existing CTM database to estimate Kolmogorov Complexity. It first tries finding algorithmically compressible substrings using CTM and then uses that information in conjunction with a Shannon-entropy like calculation to estimate the complexity of the whole string. For small strings, BDM is close to the performance of CTM, for large strings its average-case performance is close to statistical compression. Many large strings in practice, however, tend to be compressed better than with statistical methods.
+This utilizes an existing CTM database to estimate Kolmogorov Complexity. It first tries finding algorithmically compressible substrings using CTM and then uses that information in conjunction with a Shannon entropy like calculation to estimate the complexity of the whole string. For small strings, BDM is close to the performance of CTM, for large strings its average-case performance is close to statistical compression. Many large strings in practice, however, tend to be compressed better than with statistical methods.
 
 See:
   - [Numerical Evaluation of Algorithmic Complexity for Short Strings](https://arxiv.org/abs/1101.4795)
@@ -144,30 +144,36 @@ The simplest fix is to simply make `P` a multiset which may contain multiple cop
 CTM(x|y) = log₂( |[ p ∈ P : p == (x, y) ]| / |P| )
          = log₂ Σ{p ∈ P} if p == (x, y) then 1/|P| else 0
 ```
-This may be off, but this is the closest thing to the original paper I could think of. It just calculates the log-likelihood of a random program covered by `P` outputing `x` on input `y`. Except, there are a few problems with this. Firstly, this quantity will always be negative since `log(X) < 0` when `0 < X < 1`. `K` can never be negative. Even if we fix this, there's still a bigger issue. This CTM definition assumes that all programs are uniformly random, but they aren't. Think of the procedure we'd go through when generating a random program. Assuming our choices are uniformly distributed, the programs we generate won't be. If we assume our programs are binary strings, then we will, at each point, make one of three choices; add a `0`, add a `1`, or end the string. If each choice is uniformly sampled, then there will be a one third chance of generating the empty string, a one in nine chance of generating `1`, and about a one in 60,000 chance of generating `001101001`. The chance of generating a program decays exponentially with the length of the program. This observation is build into algorithmic probability, and it's weird that the CTM measure, as described in this paper, ignores that.
+This may be off, but this is the closest thing to the original paper I could think of. It just calculates the log-likelihood of a random program covered by `P` outputing `x` on input `y`. Except, there are a few problems with this. Firstly, this quantity will always be negative since `log(X) < 0` when `0 < X < 1`. `K` can never be negative. Even if we fix this, there's still a bigger issue. This CTM definition assumes that all programs are uniformly random, but they aren't. Think of the procedure we'd go through when generating a random program. Assuming our choices are uniformly distributed, the programs we generate won't be. If we assume our programs are binary strings, then we will, at each point, make one of three choices; add a `0`, add a `1`, or end the string. If each choice is uniformly sampled, then there will be a one third chance of generating the empty string, a one in nine chance of generating `1`, and about a one in 60,000 chance of generating `001101001`. The chance of generating a program decays exponentially with the length of the program. This observation is built into algorithmic probability, and it's weird that the CTM measure, as described in this paper, ignores that.
 
 Digressing a bit, I feel like the authors may have some over-familiarity with one specific model of computation. One approach to define `M` used by the Complexity Calculator project is to use an enumeration for Turing machines which, to my knowledge, was originally devised for investigating busy beaver numbers. I believe that the authors are imagining that `M` as a function that enumerates all Turing machines, runs `x` on them all, and outputs a stream of all the `ys` that each Turing machine outputs. This will certainly be a function rather than some generic relation, though.
 
 Let's think of what this measure means for other models of computation. If we were using, say, lambda expressions instead, `M` should enumerate all lambda expressions, take another lambda expression as input, and output the normal forms of the input applied to all possible lambda expressions. This does seem like it makes sense for any model of computation, but I'm not sure it makes sense as a measure of algorithmic similarity.
 
-The justification for this procedure comes is supposed to come from the coding theorem, which states that `K(X) + O(1) = -log₂(m(X))`, where `m(X)` is the sum over all programs `p` which output `X` of `2 ^ -l(p)`, where `l(p)` is the length of `p`. There's that exponential decay I was talking about.
+The justification for this procedure is supposed to come from the coding theorem, which states that `K(X) + O(1) = -log₂(m(X))`, where 
+```
+m(X) = Σ{p | p ↓ X} 2 ^ -l(p)
+```
+where `p ↓ X` means `p` normalizes to `X` and `l(p)` is the length of `p`. There's that exponential decay I was talking about.
 
 See: 
 - http://www.scholarpedia.org/article/Algorithmic_probability
 - Also, Theorem 4.3.3 of "An Introduction to Kolmogorov Complexity and Its Applications"
 
-Modifying this for lambda expressions, `m(x)` should be the sum over all lambda expressions `l` which normalize to `X` of `2 ^ -I(l)`, where `I(l)` would be calculated
+Modifying this for lambda expressions,
+```
+m(X) = Σ{l | l ↓ X} 2 ^ -I(l)
+```
+where `l ↓ X` means `l` normalizes to `X` and `I(l)` measures the bit information of `l`, essentialy the number of binary decisions made when constructing `l`. `I(l)` would be calculated
 ```
 I(l) := I(l, 0)
 I(λ x . y, b) := log₂(2 + b) + I(y, b + 1)
 I(x y,     b) := log₂(2 + b) + I(x, b) + I(y, b)
 I(x,       b) := log₂(2 + b)
 ```
-`I(l)` calculates the number of bits in `l`; approximately the number of binary decisions made when constructing `l`.
-
 Incidentally, the length of a binary string doesn't actually give the information content of that string. If a string's length isn't fixed beforehand, then each additional digit incurs one trit of information since at each stage of the construction we are choosing between one of three options; `0`, `1`, or stop constructing the string. From this, we can conclude that `l(s) = log₃(2 ^ -I(s)) - 1`; that is, the length of a string is one less than the number of trits in that string. If the string's length is fixed beforehand, if we cannot choose to end the construction of a string at our leisure, then each choice is actually binary and `l(s) = I(s)`.
 
-I think that using `I(s)` to calculate the information rather than the length is more theoretically correct than the usual expression in terms of length. It doesn't seem to matter too much in the case of strings because the sum over all `2 ^ (-l(s)-1)` = the sum over all `2 ^ -I(s)` = `1`, so both are valid ways of making a probability distribution over all programs with a similar exponentially decreasing probability profile. That `-l(p)-1` is there so that the empty string isn't given 100% of the distribution. The real problem is generalizability; the length calculation generally fails to make a coherent distribution if our computation model no longer accepts binary strings as inputs. The information, however, can always be adapted even if our computational model expects programs to be something esoteric, like graphs, such is the case with interaction nets.
+I think that using `I(s)` to calculate the information rather than the length is more theoretically correct than the usual expression in terms of length. It doesn't seem to matter too much in the case of strings because the sum over all `2 ^ (-l(s)-1)` = the sum over all `2 ^ -I(s)` = `1`, so both are valid ways of making a probability distribution over all programs with a similar exponential decay. That `-l(p)-1` is there so that the empty string isn't given 100% of the distribution. The real problem is generalizability; the length calculation generally fails to make a coherent distribution if our computation model no longer accepts binary strings as inputs. The information, however, can always be adapted even if our computational model expects programs to be something esoteric, like graphs, such is the case with interaction nets.
 
 As a side note, despite length being theoretically incorrect, it's been used in some papers for measuring the information of a lambda expression. See [Computable Variants of AIXI which are More Powerful than AIXItl](https://arxiv.org/abs/1805.08592) for instance. But it seems like the theoretically wrong thing to do, especially since the actual information is so easy to calculate. I think many authors in this field don't think too carefully about the information content of the things they write about, which is quite ironic.
 
@@ -175,7 +181,10 @@ The conditional coding theorem states that;
 ```
 K(X|Y) + O(1) = -log₂(m(X|Y))
 ```
-where `m(X|Y)` is the sum, for all programs `p` such that `p(Y) = X`, of `2 ^ -l(p)`.
+where
+```
+m(X|Y) = Σ{p | p(Y) ↓ X} 2 ^ -l(p)
+```
 
 See: 
 - Theorem 4.3.4 and Definition 4.3.7 in "An Introduction to Kolmogorov Complexity and Its Applications"
@@ -217,9 +226,9 @@ A pairing strategy generates a set `P`
 That's all it says on pairing strategies. As far as I can tell from this, a pairing strategy that pairs nothing and is just empty is valid, but I'm pretty sure it's not supposed to be.
 
 Assuming we have an understanding of what additional constraints a pairing strategy should have, we want to find the pairing strategy which minimizes the following quantity;
-
-  the sum over all `((rx, nx), (ry, ny)) ∈ P` of `CTM(rx|ry) + if nx == ny then 0 else log(nx)`
-
+```
+Σ{((rx, nx), (ry, ny)) ∈ P} `CTM(rx|ry) + if nx == ny then 0 else log(nx)`
+```
 The minimal value for this quantity will be `BDM(X|Y)`.
 
 This quantity will always be nonnegative and we can always minimize it to zero by making `P` empty. This is obviously not intended. It also doesn't make much sense to me that we're taking the log of `nx` if `nx` is just the count of `rx`s rather than, say, the length of `rx` times the number of occurrences. And shouldn't that log term scale with the difference between `nx` and `ny` in some way? The paper offers no real intuition.
@@ -235,7 +244,7 @@ We have a choice of partitioning strategy, but it gives the example of splitting
 ```
 ... Okay, but shouldn't it be way smaller? The original string wasn't even twice as long as its partitions, and it should be almost as easy to generate as the partitions. I thought this might be an idiosyncrasy of the specific kind of Turing machine which the paper uses, but the [complexity calculator website](https://www.complexitycalculator.com/) says almost the same thing, giving the "BDM algorithmic complexity estimation" as 57.5664 bits when we select a block size of 12 with an overlap of 11.
 
-Let's digress of a bit and think of `K` in the the lambda calculus. Firstly, we need a way to represent binary strings. We'll just encode these as lists of bits. The type of bits will be defined;
+Let's digress a bit and think of `K` in the the lambda calculus. Firstly, we need a way to represent binary strings. We'll just encode these as lists of bits. The type of bits will be defined as
 ```
 2 = ∀ X . X → X → X = {0, 1}
 ```
@@ -378,13 +387,10 @@ Hmm... this seems like a big gap in the whole approach.
 So this clears up some things about the partitioning strategy, at any rate. But I wasn't worried about the partitioning strategy anyway; I wanted to know what a "pairing strategy" is! The original paper on BDM isn't any help since it doesn't describe conditional BDM at all.
 
 Going back to the topic paper of this post, it does describe a "coarse conditional BDM of `X` with respect to the tensor `Y`". Again, tensors are not explained at all in the paper, and it's unclear if `Y` actually needs to be a tensor in any mathematical sense. As I stated before, I think the authors just mean a 2-dimensional array when they say "tensor", and it seems obvious that the construction doesn't rely on dimensionality at all. It defines `BDM(X|Y)` as
-
-- the sum over all `(rx, nx) ∈ Adj(X)` where `rx ∉ Adj(Y)` of `CTM(rx) + log(nx)`
-
-plus
- 
-- the sum over all `rx` in both `Adj(X)` and `Adj(Y)` of `if nx == ny then 0 else log(nx)`
-
+```
+BDM(X|Y) = (Σ{(rx, nx) ∈ Adj(X) && rx ∉ Adj(Y)} CTM(rx) + log(nx))
+         + (Σ{(rx, nx) ∈ Adj(X) ∩ Adj(Y)} log(nx))
+```
 This definition isolates the unique information in `X` while issuing additional penalties if the information shared between `X` and `Y` appears more or less often in `X` than in `Y`. I'm not sure if this makes sense. The paper says;
 
 > [the second sum] is important in cases where such multiplicity dominates the complexity of the objects
@@ -393,12 +399,11 @@ but, intuitively, it seems to me like the sum should only add a penalty if `nx >
  
 The "coarse" BDM is, I guess, less accurate than the "strong" BDM that I first looked at; but, at least, it makes sense. It's weaker since it doesn't utilize conditional CTM. But without additional clarification on what a "pairing strategy" is, I just can't understand how the strong version works.
 
-I've thought a lot about it and, while I'm not confident, I think I've figured out the most reasonable fixes.
+I've thought a lot about it and, while I'm not confident, I think I've figured out the two most reasonable fixes.
 - If the pairing strategies must cover `X` then that solves the specific problem I pointed out.
 
-Also
-
 - If P is supposed to be totally functional over the partitions of `X`.
+
 Neither of these conditions is hinted at in the paper, but it's the best I've got. The paper does say;
 
 > prior knowledge of the algorithmic structure of the objects can be used to facilitate the computation by reducing the number of possible pairings to be explored
@@ -439,20 +444,20 @@ These approaches can be used as compression methods. They're not guaranteed to a
 
 ---
 
-Consider the possibility of an algorithm, `C(X)`, and a Shannon-optimal compressor, `S(X)`, such that the sum over all `X` of `C(X) - S(X)` is negatively infinite. That is to say, `C(X)` tends to perform better infinitely much as a Shannon-optimal compressor while being no slower. BDM already does this, but is there an algorithm that can do this without keeping track of a large database which takes exponential effort beforehand to calculate.
+Consider the possibility of an algorithm, `C(X)`, and a Shannon optimal compressor, `S(X)`, such that the sum over all `X` of `C(X) - S(X)` is negatively infinite. That is to say, `C(X)` tends to perform better infinitely much as a Shannon optimal compressor while being no slower. BDM already does this, but is there an algorithm that can do this without keeping track of a large database which takes exponential effort beforehand to calculate?
 
-It's actually fairly easy to outperform Shannon-optimal compressors by infinitely much. Have a compressor do the following;
+It's actually fairly easy to outperform Shannon optimal compressors by infinitely much. Have a compressor do the following;
 If it detects a string encoding `0, 1, 2, 3, 4, 5, ...,` replace it with a flag indicating such and a number indicating how far the sequence counts.
-For all other strings, replace them with the output of a Shannon-optimal compressor.
-Such a scheme would generally perform no worse than a Shannon-optimal compressor while performing better by infinitely much; though the benefits clearly only apply to a small number of patterns overall, even if there are infinitely many such patterns. This means that CTM will generally be able to improve by infinitely much by adding entries to its database, but expanding this database takes exponential effort. Is there a way to do better? Is there a way to characterize how far this can go without exponential effort? Even if it doesn't cover as much of program space asymptotically, is there a way to grow the database forever using only, say, linear effort? Or quadratic? Or logarithmic? And could such things be efficiently sewed together so that we discover the easy things first and foremost, for even very large strings, and the hard things later?
+For all other strings, replace them with the output of a Shannon optimal compressor.
+Such a scheme would generally perform no worse than a Shannon optimal compressor while performing better by infinitely much; though the benefits clearly only apply to a small number of patterns overall, even if there are infinitely many such patterns. This means that CTM will generally be able to improve by infinitely much by adding entries to its database, but expanding this database takes exponential effort. Is there a way to do better? Is there a way to characterize how far this can go without exponential effort? Even if it doesn't cover as much of program space asymptotically, is there a way to grow the database forever using only, say, linear effort? Or quadratic? Or logarithmic? And could such things be efficiently sewed together so that we discover the easy things first and foremost, for even very large strings, and the hard things later?
 ```
 1, 2, 3, ... 999999999, 1000000000
 ```
-Is easy to compress algorithmically, but I wouldn't expect BDM to do much better than statistical compression. I do believe that such things should be efficiently discoverable anyway, but not by CTM, as it stands.
+Is easy to compress algorithmically, but I wouldn't expect BDM to do much better than statistical compression. I do believe that such things should be efficiently discoverable anyway, but not by CTM or BDM, as it stands.
 
 ---
 
-I think we may need to start thinking about the amount of effort we'd be willing to expend during compression. `K` and its alternatives seem somewhat backward in their definition. `K` is the minimal size of a program that can become our target if we're willing to expend an arbitrarily large effort *during decompression*. Levin complexity is just `K` plus the log of the runtime of the smallest program. Essentially, Levin complexity is the minimal size of a program that can become our target if we're willing to expend only an exponential amount of effort on decompression. But, shouldn't it be the other way around? Shouldn't we care more about the amount of effort we want to put into *compression*?
+I think we may need to start thinking about the amount of effort we'd be willing to expend during compression. `K` and its alternatives seem somewhat backward in their definition. `K` is the minimal size of a program that can become our target if we're willing to expend an arbitrarily large effort *during decompression*. Levin complexity is just `K` plus the log of the runtime of the smallest program. Essentially, Levin complexity is the minimal size of a program that can become our target if we're willing to expend only an exponential amount of effort on decompression. But, shouldn't it be the other way around? Shouldn't we care more about the amount of effort we want to put *during compression*?
 
 For the purposes of ML, we don't care about decompression at all. What would be better to know is how small a program can be if we're only willing to spend exponential, quadratic, linear, etc. effort with respect to the length of the string we're compressing. Are these problems solvable? I have a suspicion that feedforward NNs are essentially solving a subset of the linear effort case.
 
@@ -465,16 +470,21 @@ Here's another idea. This one is original to me, but I wouldn't be surprised if 
 λx . (λ y . λ f . f y y) x
 (λx . x) (λ x . λ f . f x x)
 λ x . λ f . (λx . x) (f x x)
-(λ x . λ y . x) (λ x . λ f . f x x) (λx . x)
-(λ x . λ y . x) (λ x . λ f . f x x) (λx . x x)
-(λ x . λ y . x) (λ x . λ f . f x x) (λx . x x x)
+(λ d . λ x . λ f . f x x) (λx . x)
+(λ d . λ x . λ f . f x x) (λx . x x)
+(λ d . λ x . λ f . f x x) (λx . x x x)
 ...
 ```
 and infinitely many other things. This means that running a lambda expression backward implies enumerating infinite many possibilities at each step. The same applies to combinator logic.
 
 Many models of computation, however, don't have this property. Anything where a fixed amount of work is done at each step does; that includes Turing machines, interaction nets, the linear lambda calculus, and most abstract machines. These can all be run backward, as a result. We can then enumerate all the programs which normalize to a particular output by doing the following, assuming we're using an appropriate Turing machine;
 
-Start with our output string. Enumerate every end-state involving this machine. That is, every case where the head of the machine is at every position while in the halting state. For each of these, generate an infinitely tall rose tree by recursively running the program backward for each time step. We can collapse these trees into a stream by doing a breadth-first-search and we can collapse these searches together by riffling the streams. Every time we reach a point where the machine's head is at the beginning of the string in the starting state, we've logged a program which normalizes to our output. This procedure will look for and find only those programs which normalize to our desired output, ordered by running time. We can keep this going for as long as we want, remembering only the smallest program found so far. The longer we go, the closer our approximation is to the actual shortest program and therefore the actual Kolmogorov complexity. There are also probably heuristics we could apply to prune the search of paths which won't get us anything smaller than what we already have. I don't know how efficient this could be made, but it seems to me that it would do better than BDM on large strings.
+- Start with our output string.
+- Enumerate every end-state involving this machine. That is, every case where the head of the machine is at every position while in the halting state. 
+  - For each of these, generate an infinitely tall rose tree by recursively running the program backward for each time step. We can collapse these trees into a stream by doing a breadth-first-search and we can collapse these searches together by riffling the streams. 
+  - Every time we reach a point where the machine's head is at the beginning of the string in the starting state, we've logged a program which normalizes to our output.
+
+This procedure will look for and find only those programs which normalize to our desired output, ordered by running time. We can keep this going for as long as we want, remembering only the smallest program found so far. The longer we go, the closer our approximation is to the actual shortest program and therefore the actual Kolmogorov complexity. There are also probably heuristics we could apply to prune the search of paths which won't get us anything smaller than what we already have. I don't know how efficient this could be made, but it seems to me that it would do better than BDM on large strings.
 
 For parallel models of computation, such as interaction nets, we can optimize this further by treating the (backward) transformations of different segments of the program independently and only combine the timelines when they start interacting.
 
@@ -482,9 +492,7 @@ A further optimization, which would make finding small programs easier but would
 
 ---
 
-Here's another idea. In CTM, we're enumerating all programs and seeing what they output. It may, instead, be better to enumerate programs and then filter them for randomness. Essentially, we'd build up a database by looking at each program in algorithmic order. We'd try building that program from the programs already in the database. If we can't build it using the existing elements in the database in a way that's smaller than what we're trying to build the thing we're looking at is algorithmically random and we add it to the database as a random "atom". This should significantly cut down on the combinatorial explosion, though, I'm pretty sure it would still be exponential.
-
-There may be a simple way to do this while exploiting existing ATP technology. Generate every program. Give each program a simple type. Treat this type as a theorem of intuitionistic propositional logic. Do the previously described procedure, trying to find the proof who's dependencies have the smallest collective information. If this total information is greater than the information in the theorem being proved then the theorem represents an algorithmically random program. This would also work up to extensional equivalence. 
+Here's another idea. In CTM, we're enumerating all programs and seeing what they output. It may, instead, be better to enumerate programs and then filter them for randomness. Essentially, we'd build up a database by looking at each program in algorithmic order. We'd try building that program from the programs already in the database. If we can't build it using the existing elements in the database in a way that's smaller than what we're trying to build then the thing we're looking at is algorithmically random and we add it to the database as a random "atom". This should significantly cut down on the combinatorial explosion, though, I'm pretty sure it would still be exponential.
 
 ---
 
@@ -505,7 +513,7 @@ This has always irked me. No matter how many statisticians say "it's reasonable 
 
 Anyway, let's do the derivation;
 
-Firstly, what we always really want to minimize is the likelihood. Our model is going to make predictions about the probability of various data. The likelihood of our model is just the product of all the probabilities of each training point as predicted by our model.
+Firstly, what we always really want to do is maximize is the likelihood. Our model is going to make predictions about the probability of various data. The likelihood of our model is just the product of all the probabilities of each training point as predicted by our model.
 ```
 L(m) = Π(i) m_prob(yi)
 ```
@@ -525,13 +533,13 @@ The "prediction" made by a Gaussian model will be the mean, `μ`, and the likeli
 ```
 which is exactly the squared error, modulo some constant we don't care about. And getting the average by dividing by the number of data points will get us the mean squared error, MSE. This should also illustrate that if you don't think it's reasonable to assume your data were randomly sampled from a gaussian distribution, then you should also not think it's reasonable to use the squared error without a similar derivation.
 
-Okay, so, what's the justification for squaring `K`? Let's think about this, what are the probabilities in our likelihood? Well, they'll be the algorithmic probabilities; the probability that a random program will output the datapoint when given our model's prediction as an input. The coding theorem says exactly that (within an additive constant) the Kolmogorov complexity of a program is the negative logarithm of the algorithmic probability, meaning the appropriate negative log-likelihood is exactly the sum of Ks.
+Okay, so, what's the justification for squaring `K`? Let's think about this, what are the probabilities in our likelihood? Well, they'll be the algorithmic probabilities; the probability that a random program will output the datapoint when given our model's prediction as an input. The coding theorem says exactly that (within an additive constant) the Kolmogorov complexity of a program is the negative logarithm of the algorithmic probability, meaning the appropriate negative log-likelihood is exactly the sum of `K`s.
 
 But, wait, I was looking for justification for squaring `K`. That's what the paper does. Does it say why?
 
 > [...] in order to remain congruent with the most widely used cost functions, we will, for the purpose of illustration, use the sum of the squared algorithmic differences.
 
-Oh, so there is no reason. To be clear, there is a clearly right thing to do here; use the sum of Ks, not squared Ks. We may also want to divide by our number of data points to get the mean `K` error rather than just the total error. I don't think the author's thought very hard about what the loss should be. For much of the paper this odd, clearly wrong loss function will be used.
+Oh, so there is no reason. To be clear, there is a clearly right thing to do here; use the sum of `K`s, not squared `K`s. We may also want to divide by our number of data points to get the mean `K` error rather than just the total error. I don't think the author's thought very hard about what the loss should be. For much of the paper this odd, clearly wrong loss function will be used.
 
 The paper goes on to talk about categorical loss. The obvious thing, to me, is to do basically the same thing, and that's what the paper recommends. Assume our model is outputting some object which is being used to predict the class. In classical ML, this would be like the class probabilities before assigning a class. The loss will be `K(Y|M(X))`, where `Y` is the actual class and `X` is our input data. This signifies how much information is in the real class but not in the prediction of our model. If we were using our model for prediction, then the class `C` which minimizes `K(C|M(X))` would be our prediction. 
 
@@ -549,7 +557,7 @@ Great! So, we know how to assess a model, how do we actually do optimization? Pr
 - For each set of parameters, calculate the loss of the model with those parameters. If the loss is less than the current `minCost`, then set `minCost` to this value and set `param` to the parameters being used.
 - Keep going until you're bored or satisfied or no reason at all; the paper doesn't care.
 
-That's it. However, there are some complications that make me not entirely sure if this is right. It defines the cost function (the sum of squared Ks) to be `J_a(ˆX, M)`, where `ˆX` is our dataset, and `M` is the model we're assessing. However, the actual description of the algorithm tells us to use `J_a(ˆM, σ_i)`, where `σ_i` is the ith parameter in our parameter stream and `ˆM` is never defined. Presumedly, `ˆM` has something to do with our model, but it can't possibly be a replacement for `ˆX` since `ˆX` is just a collection of input-output pairs and our model is, obviously, not. Either there's an entirely separate loss function over models and parameters which is never defined, or there was a typo and the algorithm should have said `J_a(ˆX, M{σ_i})`, or something like that. The version I wrote seems pretty intuitive (if overly simplistic), so I'm leaning toward the latter.
+That's it. However, there are some complications that make me not entirely sure if this is right. It defines the cost function (the sum of squared `K`s) to be `J_a(ˆX, M)`, where `ˆX` is our dataset, and `M` is the model we're assessing. However, the actual description of the algorithm tells us to use `J_a(ˆM, σ_i)`, where `σ_i` is the ith parameter in our parameter stream and `ˆM` is never defined. Presumedly, `ˆM` has something to do with our model, but it can't possibly be a replacement for `ˆX` since `ˆX` is just a collection of input-output pairs and our model is, obviously, not. Either there's an entirely separate loss function over models and parameters which is never defined, or there was a typo and the algorithm should have said `J_a(ˆX, M{σ_i})`, or something like that. The version I wrote seems pretty intuitive (if overly simplistic), so I'm leaning toward the latter.
 
 The paper states that this algorithm "can ['minimize `K(M)` and minimize the cost function'] in an efficient amount of time". But, uh, no it doesn't. It does as bad as a brute force search because it is a brute force search. It goes on to say 
 
@@ -566,7 +574,7 @@ giving a few citations. This seems more reasonable to me, as such methods aren't
 This will be a bit of a digression, but if you read this far you probably don't care about that. The first example it uses is a regression problem on two variables. It says the following on the ability to enumerate the parameter space;
 
 
-> For instance, in order to fit the output of the function `f` (Eq. 2) by means of the model M, we must optimize over two continuous parameters `s1` and `s2`. Therefore the space of parameters is composed of the pairs of real numbers `σ_i = [σ_i1, σ_i2]`. However, a computer cannot fully represent a real number, using instead an approximation by means of a fixed number of bits. Since this second space is finite, so is the parameter space and the search space which is composed of pairs of binary strings of finite size [...]
+> For instance, in order to fit the output of the function `f` (Eq. 2) by means of the model `M`, we must optimize over two continuous parameters `s1` and `s2`. Therefore the space of parameters is composed of the pairs of real numbers `σ_i = [σ_i1, σ_i2]`. However, a computer cannot fully represent a real number, using instead an approximation by means of a fixed number of bits. Since this second space is finite, so is the parameter space and the search space which is composed of pairs of binary strings of finite size [...]
 
 This entire paragraph is rather head-scratching. Computers certainly can fully represent a real number. We can figure out how by following the same basic procedure I used before to figure out how to encode binary strings. You just state a universal property of the mathematical object you want to represent and derive a type of realizers. This is a bit squirrely with the real numbers as the exact universal properties diverge in constructive settings. Dedekind Reals and Cauchy Reals aren't isomorphic anymore, for instance. There are also practical questions about how to make calculating with them as easy as possible. That being said, the simplest universal property for any kind of real number I'm aware of is the following; the (nonnegative) real numbers are the final coalgebra of the endofunctor `X ↦ ℕ × X`. There are a few places that say this in various guises. The most direct is [On coalgebra of real numbers](http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=9A564F2172717230E15D3F8EC5253423?doi=10.1.1.47.5204&rep=rep1&type=pdf) which is all about this observation. See [this](https://ncatlab.org/nlab/show/continued+fraction#half-open) as well.  This basically says that real numbers are an infinite stream of natural numbers. There are a few ways of viewing what this represents, and that will largely determine whether you see each number as representing a nonnegative real or something isomorphic, like something in `[0, 1)`. For the latter, we can read each natural number as describing how many 1s we encounter before encountering a `0` in the binary expansion of a number. For example;
 ```
@@ -603,7 +611,7 @@ This can represent any nonnegative real number.
 ```
 whichever interpretation we use will determine how we define, for instance, addition, multiplication, etc. Note that there are some complications with representing real numbers as continued fractions in this way. Notably, that some numbers don't have unique representations. While I understand these caveats, I don't understand how to solve them, though I've been told that such solutions are "various".
 
-Following [Recursive types for free!](https://homepages.inf.ed.ac.uk/wadler/papers/free-rectypes/free-rectypes.txt), the (weak) final coalgebra of `X ↦ ℕ × X` can simply be defined as
+Following [Recursive types for free!](https://homepages.inf.ed.ac.uk/wadler/papers/free-rectypes/free-rectypes.txt), the (weakly) final coalgebra of `X ↦ ℕ × X` can simply be defined as
 ```
 ∃ X . (X → ℕ × X) × X
 ```
@@ -639,7 +647,7 @@ where the `I`s are [Bessel I](https://en.wikipedia.org/wiki/Bessel_function#Modi
 ```
 2 - ϑ₂(1 / √2) / 2 ^ (7/8) ≈ 0.358367
 ```
-Where ϑ is an [elliptic theta](https://mathworld.wolfram.com/JacobiThetaFunctions.html) function. I don't know if this constant has a name, but I couldn't find it anywhere. When using our previous map turn this into the full positive reals, this becomes `≈ 0.558524`.
+Where ϑ is an [elliptic theta](https://mathworld.wolfram.com/JacobiThetaFunctions.html) function. I don't know if this constant has a name, but I couldn't find it anywhere. When using our previous map to turn this into the full positive reals, this becomes `≈ 0.558524`.
 
 Anyway, my whole point with this exercise was to show we can represent real numbers, and many other mathematical structures besides, just fine on computers. We don't, and, in fact, shouldn't use floating-point numbers if we're going to take algorithmic complexity seriously. The original BDM paper mentions π a few times, saying, for instance,
 
