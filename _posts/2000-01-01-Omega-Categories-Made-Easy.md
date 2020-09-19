@@ -201,7 +201,9 @@ Category context formation rules
 ----------------------------------------
 ⊢ [Γ, y : *, f : x → y] ps (f : x → y)
 ```
-The `ps` judgement, standing for "pasting scheme", allows us to locate the source of any prospective morphisms we might want to add to our context. This will, thankfully, only need to be barely modified when we go to higher dimensions. Substitution is identical to the rule used for monoids;
+The `ps` judgement, standing for "pasting scheme", allows us to locate the source of any prospective morphisms we might want to add to our context. I'll give a detailed example of this later on when we talk about full ω-categories which will have almost identical context formation rules.
+
+Substitution is identical to the rule used for monoids;
 ```
 Category substitution formation rules
                   Δ ⊢ σ sub Γ     Δ ⊢ a : A[σ/Γ]
@@ -288,38 +290,42 @@ Like before, if we turn this into a context it will be ill-formed. As such, we n
 The rules neccessary to parse this context is barely different then that for ordinary categories;
 ```
 ω-Category context formation rules
-⊢ Γ ps (x : *)                        ⊢ Γ ps (f : x → y)
---------------  --------------------  ------------------
-   ⊢ Γ ctx      ⊢ [x : *] ps (x : *)    ⊢ Γ ps (y : A)
+⊢ Γ ps (x : *)                            ⊢ Γ ps (f : x → y)
+-------------✓   ---------------------⋆  -------------------⇓
+   ⊢ Γ ctx        ⊢ [x : *] ps (x : *)     ⊢ Γ ps (y : A)
 
            ⊢ Γ ps (x : A)                      
-----------------------------------------
+--------------------------------------⇑
 ⊢ [Γ, y : A, f : x → y] ps (f : x → y)
 ```
 To construct the above context, we'd do, roughly, the following;
 ```
-------------------
+------------------⋆
 [x : *] ps (x : *)
---------------------------------------
+--------------------------------------⇑
 [x : *, y : *, f : x → y] ps f : x → y
-------------------------------------------------------------
+------------------------------------------------------------⇑
 [x : *, y : *, f : x → y, g : x → y, a : f → g] ps a : f → g
-------------------------------------------------------------
+------------------------------------------------------------⇓
 [x : *, y : *, f : x → y, g : x → y, a : f → g] ps g : x → y
-----------------------------------------------------------------------------------
+----------------------------------------------------------------------------------⇑
 [x : *, y : *, f : x → y, g : x → y, a : f → g, h : x → y, b : g → h] ps b : g → h
 
 ...
 
 ..., a' : f' → g'] ps g' : y → z
-------------------------------------------------------------
+------------------------------------------------------------⇑
 ..., a' : f' → g', h' : y → z, b' : g' → h'] ps b' : g' → h'
-------------------------------------------------------------
+------------------------------------------------------------⇓
 ..., a' : f' → g', h' : y → z, b' : g' → h'] ps h' : y → z
-----------------------------------------------------------
+----------------------------------------------------------⇓
 ..., a' : f' → g', h' : y → z, b' : g' → h'] ps z : *
------------------------------------------------------
+-----------------------------------------------------✓
 ..., a' : f' → g', h' : y → z, b' : g' → h'] ctx
+```
+we can write all these proof steps to coincide with the dimension pattern in the scheme itself.
+```
+⋆x⇑f⇑a⇓g⇑b⇓h⇓y⇑f'⇑a'⇓g'⇑b'⇓h'⇓z✓
 ```
 In practice, this calculation would be run in reverse by a computer, as a form of parsing.
 
