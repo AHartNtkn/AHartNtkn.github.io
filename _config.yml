@@ -158,7 +158,7 @@ markdown: kramdown
 kramdown:
    syntax_highlighter_opts:
       disable : true
-highlighter: none
+highlighter: rouge
 permalink: /:year-:month-:day-:title/
 paginate: 5
 
