@@ -438,7 +438,7 @@ This may be leverageable for some applications. In fact, I'd guess most applicat
 It's also worth noting that this whole problem is just the inductive programming problem + a desire to minimize the induced program's size. Inductive programming is a whole field unto itself. There are algorithms which can exhaustively produce programs which have a particular output sequence;
 
 See;
-  - https://scholar.google.com/scholar?hl=en&as_sdt=0%2C3&q=exhaustive+program+generation+inductive+programming&btnG=
+  - [Google Scholar: "exhaustive program generation inductive programming"](https://scholar.google.com/scholar?hl=en&as_sdt=0%2C3&q=exhaustive+program+generation+inductive+programming&btnG=)
 
 These approaches can be used as compression methods. They're not guaranteed to approach the Kolmogorov complexity, but they should generally do a much, much better job than statistical compression methods while being much more efficient than methods attempting to approximate `K` directly.
 
