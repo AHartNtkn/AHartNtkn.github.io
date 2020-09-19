@@ -157,7 +157,7 @@ m(X) = Σ{p | p ↓ X} 2 ^ -l(p)
 where `p ↓ X` means `p` normalizes to `X` and `l(p)` is the length of `p`. There's that exponential decay I was talking about.
 
 See: 
-- http://www.scholarpedia.org/article/Algorithmic_probability
+- [Scholarpedia: Algorithmic probability](http://www.scholarpedia.org/article/Algorithmic_probability)
 - Also, Theorem 4.3.3 of "An Introduction to Kolmogorov Complexity and Its Applications"
 
 Modifying this for lambda expressions,
