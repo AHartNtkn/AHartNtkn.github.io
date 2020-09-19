@@ -227,7 +227,7 @@ That's all it says on pairing strategies. As far as I can tell from this, a pair
 
 Assuming we have an understanding of what additional constraints a pairing strategy should have, we want to find the pairing strategy which minimizes the following quantity;
 ```
-Σ{((rx, nx), (ry, ny)) ∈ P} `CTM(rx|ry) + if nx == ny then 0 else log(nx)`
+Σ{((rx, nx), (ry, ny)) ∈ P} CTM(rx|ry) + if nx == ny then 0 else log(nx)
 ```
 The minimal value for this quantity will be `BDM(X|Y)`.
 
@@ -244,7 +244,7 @@ We have a choice of partitioning strategy, but it gives the example of splitting
 ```
 ... Okay, but shouldn't it be way smaller? The original string wasn't even twice as long as its partitions, and it should be almost as easy to generate as the partitions. I thought this might be an idiosyncrasy of the specific kind of Turing machine which the paper uses, but the [complexity calculator website](https://www.complexitycalculator.com/) says almost the same thing, giving the "BDM algorithmic complexity estimation" as 57.5664 bits when we select a block size of 12 with an overlap of 11.
 
-Let's digress a bit and think of `K` in the the lambda calculus. Firstly, we need a way to represent binary strings. We'll just encode these as lists of bits. The type of bits will be defined as
+Let's digress a bit and think of `K` in the lambda calculus. Firstly, we need a way to represent binary strings. We'll just encode these as lists of bits. The type of bits will be defined as
 ```
 2 = ∀ X . X → X → X = {0, 1}
 ```
@@ -417,7 +417,7 @@ One of the thoughts I had was that there may be program patterns in the computat
 
 The CTM database only keeps track of string reductions, but it may be possible to search for patterns and perform block replacement via unification/pattern matching instead. This description was given in terms of first-order unification, but there may be a close link with higher-order unification; unification modulo computation.
 
-This also seems similar to finding smaller extensionally equivalent expressions to certain programs. That is, finding programs that don't normalize to the same term but do normalize to the same term when given the same inputs. Programs that are not the same but are behaviourally indistinguishable. I wrote a program a while ago in Mathematica which enumerated SKI expressions, applied 30 or so variable arguments to them, and collected them into pairs which normalized to the same expression after application. In this way, I built up a database which I used to make expressions smaller by replacing expressions with smaller eta-equivalent ones. In practice, this ran into some issues. Namely, two extensionally equivalent expressions are not guaranteed to have the same behavior since one may start evaluating after two arguments while the other will evaluate after three. For example, the following two expressions are extensionally equivalent, but they only normalize to the same term after two arguments are applied despite the first fully normalizing after only one application.
+This also seems similar to finding smaller extensionally equivalent expressions to certain programs. That is, finding programs that don't normalize to the same term but do normalize to the same term when given the same inputs. Programs that are not the same but are behaviourally indistinguishable. I wrote a program a while ago in Mathematica which enumerated SKI expressions, applied 30 or so variable arguments to them, and collected them into pairs which normalized to the same expression after application. In this way, I built up a database which I used to make expressions smaller by replacing expressions with smaller extensionally equivalent ones. In practice, this ran into some issues. Namely, two extensionally equivalent expressions are not guaranteed to have the same behavior since one may start evaluating after two arguments while the other will evaluate after three. For example, the following two expressions are extensionally equivalent, but they only normalize to the same term after two arguments are applied despite the first fully normalizing after only one application.
 ```
 λ f . f
 λ f . λ x . f x
@@ -465,7 +465,7 @@ This is an area which has been explored quite a bit; by the paper on [Universal 
 
 ---
 
-Here's another idea. This one is original to me, but I wouldn't be surprised if someone came up with something similar. Some models of computation can be run backward, nondeterministically. Specifically, models where every state can be reached in one step by only a finite number of transitions. This *can't* be done with the lambda calculus. If we were in a state λ x . λ f . f x x, that could have been reached in one step by
+Here's another idea. This one is original to me, but I wouldn't be surprised if someone came up with something similar. Some models of computation can be run backward, nondeterministically. Specifically, models where every state can be reached in one step by only a finite number of transitions. This *can't* be done with the lambda calculus. If we were in a state `λ x . λ f . f x x`, that could have been reached in one step by
 ```
 λx . (λ y . λ f . f y y) x
 (λx . x) (λ x . λ f . f x x)
@@ -496,7 +496,7 @@ Here's another idea. In CTM, we're enumerating all programs and seeing what they
 
 ---
 
-Ultimately, I think this whole problem should eat itself. If we're using a universal learning algorithm, then, certainly, it can learn to be better, somehow. Bootstrapping should be possible by some variation of the methods given in the paper.
+Ultimately, I think this whole problem should eat itself. If we're using a universal learning algorithm, then, certainly, it can learn to be better, somehow. Bootstrapping should be possible in this domain.
 
 <a name="heading5"></a>
 ## Algorithmic Loss
@@ -513,7 +513,7 @@ This has always irked me. No matter how many statisticians say "it's reasonable 
 
 Anyway, let's do the derivation;
 
-Firstly, what we always really want to do is maximize is the likelihood. Our model is going to make predictions about the probability of various data. The likelihood of our model is just the product of all the probabilities of each training point as predicted by our model.
+Firstly, what we always really want to do is maximize the likelihood. Our model is going to make predictions about the probability of various data. The likelihood of our model is just the product of all the probabilities of each training point as predicted by our model.
 ```
 L(m) = Π(i) m_prob(yi)
 ```
@@ -529,7 +529,8 @@ e^(- (x-μ)² / 2 σ²) / σ √(2 π)
 ```
 The "prediction" made by a Gaussian model will be the mean, `μ`, and the likelihood of a particular piece of data `x` will be that data fed into the PDF of a gaussian with the predicted mean. Substituting with those changes into our negative log-likelihood, this becomes
 ```
-- Σ(i) log(e ^ - (yi - y_pred)² / 2 σ²)  / σ √(2 π) = (1 / σ³ √(8 π)) Σ(i) (yi - yi_pred)²
+- Σ(i) log(e ^ - (yi - y_pred)² / 2 σ²)  / σ √(2 π)
+  = (1 / σ³ √(8 π)) Σ(i) (yi - yi_pred)²
 ```
 which is exactly the squared error, modulo some constant we don't care about. And getting the average by dividing by the number of data points will get us the mean squared error, MSE. This should also illustrate that if you don't think it's reasonable to assume your data were randomly sampled from a gaussian distribution, then you should also not think it's reasonable to use the squared error without a similar derivation.
 
