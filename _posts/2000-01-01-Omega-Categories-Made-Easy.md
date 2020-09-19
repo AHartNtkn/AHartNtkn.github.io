@@ -290,9 +290,9 @@ Like before, if we turn this into a context it will be ill-formed. As such, we n
 The rules neccessary to parse this context is barely different then that for ordinary categories;
 ```
 ω-Category context formation rules
-⊢ Γ ps (x : *)                            ⊢ Γ ps (f : x → y)
--------------✓   ---------------------⋆  -------------------⇓
-   ⊢ Γ ctx        ⊢ [x : *] ps (x : *)     ⊢ Γ ps (y : A)
+⊢ Γ ps (x : *)                             ⊢ Γ ps (f : x → y)
+--------------✓   ---------------------⋆  -------------------⇓
+   ⊢ Γ ctx         ⊢ [x : *] ps (x : *)     ⊢ Γ ps (y : A)
 
            ⊢ Γ ps (x : A)                      
 --------------------------------------⇑
