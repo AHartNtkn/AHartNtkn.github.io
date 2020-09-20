@@ -231,7 +231,7 @@ Assuming we have an understanding of what additional constraints a pairing strat
 ```
 The minimal value for this quantity will be `BDM(X|Y)`.
 
-This quantity will always be nonnegative and we can always minimize it to zero by making `P` empty. This is obviously not intended. It also doesn't make much sense to me that we're taking the log of `nx` if `nx` is just the count of `rx`s rather than, say, the length of `rx` times the number of occurrences. And shouldn't that log term scale with the difference between `nx` and `ny` in some way? The paper offers no real intuition.
+This quantity will always be nonnegative and we can always minimize it to zero by making `P` empty. This is obviously not intended. It also doesn't make much sense to me that we're taking the log of `nx` if `nx` is just the count of `rx`s rather than something involving the length of `rx`. And shouldn't that log term scale with the difference between `nx` and `ny` in some way? The paper offers no real intuition.
 
 Maybe looking at the [original BDM paper](https://arxiv.org/abs/1609.00110) can offer clarification. It gives a nice example which I'll reproduce here. Let's say we're applying BDM to the string 
 ```
