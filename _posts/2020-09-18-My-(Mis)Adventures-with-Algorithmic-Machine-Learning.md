@@ -465,7 +465,7 @@ This is an area which has been explored quite a bit; by the paper on [Universal 
 
 ---
 
-Here's another idea. This one is original to me, but I wouldn't be surprised if someone came up with something similar. Some models of computation can be run backward, nondeterministically. Specifically, models where every state can be reached in one step by only a finite number of transitions. This *can't* be done with the lambda calculus. If we were in a state `λ x . λ f . f x x`, that could have been reached in one step by
+Here's another idea. This one is original to me, but I wouldn't be surprised if someone came up with something similar. Some models of computation can be run backward, nondeterministically. Specifically, models where every state can be reached in one step by only a finite number of transitions. This *can't* be done effectively with the lambda calculus. If we were in a state `λ x . λ f . f x x`, that could have been reached in one step by
 ```
 λx . (λ y . λ f . f y y) x
 (λx . x) (λ x . λ f . f x x)
@@ -475,7 +475,7 @@ Here's another idea. This one is original to me, but I wouldn't be surprised if 
 (λ d . λ x . λ f . f x x) (λx . x x x)
 ...
 ```
-and infinitely many other things. This means that running a lambda expression backward implies enumerating infinite many possibilities at each step. The same applies to combinator logic.
+and infinitely many other things. This means that running a lambda expression backward implies enumerating infinite possibilities at each step. That doesn't mean running expressions backward is impossible, but it limits the utility of such an approach since we'd basically be enumerating every lambda expression an infinite number of times at each backward step. The same applies to combinator logic.
 
 Many models of computation, however, don't have this property. Anything where a fixed amount of work is done at each step does; that includes Turing machines, interaction nets, the linear lambda calculus, and most abstract machines. These can all be run backward, as a result. We can then enumerate all the programs which normalize to a particular output by doing the following, assuming we're using an appropriate Turing machine;
 
