@@ -83,6 +83,25 @@ I do wonder what the generic principal relating these is. I think it may be a pe
 ```
 which is isomorphic to `1 + X → X`. So the connection, in this case, is obvious, but it doesn't seem to me like this reasoning would generalize if our constructors required types with more exotic kinds of morphisms than functions.
 
+An interesting example is the identity type. The identity type has one constructor;
+```
+Id A a : A → *
+  refl : Id A a a
+```
+
+formulating this as a dialgebra, we'd get `Id A a` as the initial diagebra over
+```
+  F, G : (A → *) → (A → *)
+  F(P) = λ x . P a
+  G(P) = λ x . P x
+```
+
+The reason I wrote it this way is to emphasize the connection to the ordinary Leibniz definition of equality; `a = b` if and only if every property of `a`, `P`, is a property of `b`. That is;
+```
+a = b := ∀ P . P a → P b
+```
+This dialgebraic construction is one way of defining Leibniz equality categorically.
+
 Codata is essentially the same construction, but the inputs and outputs are switched, and we take the final, rather than initial, dialgebra.
 
 ℕ∞ is ℕ equipped with a point at infinity. Its destructors are the exact opposites of the constructors of ℕ.
@@ -235,3 +254,11 @@ which is further equivalent to
 ```
 
 where `n` is the number of constructors. This seems very workable and should give a generic construction for something like a Church encoding for dependent types.
+
+We can do a similar construction with coinductive types. For example;
+```
+PStr A n
+  = ∃ X : ℕ∞ → * . (∀ n : ℕ∞ . X (succ n) → A)
+                 × (∀ n : ℕ∞ . X (succ n) → X n)
+                 × X n
+```
