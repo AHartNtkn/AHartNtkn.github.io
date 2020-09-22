@@ -123,7 +123,7 @@ PStr A : ℕ∞ → *
 ```
   F, G : (ℕ∞ → *) → (ℕ∞ → *) × (ℕ∞ → *)
   F(X) = (const A, X)
-  G(X) = Δ (X ∘ (+1))
+  G(X) = Δ (X ∘ succ)
 ```
 
 The final example I'll give is pi types. As a coinductive type, they have one destructor;
