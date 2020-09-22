@@ -448,9 +448,42 @@ a ⨂ b =
 This is fully expanded upon in
   - [Monoidal weak ω-categories as models of a type theory](http://www.lix.polytechnique.fr/~tbenjamin/articles/publications/monoidal.pdf)
 
-Futher k-tuply monoidal ω-categories could certainly be made by furthering this construction. More speculatively, I do wonder how sophisticated we can make this. If, hypothetically, we could devise a way to construct canonical contexts in the shape of objects in a topos, then it would basically become an unbiased presentation of ordinary intuitionistic type theory with Pi-types, Sigma-types, etc. I don't think that would be possible, but that paper speculates on at least having closed-monoidal ω-categories, which should be structurally very rich. 
+Further k-tuply monoidal ω-categories could certainly be made by furthering this construction. More speculatively, I do wonder how sophisticated we can make this. If, hypothetically, we could devise a way to construct canonical contexts in the shape of objects in a topos, then it would basically become an unbiased presentation of ordinary intuitionistic type theory with Pi-types, Sigma-types, etc. I don't think that would be possible, but that paper speculates on at least having closed-monoidal ω-categories, which should be structurally very rich. I think something like the following should work; split up the (monoidial) canonical context into a contravarient and coverient part. When calculating the source and target, the target becomes the source and vice versa on the contravarient part. If the contraverient part is denoted with `{`s, we might have;
 
-Incidently, it is possible to present globular ω-categories in a biased manner. We'd need to define two infinite families of composition and identity operations for every direction in every dimension. This is done, for instance, in 
+```
+[a, b] =
+  op [{x : *}, [y : *]]
+     [{a}, [b]]
+     *
+
+unit-law =
+  coh [[x : *]]
+      [...]
+      [1, x] → x
+
+bij-1 =
+  coh [{x : *}, {y : *}, [z : *]]
+      [...]
+      [x ⨂ y, z] → [x, [y, z]]
+...
+
+hom-func-1 =
+  op [{x : *}, [y : *, z : *, f : y → z]]
+     [...]
+     [x, y] → [x, z]
+
+hom-func-2 =
+  op [{x : *, y : *, f : x → y}, [z : *]]
+     [...]
+     [y, z] → [x, z]
+...
+```
+
+however, this isn't able to capture the "wiring" which makes internal homs genuenly useful. How would one witness, for instance, the canonical `1 → [x, x]` for any `x`? This would suggest implementing some computational principal which cancels out the contra and covarient instances of repeated free variables in the type, but the calculation would have to be more sophisticated than the simple variable counting method presented thus far. We should not have a canonical map `[x ⨂ y, z] → [y, [x, z]]` since our tensor product isn't symmetric, though we can make it so by making our context a finite set instead of a list. As a consequence, variables shouldn't cancel if they're not in the correct position to do so. We may also extend the context with an extranatural component just to explicitly state this wiring, though, I don't know what that would look like.
+
+The above costruction basically just defines a product that's contravarient in one argument. Such a thing might be useful when defining opposite categories, but it doesn't address the "hom" part of "internal hom".
+
+Incidentally, it is possible to present globular ω-categories in a biased manner. We'd need to define two infinite families of composition and identity operations for every direction in every dimension. This is done, for instance, in 
  - [Steps toward the weak higher category of weak higher categories in the globular setting](http://cgasa.sbu.ac.ir/article_11180_b13cacfd9afe5780932141c269d0add6.pdf)
 
 I suppose I should also state somewhere that, throughout this presentation, I've been using globes as my [fundamental shape](https://ncatlab.org/nlab/show/geometric+shape+for+higher+structures). In most publications on higher categories, simplices are used instead. I do think what I've described here could be done with simplices, though I'm not sure how to define the pasting scheme contexts. Globes are by far the simplest shape, so using anything else makes things fundamentally more complex. However, some operations, particularly those close in geometry to other geometric shapes, are easier to work with using other shapes.
