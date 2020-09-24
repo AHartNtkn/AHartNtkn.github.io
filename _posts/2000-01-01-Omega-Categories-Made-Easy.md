@@ -448,7 +448,9 @@ a ⨂ b =
 This is fully expanded upon in
   - [Monoidal weak ω-categories as models of a type theory](http://www.lix.polytechnique.fr/~tbenjamin/articles/publications/monoidal.pdf)
 
-Further k-tuply monoidal ω-categories could certainly be made by furthering this construction. More speculatively, I do wonder how sophisticated we can make this. If, hypothetically, we could devise a way to construct canonical contexts in the shape of objects in a topos, then it would basically become an unbiased presentation of ordinary intuitionistic type theory with Pi-types, Sigma-types, etc. I don't think that would be possible, but that paper speculates on at least having closed-monoidal ω-categories, which should be structurally very rich. I think something like the following should work; split up the (monoidial) canonical context into a contravarient and coverient part. When calculating the source and target, the target becomes the source and vice versa on the contravarient part. If the contraverient part is denoted with `{`s, we might have;
+Further k-tuply monoidal ω-categories could certainly be made by furthering this construction. More speculatively, I do wonder how sophisticated we can make this. If, hypothetically, we could devise a way to construct canonical contexts in the shape of objects in a topos, then it would basically become an unbiased presentation of ordinary intuitionistic type theory with Pi-types, Sigma-types, etc. I don't think that would be possible, but that paper speculates on at least having closed-monoidal ω-categories, which should be structurally very rich. 
+<!--
+I think something like the following should work; split up the (monoidial) canonical context into a contravarient and coverient part. When calculating the source and target, the target becomes the source and vice versa on the contravarient part. If the contraverient part is denoted with `{`s, we might have;
 
 ```
 [a, b] =
@@ -479,14 +481,91 @@ hom-func-2 =
 ...
 ```
 
-however, this isn't able to capture the "wiring" which makes internal homs genuenly useful. How would one witness, for instance, the canonical `1 → [x, x]` for any `x`? This would suggest implementing some computational principal which cancels out the contra and covarient instances of repeated free variables in the type, but the calculation would have to be more sophisticated than the simple variable counting method presented thus far. We should not have a canonical map `[x ⨂ y, z] → [y, [x, z]]` since our tensor product isn't symmetric, though we can make it so by making our context a finite set instead of a list. As a consequence, variables shouldn't cancel if they're not in the correct position to do so. We may also extend the context with an extranatural component just to explicitly state this wiring, though, I don't know what that would look like.
+however, this isn't able to capture the "wiring" which makes internal homs genuenly useful. How would one witness, for instance, the canonical `1 → [x, x]` for any `x`? This would suggest implementing some computational principal which cancels out the contra and covarient instances of repeated free variables in the type, but the calculation would have to be more sophisticated than the simple variable counting method presented thus far. We should not have a canonical map `[x ⨂ y, z] → [y, [x, z]]` since our tensor product isn't symmetric, though we can make it so by making our context a finite set instead of a list. As a consequence, variables shouldn't cancel if they're not in the correct position to do so. The above costruction basically just defines a product that's contravarient in one argument. Such a thing might be useful when defining opposite categories, but it doesn't address the "hom" part of "internal hom". 
 
-The above costruction basically just defines a product that's contravarient in one argument. Such a thing might be useful when defining opposite categories, but it doesn't address the "hom" part of "internal hom".
+We may also extend the context with an extranatural component just to explicitly state this wiring. Using `(` to denote extranatural input-output pairs, we might be able to do;
 
-Incidentally, it is possible to present globular ω-categories in a biased manner. We'd need to define two infinite families of composition and identity operations for every direction in every dimension. This is done, for instance, in 
+```
+j(a) =
+  coh [(x : *)]
+      [a]
+      1 → [x-, x+]
+
+L(x, b, c) =
+  coh [(x : *), {y : *}, [z : *]]
+      [b, c]
+      [y, z] → [[x+, y], [x-, z]]
+
+comm-1 =
+  coh [(x : *), (y : *)]
+      []
+      j(y) ∘ L(x, y-, y+) → j([x, y])
+
+i(a, b) =
+  coh [{x : *}, [y : *]]
+      [a, b]
+      [x, y] → [1, [x, y]]
+
+j1(a) =
+  coh [(x : *), [z : *]]
+      [a, _]
+      [[x+, x-], z] → [1, z]
+
+comm-2 =
+  coh [(x : *), [y : *]]
+      [...]
+      i(x-, y) → L(x, x-, y) ∘ j1(x) ???
+...
+```
+This may suggest a full rehauling for how varience is tracked in the first place. We might count, not variables, but occurences of variables under each varience.  `FV` would then make sure the sources and targets just have the same counts for co and contra varience.
+
+Another alteration we could do is change how the source and target of types is defined. We may count the source to include all contravarient arguments in the target and the target to include all the cantravarient arguments in the source. We'd simply delete extranatural arguments when calculating free variables since they'd be wired to themselves and wouldn't be present in any kind of normal form. We might be able to simply have;
+
+```
+j(a) =
+  coh []
+      []
+      1 → [a, a]
+
+L(x, b, c) =
+  coh [{y : *}, [z : *]]
+      [b, c]
+      [y, z] → [[x, y], [x, z]]
+
+comm-1(x, y) =
+  coh []
+      []
+      j(y) ∘ L(x, y, y) → j([x, y])
+(Everything is extranatural here, but how would it know those center two ys should connect?)
+
+i(a, b) =
+  coh [{x : *}, [y : *]]
+      [a, b]
+      [x, y] → [1, [x, y]]
+
+j1(a) =
+  coh [[z : *]]
+      []
+      [[a, a], z] → [1, z]
+
+comm-2 =
+  coh [{x : *}, [y : *]]
+      [...]
+      i(x, y) → L(x, x, y) ∘ j1(x)
+...
+```
+
+though, handling extranatural functoriality and actually writing down `FV` are something I don't know how to do.
+-->
+
+...
+
+It is possible to present globular ω-categories in a biased manner. We'd need to define two infinite families of composition and identity operations for every direction in every dimension. This is done, for instance, in 
  - [Steps toward the weak higher category of weak higher categories in the globular setting](http://cgasa.sbu.ac.ir/article_11180_b13cacfd9afe5780932141c269d0add6.pdf)
 
 I suppose I should also state somewhere that, throughout this presentation, I've been using globes as my [fundamental shape](https://ncatlab.org/nlab/show/geometric+shape+for+higher+structures). In most publications on higher categories, simplices are used instead. I do think what I've described here could be done with simplices, though I'm not sure how to define the pasting scheme contexts. Globes are by far the simplest shape, so using anything else makes things fundamentally more complex. However, some operations, particularly those close in geometry to other geometric shapes, are easier to work with using other shapes.
+
+...
 
 Lastly, I'd like to make a point about free theorems, functors, and natural transformations. After all this higher-category stuff became intuitive, some properties of structure-preserving maps became obvious special cases of cell properties in higher categories. Functors `F : C → D` have the property that, given a morphism between objects `a` and `b` in the category `C`, we have a morphism between `F(a)` and `F(b)`. Functors are just morphisms in `Cat`, the category of categories. Objects are morphisms from the unit category, `𝟙`, to the object `C` in `Cat`. Morphisms in `C` are then 2-cells between maps between `𝟙` and `C`. We can define the functor map as an operation out of the context defined by the pasting scheme
 
