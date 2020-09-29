@@ -681,8 +681,8 @@ The conclusion section refers to the whole framework as a "symbolic inference en
 I'm not satisfied with the methods presented in this paper. Nothing in it connected back to that idea of "whichever addition increases the compressed size the least should be considered the likeliest prediction" I mentioned at the beginning of this post. All the paper said, really, was "when tuning parameters, just look through them in order from least to most complex. Also, use Kolmogorov complexity, not Shannon entropy, to measure complexity." I'll keep that in mind, but I think I'd want to look at other methods. I think something more carefully designed will need to be made for practical ML. 
 
 I took a closer look at those evolutionary methods mentioned. Specifically, I read;
-* (Proving Darwin: Making Biology Mathematical)[https://www.amazon.com/Proving-Darwin-Making-Biology-Mathematical/dp/1400077982]
-* (Algorithmically probable mutations reproduce aspects of evolution such as convergence rate, genetic memory, and modularity)[https://arxiv.org/abs/1709.00268]
+* [Proving Darwin: Making Biology Mathematical](https://www.amazon.com/Proving-Darwin-Making-Biology-Mathematical/dp/1400077982)
+* [Algorithmically probable mutations reproduce aspects of evolution such as convergence rate, genetic memory, and modularity](https://arxiv.org/abs/1709.00268)
 
 I cannot recommend that first source. It's a very fluffy soft pop-sci book. It does contain the basic idea of algorithmic evolution, though. Chaitin calls it "metabiology", but I don't like that term, so I'll call it "algorithmic evolution". It's basically the following;
 
