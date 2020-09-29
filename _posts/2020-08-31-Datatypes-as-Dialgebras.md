@@ -89,7 +89,7 @@ Id A a : A → *
   refl : Id A a a
 ```
 
-formulating this as a dialgebra, we'd get `Id A a` as the initial diagebra over
+formulating this as a dialgebra, we'd get `Id A a` as the initial dialgebra over
 ```
   F, G : (A → *) → (A → *)
   F(P) = λ x . P a
