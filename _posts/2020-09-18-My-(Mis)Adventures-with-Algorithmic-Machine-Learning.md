@@ -122,6 +122,15 @@ I don't buy the argument given in the paper, though, which just seems to argue t
 
 Similar grammar-based methods should work for other structured models of computation. For example, using re-pair for graphs as presented in [Grammar-Based Graph Compression](https://arxiv.org/abs/1704.05254), a version should be possible for interaction nets.
 
+---
+
+### Evolution-based
+
+There is also this paper;
+* [Genetic Programming Estimates of Kolmogorov Complexity](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.57.429&rep=rep1&type=pdf)
+
+which proposes the evolution of programs for the purposes of producing strings, giving smaller functions higher fitness.
+
 <a name="heading2p5"></a>
 ## Approximating Conditional Kolmogorov Complexity using CTM
 
