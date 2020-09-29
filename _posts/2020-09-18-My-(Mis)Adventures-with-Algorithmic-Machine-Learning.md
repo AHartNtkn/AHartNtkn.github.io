@@ -323,11 +323,11 @@ For the other, just swap `0` and `1`. This has about 83.93 bits; the exact same,
 This isn't the only way to represent binary strings. We can write the original string instead as;
 
 ```
-λ0 . λ1 . 
+λ0 . λ1 . λ x .
   0 (1 (0 (1 (0 (1
   (0 (1 (0 (1 (0 (1
-  (0 (1 (0 (1 (0 (1 (λ x . x)))))))
-  )))))))))))
+  (0 (1 (0 (1 (0 (1 x)))))))
+  ))))))))))
 ```
 
 To justify this representation we need to prove that its type is isomorphic to something satisfying the universal property of binary strings. Here, `1` and `0` are expected to take a function `X → X` and return another function of the same type. This means our new representation has type;
@@ -352,15 +352,14 @@ Which is the representation we started with. This justifies that the new represe
 - [Recursive types for free!](https://homepages.inf.ed.ac.uk/wadler/papers/free-rectypes/free-rectypes.txt)
 - [The Algebra of Algebraic Data Types (Youtube)](https://www.youtube.com/watch?v=YScIPA8RbVE)
 
-Our new representation has about 78.9 bits of information, while the sub-strings have about 54.9 bits. We can compress our larger string to
+Our new representation has about 90.49 bits of information, while the sub-strings have about 62.63 bits. We can compress our larger string to
 ```
 λ0 . λ1 . 
   (λ f . λ x . f (f x))
   (λ f . λ x . f (f (f x)))
   (λ x . 0 (1 x))
-  (λ x . x)
 ```
-which has about 57.27 bits of information, less even than what BDM states the Turing machine representation should have. And the lambda calculus has to represent every tree-like datatype! What's the Turing machine representation doing with all that space below 57 bits if it can't even fit 9 repetitions of `01`? As far as I can tell, the two 12 digit substrings can't be compressed any further, but my point from before still stands; both strings have similar amounts of algorithmic information. It's suspicious that BDM would say otherwise.
+which has about 59.858 bits of information, nearly what BDM states the Turing machine representation should have. And the lambda calculus has to represent every tree-like datatype! What's the Turing machine representation doing with all that space below 57 bits if it can't even fit 9 repetitions of `01`? My point from before still stands; both strings have similar amounts of algorithmic information. It's suspicious that BDM would say otherwise.
 
 ...
 
