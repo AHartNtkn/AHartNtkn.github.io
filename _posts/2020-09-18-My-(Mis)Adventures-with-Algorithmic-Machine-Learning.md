@@ -419,7 +419,7 @@ Neither of these conditions is hinted at in the paper, but it's the best I've go
 So, at the very least, the pairing strategy is supposed to be determined by some algorithm that isn't described in any detail. I'm frustrated by this whole thing.
 
 <a name="heading4"></a>
-## Spit-balling ways to improve DBM and CTM
+## Spit-balling ways to improve BDM and CTM
 
 One of the thoughts I had was that there may be program patterns in the computational model that always uniformly evaluate. For example, it may always be the case that `100101X10101Y0`, for any strings `X` and `Y`, evaluate to `1100101`, or maybe `0Y1010`. In either case, we can make the replacement to get a smaller program without running the program. Or maybe it reduces to `01Y0Y01`. Depending on the length of `Y` this may or may not be a reduction in size. And there may be variations on this involving variable substrings being riffled and combined in nontrivial ways.
 
