@@ -1,6 +1,6 @@
 - [Introduction](#heading1)
 - [Turing Completeness](#heading1p5)
-- [Godel's Second Incompleteness Theorem](#heading2p5)
+- [Godel's Incompleteness Theorems](#heading2p5)
 - [Final Thoughts](#headingF)
 - [Bits and Bobs](#headingL)
 
@@ -10,7 +10,7 @@
 I've recently been thinking about a peice of hypocracy pertaining to the foundations of computing and mathematics which few seem to realize exists. This occured to me when reading one of [Gregory Chaitin's books](https://www.amazon.com/Proving-Darwin-Making-Biology-Mathematical/dp/1400077982) which makes frequent use and abuse of this hypocrasy, but that was hardly the first place I've seen it. The conflict comes from two common interpretations of some famous mathematics in the early 20th century. Namely the idea that;
 
 1. The Church-Turing thesis; that Turing proved the existence of universal computers; machines which can compute anything which can be computed in principal.
-2. Godel's Second Incompleteness Theorem; That Godel disproved the existence of universal logics; logics capable of proving anything which can be proved in principal.
+2. Godel's Incompleteness Theorems; That Godel disproved the existence of universal logics; logics capable of proving anything which can be proved in principal.
 
 To quote from Chaitin's book;
 
@@ -175,7 +175,7 @@ For more information on this topic, see;
 * [Higher-Order Computability](https://www.springer.com/gp/book/9783662479919)
 
 <a name="heading2p5"></a>
-## Godel's Second Incompleteness Theorem
+## Godel's Incompleteness Theorems
 
 Godel's Second Incompleteness Theorem is probably, for how rarely it's understood, the most widely cited theorem in mathematics. This, in my opinion, mostly comes from the extremely obscure and convoluted methods that Godel originally used. Not that he's at fault; there weren't better alternatives at the time. However, we live in the future! (reletively), and we don't need to use Godel's original methods like some kind of caveman.
 
@@ -183,11 +183,92 @@ At the very begining of Chaitin's book, he quotes a segement from Gian-Carlo Rot
 
 > To the theorizer, the supreme achievement of mathematics is a theory that sheds sudden light on some incomprehensible phenomenon. Success in mathematics does not lie in solving problems but in their trivialization. The moment of glory comes with the discovery of a new theory that does not solve any of the old problems but renders them irrelevant.
 
-I suspect that the exherpt is meant to be somewhat self-congradulatory; directing the audience to think of Chaitin as a new, great theorizer who will trivialize much of established biology with the content of his book. I suppose only time will tell on that matter, but the quote did remind me of someone. More than any other mathemetician, this quote reminded me of William Lawvere who meets that description to a T. He trivialized many, many things through his advances in category theory and topos theory. One of them was, as it so happens, Godel's Second Incompleteness Theorem. In the paper [Diagonal Arguments and Cartesian Closed Categories](http://tac.mta.ca/tac/reprints/articles/15/tr15.pdf) he writes;
+I suspect that the exherpt is meant to be somewhat self-congradulatory; directing the audience to think of Chaitin as a new, great theorizer who will trivialize much of established biology with the content of his book. I suppose only time will tell on that matter, but the quote did remind me of someone. More than any other mathemetician, this quote reminded me of William Lawvere who meets that description to a T. He trivialized many, many things through his advances in category theory and topos theory. One of them was, as it so happens, Godel's Incompleteness Theorem. In the paper [Diagonal Arguments and Cartesian Closed Categories](http://tac.mta.ca/tac/reprints/articles/15/tr15.pdf) he writes;
 
 > The original aim of this article was to demystify the incompleteness theorem of G̈odel and the truth-definition theory of Tarski by showing that both are consequences of some very simple algebra in the cartesian-closed setting. It was always hard for many to comprehend how Cantor's mathematical theorem could be re-christened as a "paradox" by Russell and how G̈odel’s theorem could be so often declared to be the most significantresult of the 20th century.
 
-This section will essentially be me explaining Lawvere's proof of G̈odel’s theorem in my own words. By the end of it, I hope you will be as demystified as I am.
+Lawvere skimmed over the hard parts of Godel's theorems, but I'll fill in those details as well, mostly using the tequniques described in [Gödel’s Incompleteness after Joyal](https://arxiv.org/pdf/2004.10482.pdf)
+
+Lawvere dows his proving inside a cartesian closed categories. I like working in type theories, so we can represent his proofs by working in a theory with product types, function types, and a unit type, at least. I'll add some other things in certain special cases. The general result which will be used to do all our most abstruce work will be Lawvere's fixed point theorem. This sais, essentially, that the existance of an epimorphism from some object `T` to the internal hom `[T, Y]` implies that every endomorphism over `Y` has a fixed point. Let's lay out the definitions more formally;
+
+* An epimorphism `to : A ↠ B` is defined to have another function, `from : B → A` such that `to (from x) ≡ x`.
+
+* A fixed point of a function `α : Y → Y` is a term `x : Y` such that `α x ≡ x`.
+
+Simple enough. To prove our theorem, we start by assuming that we have an epimorphism `to : T ↠ (T → Y)` and an endofunction `α : Y → Y`. To prove our theorem we need to identify the fixed point. It's simply 
+```
+fp : Y
+fp = to (from (λ x . α (to x x)))
+        (from (λ x . α (to x x)))`
+```
+It may be helpful to verify that this term is well-typed.
+
+To complete our proof, we need to prove that `α fp = fp`.
+```
+fp
+= to (from (λ x . α (to x x))) (from (λ x . α (to x x)))
+= (λ x . α (to x x)) (from (λ x . α (to x x)))
+= α (to (from (λ x . α (to x x))) (from (λ x . α (to x x))))
+= α fp
+```
+We just evaluate `fp`, apply the fact that `to (from x) ≡ x`, and simplify.
+
+This calculation is closely related to the proof of `Y f = f (Y f)` for `Y = λ f . (λ x . f (x x)) (λ x . f (x x))`.
+```
+Y f
+= (λ f . (λ x . f (x x)) (λ x . f (x x))) f
+= (λ x . f (x x)) (λ x . f (x x))
+= f ((λ x . f (x x)) (λ x . f (x x)))
+= f ((λ f . (λ x . f (x x)) (λ x . f (x x))) f)
+= f (Y f)
+```
+In some sense, an epimorphism of the sort assumed gives us the exact resources neccessary to set up that kind of self-referential loop.
+
+Okay, now that that's out of the way, how is it useful? In reality, we usually want the contrapositive; that the existance of an endomorphism without a fixed point implies that such an epimorphism doesn't exist.
+
+I'll use cantor's theorem as an example. Cantors theorem states that there are more real numbers than natural numbers. The original version of cantor's diagonalization argument essentially instructs us to imagine the infinite decimal expansion of a countable list of real numbers and then constructing a number out of that list ysing the digits on the diagonal.
+
+We can significantly simplify the formal presentation of the proof using Lawvere's Fixed Point theorem. We can rephrase the theorem as stating that there doesn't exist an epimorphism from `ℕ` to `ℝ`. The intermediate steps only pertain to the infinite decimal expansions, which we can model as a a function from `ℕ` to `Fin(10)`, to a finite set with ten elements. In otherwords, the core of our proof is that there doesn't exist an epimorphism `ℕ ↠ (ℕ → Fin(10))`. There are lots of endofunctions over `Fin(10)` which don't have fixed points; any permutation, really. For example, we could use
+```
+f(n) := if n == 9 then 0 else n + 1
+```
+By mapping this function over a list of infinite decimal expansions, we will get an infinite decimal expansion of something not in that list, thus completing the proof. Of course, `ℕ → Fin(10)` isn't the real numbers. Really, the (nonegative) real numbers are [`ℕ → ℕ`](https://www.sciencedirect.com/science/article/pii/S1571066105802725). We can reproduce the same proof for the nonnegative reals proper by exibiting the function `λ x . x + 1` instead, which, of course, has no fixed point.
+
+Now that a clear example has been made, we can target Godel's Incompleteness Theorems proper. While the core of the theorems is already here, most of the technical work of the theorems is involved in the setup. This is similar, really, to cantor's theorem; most of our work is making the problem look like it's asserting the nonexistance of an appropriatly shaped epimorphism.  
+
+
+
+
+
+
+
+
+Both of Godel's theorems take place in some logic, `T`, which has a quotation mechanism. That is, for any formula in the logic, `φ`, the quoted `"φ"` is also a term in the logic. For some logics, figuring out how to represent this quotation mechanism can be tricky. Furthermore, we assume `T` is expressive enough to talk about itself and reason about the provability of various statements. There should be some expression in the language of the form `Pr(E)`, meaning that the quoted expression `E` is provable. We may also assume the existance for a proof coding; that there are terms in `T` representing proofs. By `Pr(S, φ)`, We'd mean that `S` is a proof for the theorem `φ`.
+
+The main technical acheivement of either theorem, really, was the observation that godel encodings are possible in a system as simple as Peano Arithmetic.
+
+
+
+ The essential statements of the incompleteness theorems are;
+
+* First: There are true but unprovable statements in `T`.
+
+Our endofunction is simply the following;
+
+```
+E : T → T
+E(x) = ∀ s . ¬ Pr(s, x)
+```
+
+In other words; There is some formula `φ` which is unprovable by `T` such that `T` can't prove `Pr("φ") → φ`.
+
+
+* Second: 
+
+
+ There is some formula `φ` which is unprovable by `T` such that `T` can't prove `Pr("φ") → φ`.
+
+* Second: There does not exist any refutable `φ` such that `T` can prove `Pr("φ") → φ`.
 
 
 
