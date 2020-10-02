@@ -187,7 +187,7 @@ I suspect that the exherpt is meant to be somewhat self-congradulatory; directin
 
 > The original aim of this article was to demystify the incompleteness theorem of G̈odel and the truth-definition theory of Tarski by showing that both are consequences of some very simple algebra in the cartesian-closed setting. It was always hard for many to comprehend how Cantor's mathematical theorem could be re-christened as a "paradox" by Russell and how G̈odel’s theorem could be so often declared to be the most significantresult of the 20th century.
 
-Lawvere skimmed over the hard parts of Godel's theorems, but I'll fill in those details as well, mostly using the tequniques described in [Gödel’s Incompleteness after Joyal](https://arxiv.org/pdf/2004.10482.pdf)
+Lawvere skimmed over the hard parts of Godel's theorems, but there was another great theorist who touched on this same topic; Joyal. I'll fill in the details not covered by Lawvere mostly using the tequniques described in [Gödel’s Incompleteness after Joyal](https://arxiv.org/pdf/2004.10482.pdf).
 
 Lawvere dows his proving inside a cartesian closed categories. I like working in type theories, so we can represent his proofs by working in a theory with product types, function types, and a unit type, at least. I'll add some other things in certain special cases. The general result which will be used to do all our most abstruce work will be Lawvere's fixed point theorem. This sais, essentially, that the existance of an epimorphism from some object `T` to the internal hom `[T, Y]` implies that every endomorphism over `Y` has a fixed point. Let's lay out the definitions more formally;
 
