@@ -32,7 +32,7 @@ The algorithmic probability of an output, `y`, conditioned on some input, `x`, d
 m(y|x) = Σ{ p(x) = y } 2 ^ -I(p)
 ```
 
-From there, a function, `f`, of good fitness should maximize `m(y|f(x))` when `x R y`. However, since there may be many `y`s which `R` assigns to `x`, and our `f` can, at best, pick only one, we must select whichever `y` is closest. Our full fitness function is essentially the expectation of this when `x` is sampled from the universal distribution;
+From there, a function, `f`, of good fitness should maximize `m(y|f(x))` when `x R y`. However, since there may be many `y`s which `R` assigned to `x`, and our `f` can, at best, pick only one, we must select whichever `y` is closest. Our full fitness function is essentially the expectation of this when `x` is sampled from the universal distribution;
 
 ```
 fit(R, f) := 𝔼{ x ~ m } [ max{ x R y } m(y|f(x)) ]
