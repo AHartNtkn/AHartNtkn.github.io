@@ -15,13 +15,14 @@ A relational specification is a relation specifying which outputs can come from 
 
 In the ideal case, we can just give the following series of inequalities;
 
-* f ⊆ R
-* f · f° ⊆ id
-* id ⊆ f° · f
+* R is-satisfied-by f :=
+  * f ⊆ R
+  * f · f° ⊆ id
+  * id ⊆ f° · f
 
 That first condition states that any pair `(x, y)` such that `f(x) = y` must also satisfy `x R y`. That is, a function meeting the relational specification is a sub relation. The second condition states that `f` is functional, that every input is mapped onto, at most, a single output. That third condition is totality, stating that everything is mapped onto, at least, one output. By solving this system of inequalities using relational algebra, as described, for instance, in [Program Design by Calculation](http://www4.di.uminho.pt/~jno/ps/pdbc.pdf), we can derive a function meeting this specification algebraically.
 
-There are a few problems with this approach. The biggest is that, often, we want to specify programs in terms of uncomputable relations. That is, relations that don't have computable functions meeting them. Program synthesis is one such relation. It's not generally decidable whether or not there exists a program that meets a specification. As a consequence, while the system of inequalities is a perfectly good relation between `f` and `R`, it doesn't have a solution when we set `R` to it.
+There are a few problems with this approach. The biggest is that, often, we want to specify programs in terms of uncomputable relations. That is, relations that don't have computable functions meeting them. Program synthesis is one such relation. It's not generally decidable whether or not there exists a program that meets a specification. As a consequence, while "is-satisfied-by" is a perfectly good relation between `f` and `R`, it doesn't have a solution when we set `R` to it.
 
 When we have a noncomputable relation, our only hope is to approximate a solution. We can specify a fitness function that maximizes in the case that our function actually does meet the relation. Otherwise, our task is simply to maximize this fitness function. The simplest way to specify this fitness function is to use algorithmic probability; a function of high fitness should maximize the algorithmic probability of correct outputs.
 
@@ -64,5 +65,7 @@ If there's a global optimum, then we'd just argmax over the fitness function, bu
 This is essentially the version of program synthesis that can be used for bootstrapping. A better program synthesizer is essentially one that improves fitness faster; though one which improves it by `0` is a valid improver. This allows the usage of a simple modified identity function as a starting point for improvement.
 
 Of course, the fitness function could probably be improved. A good thing to do would be replacing the algorithmic probability with the Levin probability, which just divides the probability of each program, `p`, by the runtime of `p`. This, and perhaps other modifications to punish bad performance, could be made, but the description so far is a solid starting point.
+
+It's also worth noting that dropping the totality condition from "is-satisfied-by" will make the meta-problem solvable. While it's not decidable if there exists a program meeting a specification, it is hemidecidable. That is, there exists a program which will find a function, if it exists. If it doesn't exist, then the program may run forever. A nice thing about the fitness function, though, is it can give us a notion of intermediate progress which can be used, for example, by a genetic algorithm or some other randomized search.
 
 Now all I need is an algorithm that can accept this specification...
