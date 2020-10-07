@@ -1,4 +1,4 @@
-This post will be a small note on program specifications. One of my long-term goals is that of a bootstrapping program synthesizer. That is, a program synthesizer that can synthesize better program synthesizers. One important step is specifying, formally, what this means. I've recently figured out how to properly formulate this. This post will be a short note explaining this.
+This post will be a small note on program specifications. One of my long-term goals is that of a bootstrapping program synthesizer. That is, a program synthesizer that can synthesize better program synthesizers. One important step is specifying, formally, what this means. I've recently figured out how to properly formulate this.
 
 The generic program synthesis problem is essentially one of finding a program meeting a relational specification. That is, we have some relation, `R`, and we want to find a computable function, `f`, such that `f(x) = y` implies `x R y`. Some examples of relational specifications are;
 
