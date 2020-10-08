@@ -38,6 +38,14 @@ From there, a function, `f`, of good fitness should maximize `m(y|f(x))` when `x
 fit(R, f) := 𝔼{ x ~ m } [ max{ x R y } m(y|f(x)) ]
 ```
 
+Passing through the coding theorem, we could, of course, formulate this in terms of Kolomogorov complexity;
+
+```
+NLfit(R, f) := 𝔼{ x ~ m } [ min{ x R y } K(y|f(x)) ]
+```
+
+where minimizing `NLfit` is equivalent to maximizing `fit`.
+
 Here, `m` is the universal distribution assigning to `x` the likelihood that it will be produced by a random program; its algorithmic likelihood.
 
 ```
