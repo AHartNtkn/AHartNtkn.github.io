@@ -40,7 +40,7 @@ From there, a function, `f`, of good fitness should maximize `m(y|f(x))` when `x
 fit(R, f) := 𝔼{ x ~ m } [ max{ x R y } m(y|f(x)) ]
 ```
 
-If `R` doesn't assign `x` to anything, then anything the program outputs is valid. In such cases, `max{ x R y } m(y|f(x))` simply becomes `m(f(x)|f(x))`, which is greater than or equal to `m(id)`.
+If `R` doesn't assign `x` to anything, then anything the program outputs is valid. In such cases, `max{ x R y } m(y|f(x))` simply becomes `m(f(x)|f(x))`, which is greater than or equal to `m(id)`. I'm not sure what the best way to handle this is; presumably, it should be to restrict the `x`s which are actually assigned by `R` to some output rather than allow irrelevant inputs to affect the fitness.
 
 Passing through the coding theorem, we could, of course, formulate this in terms of Kolomogorov complexity;
 
