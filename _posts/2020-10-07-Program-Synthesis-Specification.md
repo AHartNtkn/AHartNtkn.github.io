@@ -40,6 +40,8 @@ From there, a function, `f`, of good fitness should maximize `m(y|f(x))` when `x
 fit(R, f) := 𝔼{ x ~ m } [ max{ x R y } m(y|f(x)) ]
 ```
 
+If `R` doesn't assign `x` to anything, then anything the program outputs is valid. In such cases, `max{ x R y } m(y|f(x))` simply becomes `m(f(x)|f(x))`, which is greater than or equal to `m(id)`.
+
 Passing through the coding theorem, we could, of course, formulate this in terms of Kolomogorov complexity;
 
 ```
@@ -59,13 +61,13 @@ This essentially makes the fitness function prioritize algorithmically simpler i
 If `f` meets our specification exactly, it will be the case that,
 
 ```
-fit(R, f) ≤ m(id)
+fit(R, f) ≥ m(id)
 ```
 
 In the case that `id` is also the simplest program, which is the case for Turing machines and the lambda calculus, then
 
 ```
-fit(R, f) = m(id)
+NLfit(R, f) = K(id)
 ```
 
 If there's a global optimum, then we'd just argmax over the fitness function, but program synthesis for noncomputable relations is generally monotone. That is, no matter how good our program does, we could always make a better one. This is like a "name the biggest number" problem; we could always name a bigger number. As an example, a relation assigning `true` to halting programs and `false` to nonterminating programs is just such a noncomputable relation. However, we could make progressively better and better functions for determining termination. We could always make improved heuristics for determining the termination of wider and wider classes of functions. We could also just memorize examples. Either would improve our function's fitness. This means there isn't a well-defined argmax, and we must, instead, settle for specifying a function improver. Something like;
