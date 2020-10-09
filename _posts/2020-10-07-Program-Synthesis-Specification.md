@@ -30,7 +30,7 @@ We could try fixing this by replacing totality with a condition like
 
   * R° · R ⊆ f° · f
 
-which asserts that all inputs assigned to something by the relation are also assigned to something by the function. However, this approach puts us back into the same position we were before when the relation is, itself, total but non-computable. If we explicitly formulate our problem as a hemidecision procedure, though, our relation won't be total this may work just fine.
+which asserts that all inputs assigned to something by the relation are also assigned to something by the function. However, this approach puts us back into the same position we were before when the relation is, itself, total but non-computable. If we explicitly formulate our problem as a hemidecision procedure, though, our relation won't be total and this may work just fine. In fact, this modified `is-satisfied-by` is a hemidecision procedure, so we can feed it to itself to have a valid formal specification of program synthesis.
 
 When we have a noncomputable relation in general, our only hope is to approximate a solution. We can specify a fitness function that maximizes in the case that our function actually does meet the relation. Otherwise, our task is simply to maximize this fitness function. The simplest way to specify this fitness function is to use algorithmic probability; a function of high fitness should maximize the algorithmic probability of correct outputs.
 
