@@ -1,7 +1,7 @@
 A few years ago, a new proof theory called CaTT was described in the paper
  - [A Type-Theoretical Definition of Weak ω-Categories](https://arxiv.org/abs/1706.02866)
 
-It contains what is, in retrospect, the simplest and easiest to reason about presentation of ω-categories anywhere I'm aware of. ω-categories are a somewhat esoteric concept, infinite-dimensional algebraic structures that seem impossible to effectively reason about at first glance. And yet, reasoning up to arbitrarily many dimensions within them can be made, not just simple but trivial.
+It contains what is, in retrospect, the simplest and easiest to reason about presentation of ω-categories anywhere I'm aware of. ω-categories are a somewhat esoteric concept, infinite-dimensional algebraic structures that seem impossible to effectively reason about at first glance. And yet, reasoning up to arbitrarily many dimensions within them can be made, not just simple, but fairly trivial.
 
 My goal with this post is not to merely summarize that paper, but to expand on its contents providing intuition and additional exposition. Hopefully, by the end of it, ω-categories will seem extremely simple to you.
 
@@ -54,9 +54,9 @@ It will be helpful to look at one of the most important monoids, lists. Given an
 ([a, b] ++ [c, d, e]) ++ [f] = [a, b] ++ ([c, d, e] ++ [f]) = [a, b, c, d, e, f]
 [] ++ [a, b, c] = [a, b, c] ++ [] = [a, b, c]
 ```
-The monoidal nature of lists is readily apparent from the way they are written. We can canonicalize an expression involving lists into a unique representation. To see the monad laws, we can simply normalize the lists and see that the results on either side of the equations are the same. This unique, canonical representation allows us to take the monoid laws for granted. This special property actually makes lists important in the theory of monoids; the type of lists of `a`s is the free monoid over `a`.
+The monoidal nature of lists is readily apparent from the way they are written. We can canonicalize an expression involving lists into a unique representation. To see the monoid laws, we can simply normalize the lists and see that the results on either side of the equations are the same. This unique, canonical representation allows us to take the monoid laws for granted. This special property actually makes lists important in the theory of monoids; the type of lists of `a`s is the free monoid over `a`.
 
-With this in mind, we can easily define the full, unbiased theory of monoids. We'll use lists as a way to canonically represent any operation so that we can take all expressions for granted.
+With this in mind, we can easily define the full, unbiased theory of monoids. We'll use lists as a way to canonically represent any operation so that we can take all equations for granted.
 
 I'll define our theory of monoids as a type theory. I'll denote the ambient type `*` which will contain all the things within our monoid. Using lists, we can define canonical representations for any operation. These lists will simply be contexts of things pulled from `*`.
 ```
@@ -65,14 +65,14 @@ Monoid context formation rules
 --------      -----------------------
 ⊢ [] ctx         ⊢ Γ , (x : *) ctx
 ```
-The reason we want to use contexts rather than simply lists is so that we can substitute them. A substitution will simply be a list of things pulled from our theory of the correct type;
+The reason we want to use contexts rather than simply lists is so that we can substitute terms into them. A substitution will simply be a list of things pulled from our theory of the correct type;
 ```
 Monoid substitution formation rules
                   Δ ⊢ σ sub Γ     Δ ⊢ a : A[σ/Γ]
 -------------     ------------------------------
 Δ ⊢ [] sub []         Δ ⊢ σ, a sub Γ, (x : A)
 ```
-Where `A[σ/Γ]` is substitution `σ` applied to every variable in `Γ` within the type `A`. Our current theory only has one type, `*`, so that's all `A` can be. When we look at categories `A` will also be able to be a morphism between two objects. With substitutions in hand, we can define an operation as an appropriate substitution into a context.
+Where `A[σ/Γ]` is the substitution `σ` applied to every variable in `Γ` within the type `A`. Our current theory only has one type, `*`, so that's all `A` can be. When we look at categories `A` will also be able to be a morphism between two objects. With substitutions in hand, we can define an operation as an appropriate substitution into a context.
 
 ```
 Monoid operation formation rule
@@ -154,7 +154,7 @@ Magma substitution formation rules.
 ```
 The operation and coherence rules are exactly the same. Using them, we can expose the interesting equational theory of an unbiased magma.
 ```
-a ∘ b        = op ((x : *) ∘ (y : *)) (a ∘ b)
+a ∘ b = op ((x : *) ∘ (y : *)) (a ∘ b)
 prod31(a, b, c) = op (((x : *) ∘ (y : *)) ∘ (z : *)) ((a ∘ b) ∘ c) 
 
 example =
@@ -171,7 +171,7 @@ We can summarize the general procedure for getting unbiased theories as follows;
 
 There are some caveats to this. This assumes there are no non-trivial interactions between context formation and the data structure. However, in theories with cancelation laws that may delete a variable, such as with groups, contexts won't be able to express this since contexts require new variables to be fresh. Outside of such structures, this procedure is generally very effective.
 
-Let's go up one level in sophistication before getting to full ω-categories. Let's talk about the unbiased theory of regular categories. 
+Let's go up one level in sophistication before getting to full ω-categories. Let's talk about the unbiased theory of categories. 
 
 Our type theory will now have two types of things;
 ```
@@ -186,7 +186,7 @@ f : a → b
 g : b → c
 h : c → d
 ```
-we can canonically represent `(f ∘ g) ∘ h` as `[a, f, b, g, c, h, d]`. Or, at least, this is what I'd do if I were defining the free category inside of some kind of library. We want this to be a context, though.
+we can canonically represent `(f ∘ g) ∘ h` as `[a, f, b, g, c, h, d]`. Note that this is in compositional order rather than applicative order. Or, at least, this is what I'd do if I were defining the free category inside of some kind of library. We want this to be a context, though.
 ```
 [a : *, f : a → b, b : *]
 ``` 
@@ -219,13 +219,7 @@ Category operation formation rule
     Δ ⊢ op Γ σ (S → T) : S[σ/Γ] → T[σ/Γ]
 ```
 `tar(Γ)` will be the last thing of type `*` mentioned, while `src(Γ)` will just be the first thing in the list. The only difference between this rule and the one for ω-categories will be how sources and targets of pasting schemes are calculated. 
-We'll also need an extra one for identity morphisms;
-```
-Category identity formation rule
-              Δ ⊢ A : *
-----------------------------------
-Δ ⊢ op [x : *] [A] (x → x) : A → A
-```
+
 From here, the coherences nearly the same as they are for monoids. The only difference is that the left and right sides of the equations must have the same types.
 ```
 Category coherence formation rule
@@ -241,7 +235,6 @@ Like with monoids, we can formulate the infinite many unbiased operations we mig
 ```
 id a  = op [x : *] [a] (x → x)
 u ∘ v = op [x : *, y : *, f : x → y, z : *, g : y → z] [_, _, u, _, v] (x → z)
-(note that this is in compositional order rather than applicative order)
 
 idcancR = 
   coh [x : *, y : *, f : x → y] [...] (f ∘ id y = f)
@@ -257,7 +250,7 @@ Now, we're finally prepared to go for the full ω-categorical case. We now not o
 ⊢ * type      ⊢ a → b type
 ```
 
-We are ultimately going to represent the higher compositions as lists with restricted formation rules; just like with regular categories. Consider this diagram of a pasting scheme in a 2-category.
+We are ultimately going to represent the higher compositions as lists with restricted formation rules; just like with ordinary categories. Consider this diagram of a pasting scheme in a 2-category.
 
 ![Labeled 2-Cell](../img/omegacat/Labeled2Cell.png)
 
@@ -563,15 +556,15 @@ though, handling extranatural functoriality and actually writing down `FV` is so
 It is possible to present globular ω-categories in a biased manner. We'd need to define two infinite families of composition and identity operations for every direction in every dimension. This is done, for instance, in 
  - [Steps toward the weak higher category of weak higher categories in the globular setting](http://cgasa.sbu.ac.ir/article_11180_b13cacfd9afe5780932141c269d0add6.pdf)
 
-I suppose I should also state somewhere that, throughout this presentation, I've been using globes as my [fundamental shape](https://ncatlab.org/nlab/show/geometric+shape+for+higher+structures). In most publications on higher categories, simplices are used instead. I do think what I've described here could be done with simplices, though I'm not sure how to define the pasting scheme contexts. Globes are by far the simplest shape, so using anything else makes things fundamentally more complex. However, some operations, particularly those close in geometry to other geometric shapes, are easier to work with using other shapes.
+I suppose I should also state somewhere that, throughout this presentation, I've been using globes as my [fundamental shape](https://ncatlab.org/nlab/show/geometric+shape+for+higher+structures). In most publications on higher categories, simplices are used instead. I do think what I've described here could be done with simplices, though I'm not sure how to define the pasting scheme contexts. Globes are by far the simplest shape, so using anything else makes things fundamentally more complex. However, some operations, particularly those close in geometry to other geometric shapes, are easier to work with using those shapes.
 
 ...
 
-Lastly, I'd like to make a point about free theorems, functors, and natural transformations. After all this higher-category stuff became intuitive, some properties of structure-preserving maps became obvious special cases of cell properties in higher categories. Functors `F : C → D` have the property that, given a morphism between objects `a` and `b` in the category `C`, we have a morphism between `F(a)` and `F(b)`. Functors are just morphisms in `Cat`, the category of categories. Objects are morphisms from the unit category, `𝟙`, to the object `C` in `Cat`. Morphisms in `C` are then 2-cells between maps between `𝟙` and `C`. We can define the functor map as an operation out of the context defined by the pasting scheme
+Lastly, I'd like to make a point about free theorems, functors, and natural transformations. After all this higher-category stuff became intuitive to me, some properties of structure-preserving maps became obvious special cases of cell properties in higher categories. Functors `F : C → D` have the property that, given a morphism between objects `a` and `b` in the category `C`, we have a morphism between `F(a)` and `F(b)`. Functors are just morphisms in `Cat`, the category of categories. Objects are morphisms from the unit category, `𝟙`, to the object `C` in `Cat`. Morphisms in `C` are then 2-cells between maps between `𝟙` and `C`. We can define the functor map as an operation out of the context defined by the pasting scheme
 
 ![Functor Map Pasting Scheme](../img/omegacat/FMapPS.png)
 
-The operation will have type `a ∘ F → b ∘ F`, where `a ∘ F` is the internal cell of `Cat` corresponding to `F(a)`, etc. Hence, the map out of `F` is exactly a right-whiskering by `F`.
+The operation will have type `a ∘ F → b ∘ F`, where `a ∘ F` is the internal cell of `Cat` corresponding to `F(a)`, etc. Hence, the map over `F` is exactly a right-whiskering by `F`.
 
 The identity `F(id a) = id (F(a))` is derivable as a coherence out of the pasting scheme
 
