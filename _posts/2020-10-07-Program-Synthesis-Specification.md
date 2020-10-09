@@ -26,6 +26,12 @@ There are a few problems with this approach. The biggest is that, often, we want
 
 Dropping the totality condition from "is-satisfied-by" will make the meta-problem solvable. While it's not decidable if there exists a program that meets a specification, it is hemidecidable. That is, there exists a program that will find a function if it exists. If it doesn't exist, then the program may run forever. However, doing this introduces degenerate solutions, like `f` mapping everything onto nothing (e.g. looping infinitely on every input). We'd need a way to measure how well different solutions performed; we need a way to measure the fitness of different solutions. Maybe, under the right circumstances, "is-satisfied-by" without totality could be used to formally prune the search space in a reasonable way before applying a genetic algorithm or some other fitness optimizer.
 
+We could try fixing this by replacing totality with a condition like
+
+  * R° · R ⊆ f° · f`
+
+which asserts that all inputs assigned to something by the relation are also assigned to something by the function. However, this approach is not without its faults. It still allows for nonterminating programs, and it gets us back into the same position we were before when the relation is, itself, total but noncomputable.
+
 When we have a noncomputable relation, our only hope is to approximate a solution. We can specify a fitness function that maximizes in the case that our function actually does meet the relation. Otherwise, our task is simply to maximize this fitness function. The simplest way to specify this fitness function is to use algorithmic probability; a function of high fitness should maximize the algorithmic probability of correct outputs.
 
 The algorithmic probability of an output, `y`, conditioned on some input, `x`, denoted `m(y|x)`, is simply the likelihood that a random program will produce `y` on input `x`. A random program, `p`, is selected from a distribution according to the number of bits, `I(p)` in it; according to the number of binary decisions made during its construction. There's a 50/50 split at every bit/decision, and the programs with more bits are proportionally less likely. Specifically, the likelihood of a program `p` will be `2 ^ -I(p)`, so programs become exponentially less likely as the number of decisions made in its construction increases. This makes sense since each decision doubles the number of possible programs.
