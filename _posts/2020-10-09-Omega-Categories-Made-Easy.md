@@ -159,7 +159,7 @@ prod31(a, b, c) = op (((x : *) ∘ (y : *)) ∘ (z : *)) ((a ∘ b) ∘ c)
 
 example =
   coh (((x : *) ∘ (y : *)) ∘ (z : *))
-    ((_ ∘ _) ∘ _)
+    [...]
     (prod31(x, y, z) = (x ∘ y) ∘ z)
 ```
 We can summarize the general procedure for getting unbiased theories as follows;
