@@ -442,7 +442,11 @@ This is fully expanded upon in
   - [Monoidal weak ω-categories as models of a type theory](http://www.lix.polytechnique.fr/~tbenjamin/articles/publications/monoidal.pdf)
 
 Further k-tuply monoidal ω-categories could certainly be made by furthering this construction. More speculatively, I do wonder how sophisticated we can make this. If, hypothetically, we could devise a way to construct canonical contexts in the shape of objects in a topos, then it would basically become an unbiased presentation of ordinary intuitionistic type theory with Pi-types, Sigma-types, etc. I don't think that would be possible, but that paper speculates on at least having closed-monoidal ω-categories, which should be structurally very rich. 
-<!---
+
+[//]: # (
+
+...
+
 I think something like the following should work; split up the (monoidal) canonical context into a contravariant and coveriant part. When calculating the source and target, the target becomes the source and vice versa on the contravariant part. If the contravariant part is denoted with `{`s, we might have;
 
 ```
@@ -549,7 +553,8 @@ comm-2 =
 ```
 
 though, handling extranatural functoriality and actually writing down `FV` is something I don't know how to do.
---->
+
+)
 
 ...
 
