@@ -492,7 +492,10 @@ We can also do new things. For example, we could get encodings of binary trees.
 treeAlg[{0, 0}] := "*"
 treeAlg[{1, {t1_, t2_}}] := "*"[t1, t2]
 toGenericTree := cata[fmapOf[coproduct[1, product[$X, $X]]], treeAlg]
-TreeForm@toGenericTree@NatToF[coproduct[1, product[$X, $X]]]@214
+```
+
+```mathematica
+In[1] := TreeForm@toGenericTree@NatToF[coproduct[1, product[$X, $X]]]@214
 ```
 
 ![Binary tree #214](../img/godelencode1/godelencode12.png)
