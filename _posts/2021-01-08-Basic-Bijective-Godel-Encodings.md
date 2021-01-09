@@ -24,7 +24,7 @@ NatTimesNatToNat[{x1_, x2_}] :=
   FromDigits[Riffle[b1, b2], 2]
   ]
 ```
-By taking the even odd placed binary numbers from the binary expansion of a number, we can retrieve the original two numbers.
+By taking the even/odd placed binary numbers from the binary expansion of a number, we can retrieve the original two numbers.
 ```mathematica
 NatToNatTimesNat[x_] :=
  Block[{b, n1, n2},
