@@ -732,7 +732,7 @@ In one of his presentations, Tarau mentioned the open problem of encoding struct
 
 One of the more obvious missing pieces of our construction is the absence of binders which would be necessary for encoding things like lambda expressions or formulas with quantifiers. Intuitively, If our full type is `A`, then, upon recursing into a position with `n` bound variables, we are effectively dealing with the type `n + A`, with new terms coding for references to the bound arguments. Something like this trick is implemented in
 
-  - [Generating Bijections between HOAS and the Natural Numbers by ](https://arxiv.org/pdf/1009.2790.pdf)
+  - [Generating Bijections between HOAS and the Natural Numbers by John Boyland](https://arxiv.org/pdf/1009.2790.pdf)
 
 However, the general trick requires the arguments to `fmapOf` and `to/fromNat` in the definitions of `NatToF` and `FToNat` to change as `cata` and `ana` recurse. This requires a more general recursion scheme than what I used here, but I'm not sure what's needed.
 
