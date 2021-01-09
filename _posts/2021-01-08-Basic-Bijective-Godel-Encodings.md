@@ -215,7 +215,7 @@ would become
 ```
 {1, {1, {1, {2, {1, {3, {0, 0}}}}}}}
 ```
-in the uniform notation we've been building up. Note that each subsequent `{0, _}` and `{1, _}` are tags for the coproduct cases. Be replacing them with `inl` and `inr` it would become
+in the uniform notation we've been building up. Note that each subsequent `{0, _}` and `{1, _}` are tags for the coproduct cases. By replacing them with `inl` and `inr` it would become
 ```
 inr[{1, inr[{2, inr[{3, inl[0]}]}]}]
 ```
