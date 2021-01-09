@@ -725,11 +725,11 @@ With these constructs in mind, Tarau presented a few interesting encodings of di
 - digraphs are exactly sets of pairs
 - directed multigraphs are exactly multisets of pairs
 - directed hypergraphs are exactly sets of lists
-- (undirected) graphs are exactly sets of unordered pairs
-- (undirected) multigraphs are exactly multisets of unordered pairs
+- undirected graphs are exactly sets of unordered pairs
+- undirected multigraphs are exactly multisets of unordered pairs
 - undirected hypergraphs are exactly sets of multisets
 
-In one of his presentations, Tarau mentioned the open problem of encoding structures with transitivity. In particular, how would one encode finite preorders, lattices, topologies, or categories? To my knowledge, this problem remains open.
+In one of his presentations, Tarau mentioned the open problem of encoding structures with transitivity. In particular, how would one encode finite preorders, lattices, topologies, or categories? To my knowledge, all these problems remain open.
 
 One of the more obvious missing pieces of our construction is the absence of binders which would be necessary for encoding things like lambda expressions or formulas with quantifiers. Intuitively, If our full type is `A`, then, upon recursing into a position with `n` bound variables, we are effectively dealing with the type `n + A`, with new terms coding for references to the bound arguments. Something like this trick is implemented in
 
