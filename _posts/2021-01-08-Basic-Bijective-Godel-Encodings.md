@@ -743,7 +743,7 @@ F(X) = (1,   λ n . A × X n)
 G(X) = (X 0, λ n . X (n + 1))
 ```
 
-Since we want to target ℕ, we should pick an `X` family with a close relation to `ℕ`. We already know how to translate n-tuples of `ℕ`s to `ℕ`, so let's pick that;
+Since we want to target `ℕ`, we should pick an `X` family with a close relation to `ℕ`. We already know how to translate n-tuples of `ℕ`s to `ℕ`, so let's pick that;
 
 ```
 X 0 = 1
