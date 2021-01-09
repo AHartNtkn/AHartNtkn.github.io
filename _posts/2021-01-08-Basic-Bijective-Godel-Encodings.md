@@ -98,7 +98,8 @@ In[2] := NatTimesNatToNat /@ %
 ```
 
 ```mathematica
-Out[1] := {{0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1}, {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1}}
+Out[1] := {{0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1},
+           {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1}}
 Out[2] := {0, 1, 2, 3, 4, 5, 6, 7}
 ```
 
@@ -128,14 +129,16 @@ In[2] := NTimesNatToNat[2] /@ %
 ```
 
 ```mathematica
-Out[1] := {{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2}, {1, 2}, {0, 3}, {1, 3}, {0, 4}, {1, 4}}
+Out[1] := {{0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 2},
+           {1, 2}, {0, 3}, {1, 3}, {0, 4}, {1, 4}}
 Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 ```
 
 Using this as a uniform representation of coproducts, we can obtain a generic method to thread isomorphisms between sums.
 
 ```mathematica
-XSumsToYSums[XsToYs_][{n_Integer, x_}] /; n < Length@XsToYs := {n, XsToYs[[n + 1]][x]}
+XSumsToYSums[XsToYs_][{n_Integer, x_}] /; n < Length@XsToYs :=
+  {n, XsToYs[[n + 1]][x]}
 ```
 
 We may now want to consider adding finite types to natural numbers. This is a fairly simple procedure as we just add the needed amount to our natural numbers to make room for the finite types.
@@ -158,7 +161,8 @@ In[2] := NTimesNatToNat[2] /@ %
 ```
 
 ```mathematica
-Out[1] := {{0, 0}, {0, 1}, {0, 2}, {1, 0}, {1, 1}, {1, 2}, {1, 3}, {1, 4}, {1, 5}, {1, 6}}
+Out[1] := {{0, 0}, {0, 1}, {0, 2}, {1, 0}, {1, 1},
+           {1, 2}, {1, 3}, {1, 4}, {1, 5}, {1, 6}}
 Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 ```
 
@@ -175,29 +179,31 @@ The most important thing to note is that if f and g are isomorphisms then `ana[m
 
 In the first case we have;
 
-```
+```mathematica
 ana[f][cata[g][X]]
   == ana[f][g[cata[g] /@ X]]
   == ana[f] /@ f[g[cata[g] /@ X]]
-  by f[g[x]] == x; f and g form an isomorphism
+    by f[g[x]] == x; f and g form an isomorphism
   == ana[f] /@ cata[g] /@ X
   == ana[f]@*cata[g] /@ X
-  by the inductive hypothesis, that ana[f] and cata[g] form an isomorphism after one evaluation step.
+    by the inductive hypothesis, that ana[f] and cata[g] form
+    an isomorphism after one evaluation step.
   == # & /@ X
   == X
 ```
 
 In the other direction we have
 
-```
+```mathematica
 cata[g][ana[f][X]]
   == cata[g][ana[f] /@ f[X]]
   == g[cata[g] /@ ana[f] /@ f[X]]
   == g[cata[g]@*ana[f] /@ f[X]]
-  by the inductive hypothesis, that ana[f] and cata[g] form an isomorphism after one evaluation step.
+    by the inductive hypothesis, that ana[f] and cata[g] form
+    an isomorphism after one evaluation step.
   == g[# & /@ f[X]]
   == g[f[X]]
-  by g[f[x]] == x; f and g form an isomorphism
+    by g[f[x]] == x; f and g form an isomorphism
   == X
 ```
 
@@ -294,8 +300,10 @@ Out[1] := {{0, 0}, {1, {0, 0}}, {1, {0, 1}}, {1, {1, 0}}, {1, {1, 1}}}
 We can shove the above encoding of `1 + ℕ×ℕ` into cata and ana to get encodings of full lists of natural numbers.
 
 ```mathematica
-NatToNatList := ana[listFMap, XSumsToYSums[{# &, NatToNatTuples[2]}]@*NatToNPlusNat[1]]
-NatListToNat := cata[listFMap,  NPlusNatToNat[1]@*XSumsToYSums[{# &, NatTuplesToNat}]]
+NatToNatList :=
+  ana[listFMap, XSumsToYSums[{# &, NatToNatTuples[2]}]@*NatToNPlusNat[1]]
+NatListToNat :=
+  cata[listFMap,  NPlusNatToNat[1]@*XSumsToYSums[{# &, NatTuplesToNat}]]
 ```
 
 ```mathematica
@@ -305,14 +313,12 @@ Out[1] := {{}, {0}, {0, 0}, {1}, {1, 0}, {0, 0, 0}, {0, 1}, {1, 0, 0}, {1, 1}, {
 
 ```mathematica
 In[1]  := NatToNatList[3142452345234] // ListToMList
-In[2]  := % // MListToList
-In[3]  := NatListToNat[%]
+In[2]  := NatListToNat@MListToList@%
 ```
 
 ```mathematica
 Out[1] := {1828968, 552, 18, 1, 0, 1}
-Out[2] := {1, {1828968, {1, {552, {1, {18, {1, {1, {1, {0, {1, {1, {0, 0}}}}}}}}}}}}}
-Out[3] := 3142452345234
+Out[2] := 3142452345234
 ```
 
 At this point, we're in a position to automatically generate isomorphisms for initial algebras over arbitrary polynomial functors over natural numbers. We'll denote polynomial functors using the following constructors
@@ -330,8 +336,10 @@ We need three generating functions. The first is the map of the functor.
 ```mathematica
 fmapOf[n_Integer][f_, e_] := e
 fmapOf[nat][f_, e_] := e
-fmapOf[coproduct[T__]][f_, {n_Integer, e_}] /; n < Length@{T} := {n, fmapOf[{T}[[n + 1]]][f, e]}
-fmapOf[product[T__]][f_, es_List] /; Length@es == Length@{T} := MapThread[fmapOf[#1][f, #2] &, {{T}, es}]
+fmapOf[coproduct[T__]][f_, {n_Integer, e_}] /; n < Length@{T} :=
+  {n, fmapOf[{T}[[n + 1]]][f, e]}
+fmapOf[product[T__]][f_, es_List] /; Length@es == Length@{T} :=
+  MapThread[fmapOf[#1][f, #2] &, {{T}, es}]
 fmapOf[$X][f_, e_] := f[e]
 ```
 
@@ -366,17 +374,20 @@ In the case of finite types, we need to automatically generate maps into the app
 
 ```mathematica
 fromFiniteSet[coproduct[A_, B_]][n_] := 
-  With[{sa = typeSize[A]}, If[n < sa, fromFiniteSet[A][n], fromFiniteSet[B][n - sa]]]
+  With[{sa = typeSize[A]},
+       If[n < sa, fromFiniteSet[A][n], fromFiniteSet[B][n - sa]]]
 (*Question; How to generalize to larger products?*)
 fromFiniteSet[product[A_, B_]][n_] := 
-  With[{sb = typeSize[B]}, {fromFiniteSet[A]@Quotient[n, sb], fromFiniteSet[B]@Mod[n, sb]}]
+  With[{sb = typeSize[B]},
+       {fromFiniteSet[A]@Quotient[n, sb], fromFiniteSet[B]@Mod[n, sb]}]
 fromFiniteSet[n_Integer] := # &
 
 toFiniteSet[coproduct[A_, B_]][{0, e_}] := toFiniteSet[A][e]
 toFiniteSet[coproduct[A_, B_]][{1, e_}] := typeSize[A] + toFiniteSet[B][e]
 toFiniteSet[coproduct[T__]][{n_Integer, e_}] /; n < Length@{T} := 
   Total[typeSize /@ {T}[[1 ;; n + 1]]] + toFiniteSet[T[[n + 1]]][e]
-toFiniteSet[product[A_, B_]][{e1_, e2_}] := {typeSize[B], 1}.{toFiniteSet[A][e1], toFiniteSet[B][e2]}
+toFiniteSet[product[A_, B_]][{e1_, e2_}] :=
+  {typeSize[B], 1}.{toFiniteSet[A][e1], toFiniteSet[B][e2]}
 toFiniteSet[n_Integer] := # &
 ```
 
@@ -471,7 +482,8 @@ In[3]  := ListToMList /@ %%
 
 ```mathematica
 Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-Out[3] := {{}, {0}, {1}, {0, 0}, {1, 0}, {0, 1}, {1, 1}, {0, 0, 0}, {1, 0, 0}, {0, 1, 0}}
+Out[3] := {{}, {0}, {1}, {0, 0}, {1, 0}, {0, 1},
+           {1, 1}, {0, 0, 0}, {1, 0, 0}, {0, 1, 0}}
 ```
 
 We can also do new things. For example, we could get encodings of binary trees.
@@ -496,44 +508,49 @@ funs = {{"~", 1}, {"*", 2}, {"+", 2}, {if, 3}};
 We can translate this into an endofunctor with the type `5 + X + X×X + X×X + X×X×X`.
 
 ```mathematica
-termSignitureToType[v_, c_, f_] := coproduct[Length@v + Length@c, coproduct @@ (termFunsToType /@ f)]
+termSignitureToType[v_, c_, f_] :=
+  coproduct[Length@v + Length@c, coproduct @@ (termFunsToType /@ f)]
 termFunsToType[{_, n_Integer}] /; n > 0 := product @@ Table[$X, {n}]
 ```
 
 ```mathematica
 In[1]  := termSignitureToType[vars, consts, funs]
-Out[1] := coproduct[5, coproduct[product[$X], product[$X, $X], product[$X, $X], product[$X, $X, $X]]]
+Out[1] := coproduct[5, coproduct[product[$X], product[$X, $X],
+                                 product[$X, $X], product[$X, $X, $X]]]
 ```
 
 We can further generate the translations to and from the term signature
 
 ```mathematica
 termToUniform[v_, c_, f_][e_] /; MemberQ[v, e] := {0, Position[v, e][[1, 1]] - 1}
-termToUniform[v_, c_, f_][e_] /; MemberQ[c, e] := {0, Length@v + Position[c, e][[1, 1]] - 1}
+termToUniform[v_, c_, f_][e_] /; MemberQ[c, e] :=
+  {0, Length@v + Position[c, e][[1, 1]] - 1}
 termToUniform[v_, c_, f_][g_[e__]] :=
   {1, {Position[f, {g, Length@{e}}][[1, 1]] - 1, termToUniform[v, c, f] /@ {e}}}
 
-uniformToTerm[v_, c_, f_][{0, n_Integer}] := If[n >= Length@v, c[[n - Length@v + 1]], v[[n + 1]]]
-uniformToTerm[v_, c_, f_][{1, {n_Integer, e_}}] := f[[n + 1, 1]] @@ (uniformToTerm[v, c, f] /@ e)
+uniformToTerm[v_, c_, f_][{0, n_Integer}] :=
+  If[n >= Length@v, c[[n - Length@v + 1]], v[[n + 1]]]
+uniformToTerm[v_, c_, f_][{1, {n_Integer, e_}}] :=
+  f[[n + 1, 1]] @@ (uniformToTerm[v, c, f] /@ e)
 ```
 
 ```mathematica
 In[1]  := if["x", "+"[1, "y"], "*"["z", 0]]
-In[2]  := termToUniform[vars, consts, funs]@%
-In[3]  := uniformToTerm[vars, consts, funs]@%
+In[2]  := uniformToTerm[vars, consts, funs]@termToUniform[vars, consts, funs]@%
 ```
 
 ```mathematica
 Out[1] := if["x", "+"[1, "y"], "*"["z", 0]]
-Out[2] := {1, {3, {{0, 0}, {1, {2, {{0, 4}, {0, 1}}}}, {1, {1, {{0, 2}, {0, 3}}}}}}}
-Out[3] := if["x", "+"[1, "y"], "*"["z", 0]]
+Out[2] := if["x", "+"[1, "y"], "*"["z", 0]]
 ```
 
 From here, we can now give Godel encodings for arbitrary term algebras
 
 ```mathematica
-NatToTermAlg[v_, c_, f_] := uniformToTerm[v, c, f]@*NatToF[termSignitureToType[v, c, f]]
-TermAlgToNat[v_, c_, f_] := FToNat[termSignitureToType[v, c, f]]@*termToUniform[v, c, f]
+NatToTermAlg[v_, c_, f_] :=
+  uniformToTerm[v, c, f]@*NatToF[termSignitureToType[v, c, f]]
+TermAlgToNat[v_, c_, f_] :=
+  FToNat[termSignitureToType[v, c, f]]@*termToUniform[v, c, f]
 ```
 
 ```mathematica
@@ -542,7 +559,8 @@ In[2]  := TermAlgToNat[vars, consts, funs] /@ %
 ```
 
 ```mathematica
-Out[1] := {"x", "y", "z", 0, 1, "~"["x"], "*"["x", "x"], "+"["x", "x"], if["x", "x", "x"], "~"["y"]}
+Out[1] := {"x", "y", "z", 0, 1, "~"["x"], "*"["x", "x"],
+           "+"["x", "x"], if["x", "x", "x"], "~"["y"]}
 Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 ```
 
@@ -558,7 +576,8 @@ Furthermore, the difference between subsequent elements of a multiset gets us a 
 
 ```mathematica
 NatMultisetToNatList[{}] := {}
-NatMultisetToNatList[x_] := Prepend[MapThread[Subtract, {Drop[x, 1], Drop[x, -1]}], x[[1]]]
+NatMultisetToNatList[x_] :=
+  Prepend[MapThread[Subtract, {Drop[x, 1], Drop[x, -1]}], x[[1]]]
 ```
 
 By composing this with the encoding of lists, we get an encoding of multisets/sorted lists.
@@ -574,7 +593,8 @@ In[2]  := NatMultisetToNat /@ %
 ```
 
 ```mathematica
-Out[1] := {{}, {0}, {0, 0}, {1}, {1, 1}, {0, 0, 0}, {0, 1}, {1, 1, 1}, {1, 2}, {2}}
+Out[1] := {{}, {0}, {0, 0}, {1}, {1, 1}, {0, 0, 0},
+           {0, 1}, {1, 1, 1}, {1, 2}, {2}}
 Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 ```
 
@@ -600,7 +620,8 @@ A variation of the construction gets us an encoding of sets. We simply treat eac
 ```mathematica
 NatListToNatSet[x_] := FoldList[#1 + #2 + 1 &, x]
 NatSetToNatList[{}] := {}
-NatSetToNatList[x_] := Prepend[MapThread[#1 - #2 &, {Drop[x, 1], Drop[x, -1]}] - 1, x[[1]]]
+NatSetToNatList[x_] :=
+  Prepend[MapThread[#1 - #2 &, {Drop[x, 1], Drop[x, -1]}] - 1, x[[1]]]
 
 NatToNatSet := NatListToNatSet@*ListToMList@*NatToNatList
 NatSetToNat := NatListToNat@*MListToList@*NatSetToNatList
@@ -626,10 +647,13 @@ In[2]  := FToNat[coproduct[nat, product[$X, $X]]]
 ```mathematica
 Out[1] :=
   ana[fmapOf[coproduct[nat, product[$X, $X]]],
-      XSumsToYSums[{#1 &, XTuplesToYTuples[{#1 &, #1 &}]@*NatToNatTuples[2]}]@*NatToNTimesNat[2]]
+      XSumsToYSums[{#1 &, XTuplesToYTuples[{#1 &, #1 &}]
+        @*NatToNatTuples[2]}]@*NatToNTimesNat[2]
+     ]
 Out[2] := 
   cata[fmapOf[coproduct[nat, product[$X, $X]]],
-       NTimesNatToNat[2]@*XSumsToYSums[{#1 &, NatTuplesToNat@*XTuplesToYTuples[{#1 &, #1 &}]}]]
+       NTimesNatToNat[2]
+         @*XSumsToYSums[{#1 &, NatTuplesToNat@*XTuplesToYTuples[{#1 &, #1 &}]}]]
 ```
 
 we may notice that the `NatToNatTuples` etc. could be replaced with `NatToNatCombs` etc. to get an encoding of the free *commutative* magma over `A` since it will canonically order any multiplication.
@@ -647,7 +671,8 @@ In[2]  := rank /@ %
 ```
 
 ```mathematica
-Out[1] := {{}, {{}}, {{}, {}}, {{{}}}, {{{}}, {}}, {{}, {}, {}}, {{}, {{}}}, {{{}}, {}, {}}, {{{}}, {{}}}, {{{}, {}}}}
+Out[1] := {{}, {{}}, {{}, {}}, {{{}}}, {{{}}, {}}, {{}, {}, {}},
+           {{}, {{}}}, {{{}}, {}, {}}, {{{}}, {{}}}, {{{}, {}}} }
 Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 ```
 
@@ -684,7 +709,8 @@ In[2]  := rank /@ %
 ```
 
 ```mathematica
-Out[1] := {{}, {{}}, {{}, {{}}}, {{{}}}, {{{}}, {{}, {{}}}}, {{}, {{}}, {{}, {{}}}}, {{}, {{}, {{}}}}}
+Out[1] := {{}, {{}}, {{}, {{}}}, {{{}}}, {{{}}, {{}, {{}}}},
+           {{}, {{}}, {{}, {{}}}}, {{}, {{}, {{}}}}}
 Out[2] := {0, 1, 2, 3, 4, 5, 6}
 ```
 
