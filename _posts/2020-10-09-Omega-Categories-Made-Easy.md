@@ -470,7 +470,7 @@ The basic rules for natural transformations come from the same place. Given a na
 
 ![Natural Map Pasting Scheme](../img/omegacat/NatMapPS.png)
 
-So the naturality map is just right-whiskering by the thing we're mapping over. The basic naturality property states that
+So the naturality map is just left-whiskering by the thing we're mapping over. The basic naturality property states that
 ```
 F(f) ∘ α(b) = α(a) ∘ G(f)
 ```
