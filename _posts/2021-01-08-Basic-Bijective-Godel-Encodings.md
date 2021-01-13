@@ -303,7 +303,7 @@ We can shove the above encoding of `1 + ℕ×ℕ` into cata and ana to get encod
 NatToNatList :=
   ana[listFMap, XSumsToYSums[{# &, NatToNatTuples[2]}]@*NatToNPlusNat[1]]
 NatListToNat :=
-  cata[listFMap,  NPlusNatToNat[1]@*XSumsToYSums[{# &, NatTuplesToNat}]]
+  cata[listFMap, NPlusNatToNat[1]@*XSumsToYSums[{# &, NatTuplesToNat}]]
 ```
 
 ```mathematica
