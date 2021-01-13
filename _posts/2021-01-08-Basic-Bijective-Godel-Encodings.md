@@ -651,13 +651,14 @@ In[2]  := FToNat[coproduct[nat, product[$X, $X]]]
 ```mathematica
 Out[1] :=
   ana[fmapOf[coproduct[nat, product[$X, $X]]],
-      XSumsToYSums[{#1 &, XTuplesToYTuples[{#1 &, #1 &}]
-        @*NatToNatTuples[2]}]@*NatToNTimesNat[2]
+      XSumsToYSums[{#1 &, XTuplesToYTuples[{#1 &, #1 &}]@*
+        NatToNatTuples[2]}]@*NatToNTimesNat[2]
      ]
 Out[2] := 
   cata[fmapOf[coproduct[nat, product[$X, $X]]],
-       NTimesNatToNat[2]
-         @*XSumsToYSums[{#1 &, NatTuplesToNat@*XTuplesToYTuples[{#1 &, #1 &}]}]]
+       NTimesNatToNat[2]@*
+         XSumsToYSums[{#1 &, NatTuplesToNat@*XTuplesToYTuples[{#1 &, #1 &}]}]
+      ]
 ```
 
 we may notice that the `NatToNatTuples` etc. could be replaced with `NatToNatCombs` etc. to get an encoding of the free *commutative* magma over `A` since it will canonically order any multiplication.
