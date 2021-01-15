@@ -158,7 +158,7 @@ NatPlusNToNat[n_][{0, x_}] := n + x
 
 ```mathematica
 In[1] := Array[NatToNPlusNat[3], {10}, 0]
-In[2] := NTimesNatToNat[2] /@ %
+In[2] := NPlusNatToNat[2] /@ %
 ```
 
 ```mathematica
@@ -377,7 +377,6 @@ In the case of finite types, we need to automatically generate maps into the app
 fromFiniteSet[coproduct[A_, B_]][n_] := 
   With[{sa = typeSize[A]},
        If[n < sa, fromFiniteSet[A][n], fromFiniteSet[B][n - sa]]]
-(*Question; How to generalize to larger products?*)
 fromFiniteSet[product[A_, B_]][n_] := 
   With[{sb = typeSize[B]},
        {fromFiniteSet[A]@Quotient[n, sb], fromFiniteSet[B]@Mod[n, sb]}]
@@ -710,8 +709,8 @@ rankSet := cata[Map, NatSetToNat]
 ```
 
 ```mathematica
-In[1]  := Array[unrank, {10}, 0]
-In[2]  := rank /@ %
+In[1]  := Array[unrankSet, {10}, 0]
+In[2]  := rankSet /@ %
 ```
 
 ```mathematica
@@ -737,9 +736,7 @@ One of the more obvious missing pieces of our construction is the absence of bin
 
   - [Generating Bijections between HOAS and the Natural Numbers by John Boyland](https://arxiv.org/pdf/1009.2790.pdf)
 
-However, the general trick requires the arguments to `fmapOf` and `to/fromNat` in the definitions of `NatToF` and `FToNat` to change as `cata` and `ana` recurse. This requires a more general recursion scheme than what I used here, but I'm not sure what's needed.
-
-Lastly, I'll wrap back to my dream at the beginning of this post. What would it take to Godel encode dependently typed data? In a [previous blog post](http://anthonylorenhart.com/2020-08-31-Datatypes-as-Dialgebras/) I talked about the formulation of dependent types as initial/final dialgebras. Presumably, we can take an isomorphic dialgebra to get isomorphic constructors/eliminators for dependent types. For example, vectors are the initial dialgebra between;
+However, the general trick requires the arguments to `fmapOf` and `to/fromNat` in the definitions of `NatToF` and `FToNat` to change as `cata` and `ana` recurse. This requires a more general recursion scheme than what I used here. To clearify that, I'll wrap back to my dream at the beginning of this post. What would it take to Godel encode dependently typed data? In a [previous blog post](http://anthonylorenhart.com/2020-08-31-Datatypes-as-Dialgebras/) I talked about the formulation of dependent types as initial/final dialgebras. Presumably, we can take an isomorphic dialgebra to get isomorphic constructors/eliminators for dependent types. For example, vectors are the initial dialgebra between;
 
 ```
 F(X) = (1,   λ n . A × X n)
@@ -755,5 +752,136 @@ X (n + 1) = ℕ × X n
 
 With this, an isomorphism between `F(X)` and `G(X)` doesn't seem too hard. It will be a pair of isomorphisms, one between `1` and `X 0 = 1`, which is trivial, and the other between `λ n . A × X n` and `λ n . ℕ × X n`. The latter would be a family of isomorphisms, one for each `n`. Such a family seems straightforward to define if `A` is isomorphic to `ℕ`. In the end, we'd have an isomorphism between `Vect A k` and `X k` for all `k`. In the special case of `k = 0`, we obviously wouldn't be able to get back to `ℕ`, but for all larger `k`, we'd just compose with the encoding for n-tuples we gave earlier to get an isomorphism back to `ℕ`, thus getting our Godel encoding.
 
-I imagine finding the right `X` for an arbitrary dependent type could end up being highly nontrivial. I feel like my choice of Mathematica may be limiting me at this point. Without a nice type system to aid in correctness, I have nothing but the elegance of my code to guide me. Unfortunately, that seems to have only gotten me so far.
+I imagine finding the right `X` for an arbitrary dependent type could end up being highly nontrivial. To see a fuller example, let's use this knowledge to devise an encoding for lambda expressions. We can give our type of formulas as;
+
+```
+AbstractSyntax (n : Nat) : Type where
+  var : Fin n -> AbstractSyntax (n + 1)
+  lam : AbstractSyntax (n + 1) -> AbstractSyntax n
+  app : AbstractSyntax n -> AbstractSyntax n -> AbstractSyntax n
+```
+
+We can then conclude that these formulas are the initial dialgebra over
+
+```
+F(X) = (Fin n, X (n + 1), X n × X n)
+G(X) = (X n,   X n,       X n)
+```
+
+It's pretty obvious that we'll need to do something more clever than make three isomorphisms since that first case would require an isomorphism between `Fin n` and `X n`, which could be `ℕ`. We may notice that this type may be impredicatively encoded as
+
+```
+AbstractSyntax n
+≅ ∀ X : ℕ → * .
+  (∀ k : ℕ . Fin k → X k) →
+  (∀ k : ℕ . X (k + 1) → X k) →
+  (∀ k : ℕ . X k → X k → X k) →
+  X n
+```
+
+which is isomorphic to
+
+```
+≅ ∀ X : ℕ → * .
+  (∀ k : ℕ . Fin k + X (k + 1) + (X k × X k) → X k) →
+  X n
+```
+
+To work with this data type, we'll need to have a custom fmap that keeps track of `k`.
+
+```mathematica
+ASMap[k_][f_][{0, n_}] := {0, n}
+ASMap[k_][f_][{1, {0, e_}}] := {1, {0, f[k + 1][e]}}
+ASMap[k_][f_][{1, {1, {e1_, e2_}}}] := {1, {1, {f[k][e1], f[k][e2]}}}
+```
+
+Notice that I'm associating the datatype to the right, `Fin k + (X (k + 1) + (X k × X k))`, and that `ASMap` increments `k` on the lambda argument. From here, we can generalize ana and cata to keep track of the fiber we're working under.
+
+```mathematica
+fcata[fmap_][f_][k_][x_] := f[k][fmap[k][fcata[fmap][f]][x]]
+fana[fmap_][f_][k_][x_] := fmap[k][fana[fmap][f]][f[k][x]]
+```
+
+Incidentally, I have no idea what these schemes could be called. They don't appear in any list of recursion schemes I could find, so I'll name them "fibered catamorphisms" and "fibered anamorphisms", in case they don't already have names.
+
+We can define an appropriate algebra and coalgebra to get a more reasonable looking syntax;
+
+```mathematica
+ASAlg[k_][{0, n_}] /; n < k := var[n]
+ASAlg[k_][{1, {0, e_}}] := lam[e]
+ASAlg[k_][{1, {1, {e1_, e2_}}}] := app[e1, e2]
+
+ASCoalg[k_][var[n_]] /; n < k := {0, n}
+ASCoalg[k_][lam[e_]] := {1, {0, e}}
+ASCoalg[k_][app[e1_, e2_]] := {1, {1, {e1, e2}}}
+
+AStoASU[k_] := fana[ASMap][ASCoalg][k]
+ASUtoAS[k_] := fcata[ASMap][ASAlg][k]
+```
+
+```mathematica
+In[1]  := AStoASU[0]@lam[var[0]]
+In[2]  := ASUtoAS[0]@%
+```
+
+```mathematica
+Out[1] := {1, {0, {0, 0}}}
+Out[2] := lam[var[0]]
+```
+
+```mathematica
+In[1]  := AStoASU[0]@lam[app[lam[var[1]], var[0]]]
+In[2]  := ASUtoAS[0]@%
+```
+
+```mathematica
+Out[1] := {1, {0, {1, {1, {{1, {0, {0, 1}}}, {0, 0}}}}}}
+Out[2] := lam[app[lam[var[1]], var[0]]]
+```
+
+From here, we need the intermediate encodings, proving that `Fin k + (ℕ + (ℕ × ℕ))` is isomorphic to `ℕ`.
+
+```mathematica
+(*Nat → Fin k + (ℕ + (ℕ × ℕ))*)
+NatToASF[k_] := 
+ XSumsToYSums[{# &, 
+    XSumsToYSums[{# &, NatToNatTuples[2]}]@*NatToNTimesNat[2]}]@*
+  NatToNPlusNat[k]
+
+(*Fin k + (ℕ + (ℕ × ℕ)) → ℕ*)
+ASFToNat[k_] := 
+ NPlusNatToNat[k]@*
+  XSumsToYSums[{# &, 
+    NTimesNatToNat[2]@*XSumsToYSums[{# &, NatTuplesToNat}]}]
+```
+
+In this case, I'm setting `X k` to `ℕ` for all `k`. That seemed better than being cleaver about it, and I suspect something like this may be possible for a large class of dependent types. From here, we can just shove these into `fcata` and `fana` to get our godel encodings.
+
+```mathematica
+NatToAS[k_] := ASUtoAS[k]@*fana[ASMap][NatToASF][k]
+ASToNat[k_] := fcata[ASMap][ASFToNat][k]@*AStoASU[k]
+```
+
+```mathematica
+In[1]  := Array[NatToAS[0], {10}, 0]
+In[2]  := ASToNat[0] /@ %
+```
+
+```mathematica
+Out[1] :=
+  {lam[var[0]],
+   app[lam[var[0]], lam[var[0]]],
+   lam[lam[var[0]]], 
+   app[lam[var[0]], app[lam[var[0]], lam[var[0]]]], 
+   lam[app[var[0], var[0]]], 
+   app[app[lam[var[0]], lam[var[0]]], lam[var[0]]],
+   lam[lam[var[1]]], 
+   app[app[lam[var[0]], lam[var[0]]], app[lam[var[0]], lam[var[0]]]], 
+   lam[app[var[0], lam[var[0]]]],
+   app[lam[var[0]], lam[lam[var[0]]]]}
+Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+```
+
+And that's that. I think there might be a lot of stamp collecting moving forward, but this pretty thoroughly covers a vast swath of mathematical structures that one might care about. This also is a much neater way of encoding quantifiers than what's usually done.
+
 {% endraw %}
