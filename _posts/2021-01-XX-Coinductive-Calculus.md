@@ -268,21 +268,24 @@ ana f a =
 using this, we can define a function which converts a `Rational`, Haskell's built-in representation of fractions, into a `ℝ`. Before that, let's define our focusing function. I've hard-coded a power of 1, but you can feel-free to vary it.
 
 ```haskell
+type Interval = (Rational, Rational)
+
 power = 1
-focus :: (Rational, Rational) -> Bool -> (Rational, Rational)
+focus :: Interval -> Bool -> Interval
 focus (fl, fr) False =
   (fl, ((2^power + 1) * fr + (2^power - 1) * fl) / 2^(power + 1))
 focus (fl, fr) True = 
   (((2^power + 1) * fl + (2^power - 1) * fr) / 2^(power + 1), fr)
 ```
 
-I will also need the expand and contract functions since we'll be going back and forth between `[-1, 1]` and `[-∞, ∞]`. Since Haskell's `Rational` type doesn't have point's at infinity. I'll devise a new type with points at infinity along with the somewhat tedius `Num` instance so I can use the standard numerical operations. The only thing interesting about is is how the infinities are handled. They are defined to make the most conservative conclusions when combining intervals which might have infinities on either side. 
+I will also need the expand and contract functions since we'll be going back and forth between `[-1, 1]` and `[-∞, ∞]`. Since Haskell's `Rational` type doesn't have point's at infinity. I'll devise a new type with points at infinity along with the somewhat tedius `Num` and `Fractional` instances so I can use the standard numerical operations. The only thing interesting about is is how the infinities are handled. They are defined to make the most conservative conclusions when combining intervals which might have infinities on either side. 
 
 ```haskell
 data RationalInf
   = Rat Rational
   | Inf
   | MInf
+  deriving (Eq, Show)
 
 instance Num RationalInf where
   Rat a + Rat b = Rat (a + b)
@@ -301,9 +304,10 @@ instance Num RationalInf where
               | True = MInf
   Rat b * MInf | b >= 0 = MInf
                | True = Inf
-  Inf * MInf = Rat 0
-  MInf * Inf = Rat 0
-  a * b = a
+  Inf * MInf = MInf
+  MInf * Inf = MInf
+  MInf * MInf = Inf
+  Inf * Inf = Inf
 
   abs (Rat r) = Rat (abs r)
   abs a = Inf
@@ -317,24 +321,31 @@ instance Num RationalInf where
   negate (Rat a) = Rat (negate a)
   negate Inf = MInf
   negate MInf = Inf
+
+instance Fractional RationalInf where
+  fromRational r = Rat r
+
+  recip Inf = Rat 0
+  recip MInf = Rat 0
+  recip (Rat r) = Rat (recip r)
 ```
 
 The expand and contract functions are then fairly simple.
 
 ```haskell
 expand :: Rational -> RationalInf
-expand r | r == -1 = Left False
-         | r < 0   = Right $ 1 - 1/(1 + r)
-         | r == 0  = Right 0
-         | r > 0   = Right $ 1/(1 - r) - 1
-         | r == 1  = Left True
+expand r | r == -1 = MInf
+         | r == 1  = Inf
+         | r < 0   = Rat $ 1 - 1/(1 + r)
+         | r == 0  = Rat 0
+         | r > 0   = Rat $ 1/(1 - r) - 1
 
 contract :: RationalInf -> Rational
-contract (Left False) = -1
-contract (Right r) | r < 0  = r/(1 - r)
-                   | r == 0 = 0
-                   | r > 0  = r/(r + 1)
-contract (Left True) = -1
+contract MInf = -1
+contract Inf  = 1
+contract (Rat r) | r < 0  = r/(1 - r)
+                 | r == 0 = 0
+                 | r > 0  = r/(r + 1)
 ```
 
 Using these, we can define the coalgebra which generates the appropriate real given a fraction. There are a couple of different ways of implementing it. I decided to initially try focusing to the left. If this focus is too small, then we know the input must be in the other interval and we focus to the right instead. If our left focus isn't too small then we can use it, though we may not *have* to use it if the input is actually in both intervals. Depending on if we test the left or right focus, we can generate different sequences which represent the same number. The larger our `power`, the less of a difference this makes.
@@ -355,7 +366,8 @@ Going the other direction, we can just fold to convert a real back into a ration
 ```haskell
 realToFloat :: ℝ -> Float
 realToFloat =
-  fromRational . expand . snd . foldl focus (-1, 1) . take 100
+  fromRational . (\(Rat r) -> r) . expand .
+  snd . foldl focus (-1, 1) . take 100
 ```
 
 ```haskell
@@ -395,17 +407,91 @@ Let's start with addition. Using an operation which adds two intervals, we can s
 
 ```haskell
 intervalAdd (a1, a2) (b1, b2) =
-  (contract (expand a1 + expand b1), contract (expand a2 + expand b2))
-
+  (contract (expand a1 + expand b1)
+  ,contract (expand a2 + expand b2))
 ```
 
+the actual stream of intervals produced by addition arises out of a straightforward coalgebra construction.
 
+```haskell
+intAdd :: Interval -> Interval -> Interval
+intAdd (a1, a2) (b1, b2) =
+  let m a b = contract (expand a + expand b)
+  in (m a1 b1, m a2 b2)
 
+intsSums :: ℝ -> ℝ -> [Interval]
+intsSums r1 r2 = ana sumCoalg ((-1,1), (-1,1), r1, r2)
+```
 
+getting from a stream of intervals to a real is a more complicated business. It's another coalgebraic construction, but we need to reason a bit more carefully so as to ensure any focus contains our number up to whatever interval approximation we're looking at. If the largest our number can be, `big`, is smaller than the top of our left subinterval, `topL`, then we can use 0/`False` as our next bit. If the smallest our number can be, `low`, is larger than the bottom of our right subinterval, `botR`, then we can use 1/`True` as our next digit. If either of these conditions is not met, then we look at the next step in our interval stream to see if the next one is more specific.
 
+```haskell
+intsToRealCoalg :: (Interval, [Interval]) -> (Bool, (Interval, [Interval]))
+intsToRealCoalg (f, ((low, big) : is)) = 
+  let (botL, topL) = focus f False
+      (botR, topR) = focus f True
+  in case (big < topL, low > botR) of
+        (True, _)      -> (False, ((botL, topL), is))
+        (_, True)      -> (True,  ((botR, topR), is))
+        (False, False) -> intsToRealCoalg (f, is)
 
+intsToReal :: [Interval] -> ℝ
+intsToReal i = ana intsToRealCoalg ((-1, 1), i)
+```
 
-The main complication is devising operations modulo `expand` and `contract`. What we'll do is g
+we can combine our operations to define real addition
+
+```haskell
+realSum :: ℝ -> ℝ -> ℝ
+realSum r1 r2 = intsToReal $ intsSums r1 r2
+```
+
+```haskell
+> realToFloat $ realSum (ratToReal 11) (ratToReal 9)
+20.0
+> realToFloat $ realSum (ratToReal (1/3)) (ratToReal (2/3))
+1.0
+> realToFloat $ realSum (ratToReal (-8)) (ratToReal 4)
+-4.0
+> realToFloat $ realSum (ratToReal (-26)) (ratToReal (-9))
+-35.0
+> realToFloat $ realSum (ratToReal (-8)) (ratToReal 8)
+7.7728724e-14
+```
+
+now that we have `intsToReal`, any operation which is defined on `Rational` can be straightforwardly extended to the full reals. Multiplication seems like an obvious choice. The only real complication is multiplying intervals. Depending on the values and the signs of the two ends of the intervals, the lower and upper bounds could vary quite a bit. We must calculate all four posibilities and pull out the smallest and largest.
+
+```haskell
+intTimes :: Interval -> Interval -> Interval
+intTimes (a1, a2) (b1, b2) =
+  let m a b = contract (expand a * expand b)
+      l = [m a1 b1, m a1 b2, m a2 b1, m a2 b2]
+  in (minimum l, maximum l)
+
+prodCoalg ::
+  (Interval, Interval, ℝ, ℝ) -> (Interval, (Interval, Interval, ℝ, ℝ))
+prodCoalg (xf, yf, (x : xs), (y : ys)) = 
+  (intTimes xf yf, (focus xf x, focus yf y, xs, ys))
+
+intsProds :: ℝ -> ℝ -> [Interval]
+intsProds r1 r2 = ana prodCoalg ((-1,1), (-1,1), r1, r2)
+
+realProd :: ℝ -> ℝ -> ℝ
+realProd r1 r2 = intsToReal $ intsProds r1 r2
+```
+
+```haskell
+> realToFloat $ realProd (ratToReal (3/2)) (ratToReal (2/3))
+1.0
+> realToFloat $ realProd (ratToReal (1/2)) (ratToReal 100)
+50.0
+> realToFloat $ realProd (ratToReal 400) (ratToReal 0)
+1.1921121e-13
+> realToFloat $ realProd (ratToReal 15) (ratToReal (-3))
+-45.0
+> realToFloat $ realProd (ratToReal (-2/5)) (ratToReal (-35))
+14.0
+```
 
 
 
