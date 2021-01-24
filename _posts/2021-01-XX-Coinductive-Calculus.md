@@ -403,24 +403,27 @@ Part 2: Let's be rational about this
 
 From here we can start generating some basic functions. Where possible, the easiest functions to implement are those which are already defined over the rationals. To accomplish this, we can create an intermediate representation of a real in terms of a sequence of nested intervals. We'll then use these to generate the bit stream.
 
-Let's start with addition. Using an operation which adds two intervals, we can simply calculate streams of successive interval approximations of the addition from interval approximations of the input numbers.
+Getting a list of nested intervals out of a real is very simple; we just scan with `focus`.
 
 ```haskell
-intervalAdd (a1, a2) (b1, b2) =
-  (contract (expand a1 + expand b1)
-  ,contract (expand a2 + expand b2))
+realToInts :: ℝ -> [Interval]
+realToInts = scanl focus (-1,1)
 ```
 
-the actual stream of intervals produced by addition arises out of a straightforward coalgebra construction.
+Let's start with addition. Using an operation which adds two intervals, we can simply calculate streams of successive interval approximations of the addition from interval approximations of the input numbers.
 
 ```haskell
 intAdd :: Interval -> Interval -> Interval
 intAdd (a1, a2) (b1, b2) =
   let m a b = contract (expand a + expand b)
   in (m a1 b1, m a2 b2)
+```
 
-intsSums :: ℝ -> ℝ -> [Interval]
-intsSums r1 r2 = ana sumCoalg ((-1,1), (-1,1), r1, r2)
+the actual stream of intervals produced by addition arises out of a straightforward zipping.
+
+```haskell
+addInts :: [Interval] -> [Interval] -> [Interval]
+addInts = zipWith intAdd
 ```
 
 getting from a stream of intervals to a real is a more complicated business. It's another coalgebraic construction, but we need to reason a bit more carefully so as to ensure any focus contains our number up to whatever interval approximation we're looking at. If the largest our number can be, `big`, is smaller than the top of our left subinterval, `topL`, then we can use 0/`False` as our next bit. If the smallest our number can be, `low`, is larger than the bottom of our right subinterval, `botR`, then we can use 1/`True` as our next digit. If either of these conditions is not met, then we look at the next step in our interval stream to see if the next one is more specific.
@@ -443,7 +446,7 @@ we can combine our operations to define real addition
 
 ```haskell
 realSum :: ℝ -> ℝ -> ℝ
-realSum r1 r2 = intsToReal $ intsSums r1 r2
+realSum r1 r2 = intsToReal $ addInts (realToInts r1) (realToInts r2)
 ```
 
 ```haskell
@@ -459,7 +462,7 @@ realSum r1 r2 = intsToReal $ intsSums r1 r2
 7.7728724e-14
 ```
 
-now that we have `intsToReal`, any operation which is defined on `Rational` can be straightforwardly extended to the full reals. Multiplication seems like an obvious choice. The only real complication is multiplying intervals. Depending on the values and the signs of the two ends of the intervals, the lower and upper bounds could vary quite a bit. We must calculate all four posibilities and pull out the smallest and largest.
+now that we have `intsToReal`, any operation which is defined on `Rational` can be straightforwardly extended to the full reals. Multiplication seems like an obvious choice. The only real complication is multiplying intervals. Depending on the values and the signs of the two ends of the intervals, the lower and upper bounds could vary quite a bit. We must calculate all four possibilities and pull out the smallest and largest.
 
 ```haskell
 intTimes :: Interval -> Interval -> Interval
@@ -468,16 +471,12 @@ intTimes (a1, a2) (b1, b2) =
       l = [m a1 b1, m a1 b2, m a2 b1, m a2 b2]
   in (minimum l, maximum l)
 
-prodCoalg ::
-  (Interval, Interval, ℝ, ℝ) -> (Interval, (Interval, Interval, ℝ, ℝ))
-prodCoalg (xf, yf, (x : xs), (y : ys)) = 
-  (intTimes xf yf, (focus xf x, focus yf y, xs, ys))
-
-intsProds :: ℝ -> ℝ -> [Interval]
-intsProds r1 r2 = ana prodCoalg ((-1,1), (-1,1), r1, r2)
+intsProds :: [Interval] -> [Interval] -> [Interval]
+intsProds = zipWith intTimes
 
 realProd :: ℝ -> ℝ -> ℝ
-realProd r1 r2 = intsToReal $ intsProds r1 r2
+realProd r1 r2 =
+  intsToReal $ intsProds (realToInts r1) (realToInts r2)
 ```
 
 ```haskell
@@ -493,6 +492,16 @@ realProd r1 r2 = intsToReal $ intsProds r1 r2
 14.0
 ```
 
+
+
+
+
+
+We now have all the pieces ready to give a `Num` instance for `ℝ`
+
+```haskell
+
+```
 
 
 {% endraw %}
