@@ -756,7 +756,7 @@ I imagine finding the right `X` for an arbitrary dependent type could end up bei
 
 ```
 AbstractSyntax (n : Nat) : Type where
-  var : Fin n -> AbstractSyntax (n + 1)
+  var : Fin n -> AbstractSyntax n
   lam : AbstractSyntax (n + 1) -> AbstractSyntax n
   app : AbstractSyntax n -> AbstractSyntax n -> AbstractSyntax n
 ```
