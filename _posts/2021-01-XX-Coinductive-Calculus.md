@@ -242,7 +242,7 @@ f([a, b], 0) := [a, ((2^n + 1) b + (2^n - 1) a)/2^(n+1)]
 f([a, b], 1] := [((2^n + 1) a + (2^n - 1) b)/2^(n+1), b]
 ```
 
-The larger we set n, the smaller the overlap. This will have the effect of increasing the rate of convergence; the intervals will get smaller, faster the more digits we wee. Though, there are diminishing returns and one should be careful not to set n so high that basic operations become extremely inefficient. I'll use n = 1 since I want to keep things simple for this post.
+The larger we set n, the smaller the overlap. If n is set to 1, the overlap will be between -1/2 and 1/2. If n is set to 2, the overlap will be between -1/4 and 1/4. For general n, the overlap will be between -1/2^n and 1/2^n. This will have the effect of increasing the rate of convergence; the intervals will get smaller, faster the more digits we see. Though, there are diminishing returns and one should be careful not to set n so high that basic operations become extremely inefficient. I'll use n = 1 since I want to keep things simple for this post.
 
 This representation does have the nice property that finding the negative of a number corresponds to swapping the 1s and 0s, but there doesn't seem to be a trivial way to ivert a number, so I'll have to think of something more clever, though it honestly isn't difficult in general.
 
@@ -384,24 +384,26 @@ realToFloat =
 That seems to have worked out well. We're now in a position to write our first actual function over reals, as simple as it might be. I mentioned before that if we swap bits in our representation we get the negative.
 
 ```haskell
-negateReal :: ℝ -> ℝ
-negateReal = map not
+realNegate :: ℝ -> ℝ
+realNegate = map not
 ```
 
 ```haskell
-> realToFloat $ negateReal $ ratToReal $ -43
+> realToFloat $ realNegate $ ratToReal $ -43
 43.0
-> realToFloat $ negateReal $ ratToReal $ 20
+> realToFloat $ realNegate $ ratToReal $ 20
 -20.0
-> realToFloat $ negateReal $ ratToReal $ 1/3
+> realToFloat $ realNegate $ ratToReal $ 1/3
 -0.33333334
-> realToFloat $ negateReal $ ratToReal $ 0
+> realToFloat $ realNegate $ ratToReal $ 0
 6.0810894e-13
 ```
 
 Part 2: Let's be rational about this
 
-From here we can start generating some basic functions. Where possible, the easiest functions to implement are those which are already defined over the rationals. To accomplish this, we can create an intermediate representation of a real in terms of a sequence of nested intervals. We'll then use these to generate the bit stream.
+From here we can start generating some basic functions. Where possible, the easiest functions to implement are those which are already defined over the rationals. To accomplish this, we can create an intermediate representation of a real in terms of a sequence of nested intervals. This representation itself could be used as a definition for the reals as detailed in 
+
+- [PCF extended with real numbers](https://www.cs.bham.ac.uk/~mhe/papers/realpcf.pdf)
 
 Getting a list of nested intervals out of a real is very simple; we just scan with `focus`.
 
@@ -430,12 +432,12 @@ getting from a stream of intervals to a real is a more complicated business. It'
 
 ```haskell
 intsToRealCoalg :: (Interval, [Interval]) -> (Bool, (Interval, [Interval]))
-intsToRealCoalg (f, ((low, big) : is)) = 
+intsToRealCoalg (f, iis@((low, big) : is)) = 
   let (botL, topL) = focus f False
       (botR, topR) = focus f True
   in case (big < topL, low > botR) of
-        (True, _)      -> (False, ((botL, topL), is))
-        (_, True)      -> (True,  ((botR, topR), is))
+        (True, _)      -> (False, ((botL, topL), iis))
+        (_, True)      -> (True,  ((botR, topR), iis))
         (False, False) -> intsToRealCoalg (f, is)
 
 intsToReal :: [Interval] -> ℝ
@@ -459,7 +461,7 @@ realSum r1 r2 = intsToReal $ addInts (realToInts r1) (realToInts r2)
 > realToFloat $ realSum (ratToReal (-26)) (ratToReal (-9))
 -35.0
 > realToFloat $ realSum (ratToReal (-8)) (ratToReal 8)
-7.7728724e-14
+1.8856775e-13
 ```
 
 now that we have `intsToReal`, any operation which is defined on `Rational` can be straightforwardly extended to the full reals. Multiplication seems like an obvious choice. The only real complication is multiplying intervals. Depending on the values and the signs of the two ends of the intervals, the lower and upper bounds could vary quite a bit. We must calculate all four possibilities and pull out the smallest and largest.
@@ -485,23 +487,119 @@ realProd r1 r2 =
 > realToFloat $ realProd (ratToReal (1/2)) (ratToReal 100)
 50.0
 > realToFloat $ realProd (ratToReal 400) (ratToReal 0)
-1.1921121e-13
+5.246011e-14
 > realToFloat $ realProd (ratToReal 15) (ratToReal (-3))
 -45.0
 > realToFloat $ realProd (ratToReal (-2/5)) (ratToReal (-35))
 14.0
 ```
 
-
-
-
-
-
-We now have all the pieces ready to give a `Num` instance for `ℝ`
+What about the reciprocal? If we try to reproduce the procedure we just did for addition and multiplication we run into a serious issue. If we just reciprocate both sides of the interval, we get a sequence which begins with `(0, 0)`, since 0 is the reciprocal of infinity. The intervals then grow for a bit before eventually settling down. This means we need to drop an initial segment of our interval. As far as I can tell, dropping the first 3 entries guarantees correctness, but I'm honestly not sure why. Beyond that, the obvious implementation going through expanding and contracting doesn't work for some reason. If we go through the algebra to simplify that triple composition, we find out that it's the same as `1-x` when `x` is positive and `-1-x` when `x` is negative. A similar calculation can be done for addition and multiplication, but the results are much more complicated. In this case, we get a simpler expression, and this does work. Unfortunately, some of this is a bit of a hack job. Hopefully, I'll be able to justify something better in the future.
 
 ```haskell
+intRecip :: Interval -> Interval
+intRecip (a, b) =
+  let ra = signum a - a
+      rb = signum b - b
+  in if ra < rb
+     then (ra, rb)
+     else (rb, ra)
 
+intsRecip :: [Interval] -> [Interval]
+intsRecip = drop 3 . map intRecip
+
+realRecip :: ℝ -> ℝ
+realRecip = intsToReal . intsRecip . realToInts
 ```
+
+```haskell
+> realToFloat $ realRecip $ ratToReal 8
+0.125
+> realToFloat $ realRecip $ ratToReal 3
+0.33333334
+> realToFloat $ realRecip $ ratToReal 2
+0.5
+> realToFloat $ realRecip $ ratToReal (1/2)
+2.0
+> realToFloat $ realRecip $ ratToReal (1/3)
+3.0
+> realToFloat $ realRecip $ ratToReal (2/3)
+1.5
+> realToFloat $ realRecip $ ratToReal (3/2)
+0.6666667
+> realToFloat $ realRecip $ ratToReal 1
+1.0
+> realToFloat $ realRecip $ ratToReal $ -1
+-1.0
+> realToFloat $ realRecip $ ratToReal $ -1/2
+-2.0
+> realToFloat $ realRecip $ ratToReal $ -2
+-0.5
+> realToFloat $ realRecip $ ratToReal $ -8
+-0.125
+```
+
+We almost have all the neccessary components for instances of `Num` and `Fractional`. All we need is a definition of `signum` and `abs`. To make these, I'll define a function which tests for positivity over intervals.
+
+```haskell
+positiveInt :: [Interval] -> Bool
+positiveInt ((l, r) : is) | l > 0 = True
+                          | r < 0 = False
+                          | True  = positiveInt is
+
+positiveReal :: ℝ -> Bool
+positiveReal = positiveInt . realToInts
+
+realAbs :: ℝ -> ℝ
+realAbs r = if positiveReal r then r else realNegate r
+
+realSignum :: ℝ -> ℝ
+realSignum r = if positiveReal r then ratToReal 1  else ratToReal (-1)
+```
+
+And we can make our instances so we can use the nice interfaces.
+
+```haskell
+instance Num ℝ where
+  (+) = realSum
+  (*) = realProd
+  abs = realAbs
+  signum = realSignum
+  fromInteger = ratToReal . fromInteger
+  negate = realNegate
+
+instance Fractional ℝ where
+  fromRational = ratToReal
+  recip = realRecip
+```
+
+These calculations are now actually using the functions I've implemented to do their calculations.
+
+```haskell
+> realToFloat $ signum $ 22
+1.0
+> realToFloat $ signum $ -22
+-1.0
+> realToFloat $ signum $ 0.01
+1.0
+> realToFloat $ signum $ -0.01
+-1.0
+> realToFloat $ abs $ -0.01
+1.0e-2
+> realToFloat $ abs $ -1
+1.0
+> realToFloat $ abs $ -22
+22.0
+> realToFloat $ abs $ 22
+22.0
+> realToFloat $ abs (22 - 45)
+23.0
+> realToFloat $ 4 - abs (22/45)
+3.511111
+```
+
+Part 3: Linear Thinking Can Take You Only So Far
+
 
 
 {% endraw %}
