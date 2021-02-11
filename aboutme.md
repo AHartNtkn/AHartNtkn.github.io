@@ -4,7 +4,7 @@ title: About me
 subtitle: 
 ---
 
-My name is Anthony Hart. I'm a current Data Scientist with an interest in the theory of programming and the foundations of mathematics.
+My name is Anthony Hart. I'm a data scientist and professional programmer with an interest in the theory of programming and the foundations of mathematics.
 
 ## History
 
@@ -18,4 +18,4 @@ From that experience, I make a hobby out of creating programming languages with 
 
 ## Hopes for the Future
 
-I'm currently going through [Lambda School's](https://lambdaschool.com) data science program. I hope to eventually get a stable job related to machine learning. And perhaps, one day, I can make the perfect fusion of mathematics and a programming language.
+I hope to eventually get a stable job where I can apply modern functional programming and algebraic mathematics to machine learning or other interesting applications. And perhaps, one day, I can make the perfect fusion of mathematics and a programming language.
