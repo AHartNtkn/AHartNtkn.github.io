@@ -432,13 +432,13 @@ getting from a stream of intervals to a real is a more complicated business. It'
 
 ```haskell
 intsToRealCoalg :: (Interval, [Interval]) -> (Bool, (Interval, [Interval]))
-intsToRealCoalg (f, iis@((low, big) : is)) = 
+intsToRealCoalg (f, is) = 
   let (botL, topL) = focus f False
       (botR, topR) = focus f True
-  in case (big < topL, low > botR) of
-        (True, _)      -> (False, ((botL, topL), iis))
-        (_, True)      -> (True,  ((botR, topR), iis))
-        (False, False) -> intsToRealCoalg (f, is)
+      iss = dropWhile (\(low, big) -> big > topL && low < botR) is
+  in if fst (head iss) > botR
+     then (True,  ((botR, topR), iss))
+     else (False, ((botL, topL), iss))
 
 intsToReal :: [Interval] -> ℝ
 intsToReal i = ana intsToRealCoalg ((-1, 1), i)
