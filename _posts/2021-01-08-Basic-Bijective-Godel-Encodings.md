@@ -1,4 +1,14 @@
 {% raw %}
+- [ℕ ≅ ℕ × ℕ](#headingTimes)
+- [ℕ ≅ ℕ + ℕ](#headingPlus)
+- [Initial Algebras](#headingInitial)
+- [Lambda Expressions](#headingLambda)
+- [Peano Expressions](#headingPeano)
+- [Sorted Trees](#headingSorted)
+- [Trees of Bounded Height](#headingHeight)
+- [Final Thoughts](#headingFinal)
+
+
 I've been researching methods for generating data the past few months and, as part of that, I looked into Godel encodings. In my wildest dreams, I dreamt of being able to simply count through all examples of some complex class and remove the need for ordinary search. That dream has yet to come, but what I did find is an exceptionally simple and elegant theory that allows one to create bijections between natural numbers and arbitrary inductive datatypes.
 
 Much of this work was done by Paul Tarau in
@@ -8,6 +18,8 @@ Much of this work was done by Paul Tarau in
 However, the organization he uses is quite convoluted and unnatural, and some of his encodings are overly complicated. I hope to present the idea in a much more streamlined fashion. Note that this post is written using Mathematica as a programming language.
 
 Our end goal will be to encode arbitrary initial algebras over polynomial functors. To that end, we need a way to encode polynomial functors; tuples and sums of natural numbers with or without finite sets.
+
+<a name="headingTimes"></a>
 
 The standard method for encoding tuples with natural numbers is "Cantor tupling". However, the general n-tuple case is quite involved and inefficient. How to do (inverse) Cantor tupling efficiently is still a research topic to this day.
  - ["Deriving a Fast Inverse of the Generalized Cantor N-tupling Bijection" by Paul Tarau](https://drops.dagstuhl.de/opus/volltexte/2012/3632/pdf/30.pdf)
@@ -77,7 +89,7 @@ NatTuplesToNat[x_] /; AllTrue[x, # == 0 &] := 0
 NatTuplesToNat[x_] :=
  Block[{n, l, b},
   n = Length@x;
-  l = Floor@Log[2, Max[x]] + 1;
+  l = IntegerLength[Max@x, 2];
   b = IntegerDigits[#, 2, l] & /@ x;
   
   FromDigits[Flatten@Thread@b, 2]
@@ -112,7 +124,9 @@ As part of composing isomorphisms to get larger and larger polynomial functors, 
 XTuplesToYTuples[XsToYs_][xs_] := MapThread[#1[#2] &, {XsToYs, xs}]
 ```
 
-We can encode `N × ℕ` for finite `N` using a variation of a method used to encode coproducts. `ℕ + ℕ` can be encoded into `ℕ` by multiplying by 2 in the first case and multiplying by 2  and subtracting 1 in the second case. The other direction inverts those operations; the first in the even case and the second in the odd case. We can view `ℕ + ℕ` as being essentially like `2 × ℕ`. By generalizing the construction of that isomorphism, we can obtain an isomorphism into `N × ℕ` for general `N`.
+<a name="headingPlus"></a>
+
+We can encode `n × ℕ` for finite `n` using a variation of a method used to encode coproducts. `ℕ + ℕ` can be encoded into `ℕ` by multiplying by 2 in the first case and multiplying by 2  and subtracting 1 in the second case. The other direction inverts those operations; the first in the even case and the second in the odd case. We can view `ℕ + ℕ` as being essentially like `2 × ℕ`. By generalizing the construction of that isomorphism, we can obtain an isomorphism into `n × ℕ` for general `n`.
 
 ```mathematica
 NatToNTimesNat[n_][x_] := {Mod[x, n], Quotient[x, n]}
@@ -167,59 +181,89 @@ Out[1] := {{0, 0}, {0, 1}, {0, 2}, {1, 0}, {1, 1},
 Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 ```
 
-Given an algebra `f : ℕ → F[ℕ]` and a coalgebra `g : F[ℕ] → ℕ`, such that `f` and `g` form an isomorphism, then any initial/final algebra over `F` is isomorphic to `ℕ`. To see this, we need to define the recursion schemes
+<a name="headingInitial"></a>
 
-```mathematica
-ana[mapF_, coalg_][x_] := mapF[ana[mapF, coalg], coalg[x]]
-cata[mapF_, alg_][x_] := alg[mapF[cata[mapF, alg], x]]
+Ordinary inductive datatypes such as lists and trees can be described as initial algebras of particular endofunctors.
+
+- [Recursive types for free!](homepages.inf.ed.ac.uk/wadler/papers/free-rectypes/free-rectypes.txt)
+
+A standard example is the list type over As, which is initial over `X ↦ 1 + A × X`. Broadly, this means we can view lists of As as the fixed point
+
+```
+List A := 1 + A × List A 
+        = 1 + A × (1 + A × List A)  
+        = 1 + A × (1 + A × (1 + A × List A ))
+        = ...
 ```
 
-These functions can be used to generically structure any (co) recursion over inductive datatypes. Cata is short for "catamorphism" and ana is short for "anamorphism"; kinds of recursion schemes that can make structuring (co)recursive programs very simple. I'll give some examples involving lists later on.
+For an arbitrary endofunctor F, (co)recursion over the initial algebra can be formulated via recursion schemes.
 
-The most important thing to note is that if f and g are isomorphisms then `ana[mapF, f]` and `cata[mapF, g]` will be as well. For the sake of simplicity, I'll leave out the mapF from the subsequent calculation. Also, I'll denote `mapF[f, e]` as `f /@ e` since it will be a generalization of the built-in map for general functors.
+- [Functional programming with bananas, lenses, envelopes and barbed wire"](https://dl.acm.org/doi/10.1145/1671970.1671972)
 
-In the first case we have;
+Given an algebra `alg : F[A] → A`, over F, we can define a canonical function from the fixed-point of F to A as
 
 ```mathematica
+cata[map_, alg_][x_] := alg[map[cata[map, alg], x]]
+```
+
+where map is the canonical functorial map for F which turns a function of type `A → B` to a function of type `F[A] → F[B]`. At each step of the recursion, the algebra is applied to remove a single F layer. In the limit, all Fs will be removed.
+
+Given a coalgebra `coalg : A → F[A]` over F, we can define a canonical function from A to the fixed-point of F as
+
+```mathematica
+ana[map_, coalg_][x_] := map[ana[map, coalg], coalg[x]]
+```
+
+At each step of the corecursion, the coalgebra will build up a single F layer. These functions can be used to generically structure any (co)recursion over inductive datatypes. Cata is short for catamorphism and ana is short for anamorphism; the most basic kinds of recursion schemes. The next subsection will be dedicated to giving examples of their usage.
+
+If `f` and `g` are isomorphisms then `ana[map,f]` and `cata[map,f]` will be as well. They will be the isomorphisms for the initial algebra. For the sake of simplicity, I'll leave out the map from `ana[map,f]` and `cata[map,f]` the subsequent calculation. I'll also denote `map[f,e]` as `f/@e` since it will be a variation of the built-in map for general functors instead of just the list functor.
+
+In the first direction we have;
+
+```
 ana[f][cata[g][X]]
   == ana[f][g[cata[g] /@ X]]
-  == ana[f] /@ f[g[cata[g] /@ X]]
-    by f[g[x]] == x; f and g form an isomorphism
+  == ana[f] /@ f[g[cata[g] /@ X]]     
   == ana[f] /@ cata[g] /@ X
-  == ana[f]@*cata[g] /@ X
-    by the inductive hypothesis, that ana[f] and cata[g] form
-    an isomorphism after one evaluation step.
-  == # & /@ X
+    by f[g[x]] == x
+  == ana[f]@*cata[g] /@ X    
+  == # & /@ X 
+    by the inductive hypothesis
   == X
 ```
 
 In the other direction we have
 
-```mathematica
+```
 cata[g][ana[f][X]]
   == cata[g][ana[f] /@ f[X]]
   == g[cata[g] /@ ana[f] /@ f[X]]
-  == g[cata[g]@*ana[f] /@ f[X]]
-    by the inductive hypothesis, that ana[f] and cata[g] form
-    an isomorphism after one evaluation step.
+  == g[cata[g]@*ana[f] /@ f[X]] 
   == g[# & /@ f[X]]
+    by the inductive hypothesis
   == g[f[X]]
-    by g[f[x]] == x; f and g form an isomorphism
   == X
+    by g[f[x]] == x
 ```
 
-With that in mind, let's give some examples. I'll use lists as a running example. Lists of `A`s are the initial algebra over the endofunctor that sends `X` to `1 + A×X`. As an example, the list
+With that in mind, let's give some examples. I'll use lists as a running example. Lists of `A`s are the initial algebra over the endofunctor that sends `X` to `1 + A×X`.  Using the previous encodings, we can transform this into a uniform representation based on the encodings given before. As an example, the list
+
 ```
 {1, 2, 3}
-```
+``` 
+
 would become
+
 ```
 {1, {1, {1, {2, {1, {3, {0, 0}}}}}}}
 ```
-in the uniform notation we've been building up. Note that each subsequent `{0, _}` and `{1, _}` are tags for the coproduct cases. By replacing them with `inl` and `inr` it would become
+
+in the uniform notation we've been building up. Note that each subsequent `{0,_}` and `{1,_}` are tags for the coproduct cases. By replacing them with nil and cons it would become 
+
 ```
-inr[{1, inr[{2, inr[{3, inl[0]}]}]}]
+cons[{1,cons[{2,cons[{3,nil[0]}]}]}]
 ```
+
 which is, hopefully, clearer to the reader.
 
 We can easily convert these to native datatypes
@@ -308,8 +352,13 @@ NatListToNat :=
 ```
 
 ```mathematica
-In[1]  := Array[ListToMList@*NatToNatList, {10}, 0]
+In[1] := Array[ListToMList@*NatToNatList, {10}, 0]
+In[2] := NatListToNat@*MListToList/@%
+```
+
+```
 Out[1] := {{}, {0}, {0, 0}, {1}, {1, 0}, {0, 0, 0}, {0, 1}, {1, 0, 0}, {1, 1}, {2}}
+Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 ```
 
 ```mathematica
@@ -374,99 +423,102 @@ typeSize[n_Integer] := n
 In the case of finite types, we need to automatically generate maps into the appropriate finite set. These definitions automatically generate isomorphisms between some finite set of size n and a type like `coproduct[5, product[2, 3]]`, which is isomorphic to a finite set of size 11.
 
 ```mathematica
-fromFiniteSet[coproduct[A_, B_]][n_] := 
+fromFiniteSet[coproduct[A_, T___]][n_] := 
   With[{sa = typeSize[A]},
-       If[n < sa, fromFiniteSet[A][n], fromFiniteSet[B][n - sa]]]
-fromFiniteSet[product[A_, B_]][n_] := 
-  With[{sb = typeSize[B]},
-       {fromFiniteSet[A]@Quotient[n, sb], fromFiniteSet[B]@Mod[n, sb]}]
+    If[n < sa, {0, fromFiniteSet[A][n]},
+               {1, 0} + fromFiniteSet[coproduct[T]][n - sa]]]
+fromFiniteSet[product[A_]][n_] := 
+  With[{sa = typeSize[A]}, {fromFiniteSet[A]@Mod[n, sa]}]
+fromFiniteSet[product[A_, T__]][n_] := 
+  With[{sa = typeSize[A]},
+    Prepend[fromFiniteSet[product[T]][Quotient[n, sa]],
+            fromFiniteSet[A][Mod[n, sa]]]]
 fromFiniteSet[n_Integer] := # &
 
-toFiniteSet[coproduct[A_, B_]][{0, e_}] := toFiniteSet[A][e]
-toFiniteSet[coproduct[A_, B_]][{1, e_}] := typeSize[A] + toFiniteSet[B][e]
-toFiniteSet[coproduct[T__]][{n_Integer, e_}] /; n < Length@{T} := 
-  Total[typeSize /@ {T}[[1 ;; n + 1]]] + toFiniteSet[T[[n + 1]]][e]
+toFiniteSet[coproduct[T__]][{n_Integer, e_}] /; n < Length@{T} :=
+  Total[typeSize /@ {T}[[1 ;; n]]] + toFiniteSet[{T}[[n+1]]][e]
+toFiniteSet[product[A_]][{a_}] := toFiniteSet[A][a]
 toFiniteSet[product[A_, B_]][{e1_, e2_}] :=
-  {typeSize[B], 1}.{toFiniteSet[A][e1], toFiniteSet[B][e2]}
+  {1, typeSize[A]}.{toFiniteSet[A][e1], toFiniteSet[B][e2]}
+toFiniteSet[product[A_, T__]][{e1_, e2__}] :=
+  {1, typeSize[A]}.{toFiniteSet[A][e1], toFiniteSet[product[T]][{e2}]}
 toFiniteSet[n_Integer] := # &
 ```
 
-The last two things we need are the final functions that generate isomorphisms between `ℕ` and `F[ℕ]`. It all comes together rather nicely.
+We are now in a position to define the function generating the isomorphism between ℕ and F ℕ for arbitrary polynomial F. This is the most complex part of the construction, but mostly because there are so many cases to consider. Each individual case is in fact very simple, largely being compositions and/or mappings of previously defined functions.
 
 ```mathematica
-fromNat[coproduct[A_, B_]] :=
+NatToFixFNat[coproduct[A_, B_]] :=
   With[{sa = typeSize[A], sb = typeSize[B]},
     Which[
       sa < ∞ == sb, 
-      XSumsToYSums[{fromFiniteSet[A], fromNat[B]}]@*NatToNPlusNat[sa],
+      XSumsToYSums[{fromFiniteSet[A], NatToFixFNat[B]}]@*NatToNPlusNat[sa],
       sb < ∞ == sa, 
-      XSumsToYSums[{fromNat[A], fromFiniteSet[B]}]@*NatToNatPlusN[sb],
+      XSumsToYSums[{NatToFixFNat[A], fromFiniteSet[B]}]@*NatToNatPlusN[sb],
       sa == ∞ == sb, 
-      XSumsToYSums[{fromNat[A], fromNat[B]}]@*NatToNTimesNat[2]
+      XSumsToYSums[{NatToFixFNat[A], NatToFixFNat[B]}]@*NatToNTimesNat[2]
     ]
   ]
-fromNat[coproduct[T__]] /; AllTrue[{T}, typeSize@# == ∞ &] :=
-  XSumsToYSums[fromNat /@ {T}]@*NatToNTimesNat[Length@{T}]
-fromNat[product[A_, B_]] :=
+NatToFixFNat[coproduct[T__]] /; AllTrue[{T}, typeSize@# == ∞ &] := XSumsToYSums[NatToFixFNat /@ {T}]@*NatToNTimesNat[Length@{T}]
+NatToFixFNat[product[A_, B_]] :=
   With[{sa = typeSize[A], sb = typeSize[B]},
     Which[
       sa < ∞ == sb, 
-      XTuplesToYTuples[{fromFiniteSet[A], fromNat[B]}]@*NatToNTimesNat[sa],
+      XTuplesToYTuples[{fromFiniteSet[A], NatToFixFNat[B]}]@*NatToNTimesNat[sa],
       sb < ∞ == sa, 
-      XTuplesToYTuples[{fromNat[A], fromFiniteSet[B]}]@*NatToNatTimesN[sb],
+      XTuplesToYTuples[{NatToFixFNat[A], fromFiniteSet[B]}]@*NatToNatTimesN[sb],
       sa == ∞ == sb, 
-      XTuplesToYTuples[{fromNat[A], fromNat[B]}]@*NatToNatTuples[2]
+      XTuplesToYTuples[{NatToFixFNat[A], NatToFixFNat[B]}]@*NatToNatTuples[2]
     ]
   ]
-fromNat[product[T__]] /; AllTrue[{T}, typeSize@# == ∞ &] := 
-  XTuplesToYTuples[fromNat /@ {T}]@*NatToNatTuples[Length@{T}]
-fromNat[nat] := # &
-fromNat[$X] := # &
+NatToFixFNat[product[T__]] /; AllTrue[{T}, typeSize@# == ∞ &] :=
+  XTuplesToYTuples[NatToFixFNat /@ {T}]@*NatToNatTuples[Length@{T}]
+NatToFixFNat[nat] := # &
+NatToFixFNat[$X] := # &
 ```
 
 ```mathematica
-toNat[coproduct[A_, B_]] :=
+FNatToNat[coproduct[A_, B_]] :=
   With[{sa = typeSize[A], sb = typeSize[B]},
     Which[
       sa < ∞ == sb, 
-      NPlusNatToNat[sa]@*XSumsToYSums[{toFiniteSet[A], toNat[B]}],
+      NPlusNatToNat[sa]@*XSumsToYSums[{toFiniteSet[A], FNatToNat[B]}],
       sb < ∞ == sa, 
-      NatPlusNToNat[sb]@*XSumsToYSums[{toNat[A], toFiniteSet[B]}],
+      NatPlusNToNat[sb]@*XSumsToYSums[{FNatToNat[A], toFiniteSet[B]}],
       sa == ∞ == sb, 
-      NTimesNatToNat[2]@*XSumsToYSums[{toNat[A], toNat[B]}]
+      NTimesNatToNat[2]@*XSumsToYSums[{FNatToNat[A], FNatToNat[B]}]
     ]
   ]
-toNat[coproduct[T__]] /; AllTrue[{T}, typeSize@# == ∞ &] := 
-  NTimesNatToNat[Length@{T}]@*XSumsToYSums[toNat /@ {T}]
-toNat[product[A_, B_]] :=
+FNatToNat[coproduct[T__]] /; AllTrue[{T}, typeSize@# == ∞ &] := NTimesNatToNat[Length@{T}]@*XSumsToYSums[FNatToNat /@ {T}]
+FNatToNat[product[A_, B_]] :=
   With[{sa = typeSize[A], sb = typeSize[B]},
     Which[
       sa < ∞ == sb, 
-      NTimesNatToNat[sa]@*XTuplesToYTuples[{toFiniteSet[A], toNat[B]}],
+      NTimesNatToNat[sa]@*XTuplesToYTuples[{toFiniteSet[A], FNatToNat[B]}],
       sb < ∞ == sa, 
-      NatTimesNToNat[sb]@*XTuplesToYTuples[{toNat[A], toFiniteSet[B]}],
+      NatTimesNToNat[sb]@*XTuplesToYTuples[{FNatToNat[A], toFiniteSet[B]}],
       sa == ∞ == sb, 
-      NatTuplesToNat@*XTuplesToYTuples[{toNat[A], toNat[B]}]
+      NatTuplesToNat@*XTuplesToYTuples[{FNatToNat[A], FNatToNat[B]}]
     ]
   ]
-toNat[product[T__]] /; AllTrue[{T}, typeSize@# == ∞ &] := 
-  NatTuplesToNat@*XTuplesToYTuples[toNat /@ {T}]
-toNat[nat] := # &
-toNat[$X] := # &
+FNatToNat[product[T__]] /; AllTrue[{T}, typeSize@# == ∞ &] := 
+  NatTuplesToNat@*XTuplesToYTuples[FNatToNat /@ {T}]
+FNatToNat[nat] := # &
+FNatToNat[$X] := # &
 ```
 
 Finally, we can put these pieces together to get an encoding for an arbitrary initial algebra over an endofunctor.
 
 ```mathematica
-NatToF[F_] := ana[fmapOf[F], fromNat[F]]
-FToNat[F_] := cata[fmapOf[F], toNat[F]]
+NatToFixF[F_] := ana[fmapOf[F], fromNat[F]]
+FixFToNat[F_] := cata[fmapOf[F], toNat[F]]
 ```
 
 We can repeat our previous list construction. Here, for lists of booleans.
  
 ```mathematica
-In[1]  := ListToMList[NatToF[coproduct[1, product[2, $X]]][25346]]
-In[2]  := FToNat[coproduct[1, product[2, $X]]]@MListToList@%
+In[1] := ListToMList[NatToFixF[coproduct[1, product[2, $X]]][25346]]
+In[2] := FixFToNat[coproduct[1, product[2, $X]]]@MListToList@%
 ```
 
 ```mathematica
@@ -475,8 +527,8 @@ Out[2] := 25346
 ```
 
 ```mathematica
-In[1]  := Array[NatToF[coproduct[1, product[2, $X]]], {10}, 0];
-In[2]  := FToNat[coproduct[1, product[2, $X]]] /@ %
+In[1]  := Array[NatToFixF[coproduct[1, product[2, $X]]], {10}, 0];
+In[2]  := FixFToNat[coproduct[1, product[2, $X]]] /@ %
 In[3]  := ListToMList /@ %%
 ```
 
@@ -495,7 +547,7 @@ toGenericTree := cata[fmapOf[coproduct[1, product[$X, $X]]], treeAlg]
 ```
 
 ```mathematica
-In[1] := TreeForm@toGenericTree@NatToF[coproduct[1, product[$X, $X]]]@214
+In[1] := TreeForm@toGenericTree@NatToFixF[coproduct[1, product[$X, $X]]]@214
 ```
 
 ![Binary tree #214](../img/godelencode1/godelencode12.png)
@@ -551,9 +603,9 @@ From here, we can now give Godel encodings for arbitrary term algebras
 
 ```mathematica
 NatToTermAlg[v_, c_, f_] :=
-  uniformToTerm[v, c, f]@*NatToF[termSignitureToType[v, c, f]]
+  uniformToTerm[v, c, f]@*NatToFixF[termSignitureToType[v, c, f]]
 TermAlgToNat[v_, c_, f_] :=
-  FToNat[termSignitureToType[v, c, f]]@*termToUniform[v, c, f]
+  FixFToNat[termSignitureToType[v, c, f]]@*termToUniform[v, c, f]
 ```
 
 ```mathematica
@@ -644,8 +696,8 @@ Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 By replacing the list/tuple isomorphisms in some of the existing constructions, we can get commutative and/or idempotent variations. For example, we may notice that the initial algebra of the endofunctor `X ↦ A + X × X`, in addition to encoding binary trees with `A`s at the leaves, also encodes the free magma over `A`. If we observe the isomorphisms generated by our program;
 
 ```mathematica
-In[1]  := NatToF[coproduct[nat, product[$X, $X]]]
-In[2]  := FToNat[coproduct[nat, product[$X, $X]]]
+In[1]  := NatToFixF[coproduct[nat, product[$X, $X]]]
+In[2]  := FixFToNat[coproduct[nat, product[$X, $X]]]
 ```
 
 ```mathematica
@@ -732,11 +784,13 @@ With these constructs in mind, Tarau presented a few interesting encodings of di
 
 In one of his presentations, Tarau mentioned the open problem of encoding structures with transitivity. In particular, how would one encode finite preorders, lattices, topologies, or categories? To my knowledge, all these problems remain open.
 
+<a name="headingLambda"></a>
+
 One of the more obvious missing pieces of our construction is the absence of binders which would be necessary for encoding things like lambda expressions or formulas with quantifiers. Intuitively, If our full type is `A`, then, upon recursing into a position with `n` bound variables, we are effectively dealing with the type `n + A`, with new terms coding for references to the bound arguments. Something like this trick is implemented in
 
   - [Generating Bijections between HOAS and the Natural Numbers by John Boyland](https://arxiv.org/pdf/1009.2790.pdf)
 
-However, the general trick requires the arguments to `fmapOf` and `to/fromNat` in the definitions of `NatToF` and `FToNat` to change as `cata` and `ana` recurse. This requires a more general recursion scheme than what I used here. To clearify that, I'll wrap back to my dream at the beginning of this post. What would it take to Godel encode dependently typed data? In a [previous blog post](http://anthonylorenhart.com/2020-08-31-Datatypes-as-Dialgebras/) I talked about the formulation of dependent types as initial/final dialgebras. Presumably, we can take an isomorphic dialgebra to get isomorphic constructors/eliminators for dependent types. For example, vectors are the initial dialgebra between;
+However, the general trick requires the arguments to `fmapOf` and `to/fromNat` in the definitions of `NatToFixF` and `FixFToNat` to change as `cata` and `ana` recurse. This requires a more general recursion scheme than what I used here. To clearify that, I'll wrap back to my dream at the beginning of this post. What would it take to Godel encode dependently typed data? In a [previous blog post](http://anthonylorenhart.com/2020-08-31-Datatypes-as-Dialgebras/) I talked about the formulation of dependent types as initial/final dialgebras. Presumably, we can take an isomorphic dialgebra to get isomorphic constructors/eliminators for dependent types. For example, vectors are the initial dialgebra between;
 
 ```
 F(X) = (1,   λ n . A × X n)
@@ -756,9 +810,9 @@ I imagine finding the right `X` for an arbitrary dependent type could end up bei
 
 ```
 AbstractSyntax (n : Nat) : Type where
-  var : Fin n -> AbstractSyntax n
-  lam : AbstractSyntax (n + 1) -> AbstractSyntax n
-  app : AbstractSyntax n -> AbstractSyntax n -> AbstractSyntax n
+  var : Fin n → AbstractSyntax n
+  lam : AbstractSyntax (n + 1) → AbstractSyntax n
+  app : AbstractSyntax n → AbstractSyntax n → AbstractSyntax n
 ```
 
 We can then conclude that these formulas are the initial dialgebra over
@@ -849,7 +903,7 @@ NatToASF[k_] :=
   NatToNPlusNat[k]
 
 (*Fin k + (ℕ + (ℕ × ℕ)) → ℕ*)
-ASFToNat[k_] := 
+ASFixFToNat[k_] := 
  NPlusNatToNat[k]@*
   XSumsToYSums[{# &, 
     NTimesNatToNat[2]@*XSumsToYSums[{# &, NatTuplesToNat}]}]
@@ -859,7 +913,7 @@ In this case, I'm setting `X k` to `ℕ` for all `k`. That seemed better than be
 
 ```mathematica
 NatToAS[k_] := ASUtoAS[k]@*fana[ASMap][NatToASF][k]
-ASToNat[k_] := fcata[ASMap][ASFToNat][k]@*AStoASU[k]
+ASToNat[k_] := fcata[ASMap][ASFixFToNat][k]@*AStoASU[k]
 ```
 
 ```mathematica
@@ -882,22 +936,18 @@ Out[1] :={
 Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 ```
 
-I'll finish up with a few more examples. 
-
-...
-
 For various purposed, it can be useful to enumerate only the normalized lambda expressions. This is important for viewing the lambda calculus as some kind of universal function over binary strings. Unlike strings for Turing machines, lambda expressions cannot in general be the output of a program if they aren't normalized. Creating a dedicated bijective encoding for normalized terms is then necessary to see all possible strings as being in the codomain of the universal function defined by the lambda calculus. Data is also often encoded using normalized terms making an encoding specialized to normalized terms better suited for encoding lambda-encoded data.
 
 Normalized expressions differ from non-normalized forms in that they have a lambda binding applied to an argument. By stratifying the type to prevent such an occurrence we only have normalized forms.
 
 ```
-NLambdaExp : ℕ -> Type
-	dum : ∀ n ∈ ℕ . NLambdaApp n -> LambdaExp n
-	lam : ∀ n ∈ ℕ . LambdaExp (n+1) -> LambdaExp n
+NLambdaExp : ℕ → Type
+	dum : ∀ n ∈ ℕ . NLambdaApp n → LambdaExp n
+	lam : ∀ n ∈ ℕ . LambdaExp (n+1) → LambdaExp n
 
-NLambdaApp : ℕ -> Type
-	var: ∀ n ∈ ℕ. Fin n -> NLambdaApp n
-	app: ∀ n ∈ ℕ. NLambdaApp n -> LambdaExp n -> NLambdaApp n
+NLambdaApp : ℕ → Type
+	var: ∀ n ∈ ℕ. Fin n → NLambdaApp n
+	app: ∀ n ∈ ℕ. NLambdaApp n → LambdaExp n → NLambdaApp n
 ```
 
 This inductive-inductive datatype, while theoretically more complicated, does not impose any substantial difficulty on our encoding. It does force us to thread mutual recursive calls across our implementations, often referencing functions before they are defined. However, the conceptual nature of our code is not so complicated despite this.
@@ -949,23 +999,23 @@ In the case of natural number encodings, we need to be careful about our fiber. 
 
 ```mathematica
 NatToNLamUF[k_] := XSumsToYSums[{NatToNLamAU[k],#&}]@*NatToNTimesNat[2]
-NLamUFToNat[k_] := NTimesNatToNat[2]@*XSumsToYSums[{NLamAUToNat[k],#&}]
+NLamUFixFToNat[k_] := NTimesNatToNat[2]@*XSumsToYSums[{NLamAUToNat[k],#&}]
 
 NatToNLamAUF[k_] := 
   XSumsToYSums[{# &,
     XTuplesToYTuples[{#&, NatToNLamU[k]}]@*
       NatToNatTuples[2]}]
   @*NatToNPlusNat[k]
-NLamAUFToNat[k_] :=
+NLamAUFixFToNat[k_] :=
   NPlusNatToNat[k]
   @*XSumsToYSums[{# &,
     NatTuplesToNat@*XTuplesToYTuples[{#&, NLamUToNat[k]}]}]
 
 NatToNLamU[k_] /; k > 0  := fana[NLamMap, NatToNLamUF][k]
-NLamUToNat[k_] /; k > 0  := fcata[NLamMap, NLamUFToNat][k]
+NLamUToNat[k_] /; k > 0  := fcata[NLamMap, NLamUFixFToNat][k]
 
 NatToNLamAU[k_] /; k > 0  := fana[NLamAMap, NatToNLamAUF][k]
-NLamAUToNat[k_] /; k > 0  := fcata[NLamAMap, NLamAUFToNat][k]
+NLamAUToNat[k_] /; k > 0  := fcata[NLamAMap, NLamAUFixFToNat][k]
 ```
 
 All normalized expressions begin with a lambda binder since, as stated before, applications without variables cannot be completed and there are no variables to reference.
@@ -995,29 +1045,29 @@ Out[1] := {
 Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 ```
 
-...
+<a name="headingPeano"></a>
 
 The first application of Gödel encodings was to encode formulas of Peano Arithmetic for the sake of embedding Peano Arithmetic into itself. The original encoding used by Gödel was quite inefficient, leading to natural numbers which were exponentially large in the length of the expression being coded. We may use the methods described here to devise a much more efficient encoding of these formulas.
 
 PA comes in two parts, syntactically. Firstly, we have a type of numerical expressions, which may mention but not bind variables;
 
 ```
-NumExp : ℕ -> Type
-	var :   ∀ n ∈ ℕ. Fin n -> NumExp n
+NumExp : ℕ → Type
+	var :   ∀ n ∈ ℕ. Fin n → NumExp n
 	zero :  ∀ n ∈ ℕ. NumExp n
-	succ :  ∀ n ∈ ℕ. NumExp n -> NumExp n
-	plus :  ∀ n ∈ ℕ. NumExp n -> NumExp n -> NumExp n
-	times : ∀ n ∈ ℕ. NumExp n -> NumExp n -> NumExp n
+	succ :  ∀ n ∈ ℕ. NumExp n → NumExp n
+	plus :  ∀ n ∈ ℕ. NumExp n → NumExp n → NumExp n
+	times : ∀ n ∈ ℕ. NumExp n → NumExp n → NumExp n
 ```
 
 And a logic layer where variables may be bound but not mentioned.
 
 ```
-PeanoExp : ℕ -> Type
-	eq:      ∀ n ∈ ℕ. NumExp n -> NumExp n -> PeanoExp n
-	not:     ∀ n ∈ ℕ. PeanoExp n -> PeanoExp n
-	implies: ∀ n ∈ ℕ. PeanoExp n -> PeanoExp n -> PeanoExp n
-	forall:  ∀ n ∈ ℕ. PeanoExp (n+1) -> PeanoExp n
+PeanoExp : ℕ → Type
+	eq:      ∀ n ∈ ℕ. NumExp n → NumExp n → PeanoExp n
+	not:     ∀ n ∈ ℕ. PeanoExp n → PeanoExp n
+	implies: ∀ n ∈ ℕ. PeanoExp n → PeanoExp n → PeanoExp n
+	forall:  ∀ n ∈ ℕ. PeanoExp (n+1) → PeanoExp n
 ```
 
 In the case of `NumExp`, a dialgebra over the same functors will be of the form
@@ -1119,14 +1169,14 @@ NatToNumF[k_] :=
     @*NatToNTimesNat[3]}]
   @*NatToNPlusNat[k+1]
 
-NumFToNat[k_] := 
+NumFixFToNat[k_] := 
   NPlusNatToNat[k+1]
   @*XSumsToYSums[{# &,
     NTimesNatToNat[3]
     @*XSumsToYSums[{# &, NatTuplesToNat, NatTuplesToNat}]}]
 
 NatToNumExpU := fana[NumExpMap, NatToNumF]
-NumExpUToNat := fcata[NumExpMap, NumFToNat]
+NumExpUToNat := fcata[NumExpMap, NumFixFToNat]
 ```
 
 ```mathematica
@@ -1158,7 +1208,7 @@ NatToPeanoF[k_] :=
                 @*NatToNatTuples[2], # &, NatToNatTuples[2], # &}]
   @*NatToNTimesNat[4]
 
-PeanoFToNat[k_] := 
+PeanoFixFToNat[k_] := 
   NTimesNatToNat[4]
   @*XSumsToYSums[{NatTuplesToNat
                   @*XTuplesToYTuples[{NumExpUToNat[k], NumExpUToNat[k]}],
@@ -1166,7 +1216,7 @@ PeanoFToNat[k_] :=
 
 NatToPeanoExp[k_] := UToPeanoExp[k]@*fana[PeanoExpMap, NatToPeanoF][k]
 
-PeanoExpToNat[k_] := fcata[PeanoExpMap, PeanoFToNat][k]@*PeanoExpToU[k]
+PeanoExpToNat[k_] := fcata[PeanoExpMap, PeanoFixFToNat][k]@*PeanoExpToU[k]
 ```
 
 ```mathematica
@@ -1204,15 +1254,15 @@ Out[2] := forall[not[eq[zero, succ[var[0]]]]]
 
 If we wanted to, we could incorporate the commutativity trick mentioned earlier to, for example, encode addition, multiplication, and equality only up to commutativity.
 
-...
+<a name="headingSorted"></a>
 
 A sorted binary tree (storing data at its branches) is a standard data-structure for many applications. For example, it acts as the intermediate data type in many quicksort implementations. It has a description as the following dependent type.
 
 ```
-SortedTree : ℕ*ℕ∞->Type
+SortedTree : ℕ*ℕ∞→Type
 	leaf  : ∀(n,m) ∈ ℕ×ℕ∞. SortedTree (n, m)
-	branch: ∀(n,m) ∈ ℕ×ℕ∞. (x : ℕ) -> n≤x≤m -> SortedTree (n, x)
-                       -> SortedTree (x, m) -> SortedTree (n, m)
+	branch: ∀(n,m) ∈ ℕ×ℕ∞. (x : ℕ) → n≤x≤m → SortedTree (n, x)
+                       → SortedTree (x, m) → SortedTree (n, m)
 ```
 
 The ordered pair which acts as a fiber represents the upper and lower bounds within which the tree is allowed to contain numbers. ℕ∞ is the type of natural numbers extended with a point at infinity sorted above all others.We can describe this as the initial dialgebra between
@@ -1293,11 +1343,11 @@ NatToSBTF[{n_, m_Integer}] /; n≤m :=
   XSumsToYSums[{#&, XTuplesToYTuples[{#+n&, NatToNatTuples[2]}]
                     @*NatToNTimesNat[m-n+1]}]@*NatToNPlusNat[1]
 
-SBTFToNat[{n_, ∞}] :=
+SBTFixFToNat[{n_, ∞}] :=
   NPlusNatToNat[1]
   @*XSumsToYSums[{#&,NatTuplesToNat
                      @*XTuplesToYTuples[{#-n&, NatTuplesToNat}]}]
-SBTFToNat[{n_, m_Integer}] /; n≤m := 
+SBTFixFToNat[{n_, m_Integer}] /; n≤m := 
   NPlusNatToNat[1]
   @*XSumsToYSums[{#&,NTimesNatToNat[m-n+1]
                      @*XTuplesToYTuples[{#-n&, NatTuplesToNat}]}]
@@ -1309,7 +1359,7 @@ We may now complete the construction by shoving these into fcata and fana.
 NatToSBT[{n_,m_}] /; n≤m :=
   UToSBT[{n,m}]@*fana[SBTMap, NatToSBTF][{n,m}]
 SBTToNat[{n_,m_}] /; n≤m :=
-  fcata[SBTMap, SBTFToNat][{n,m}]@*SBTToU[{n,m}]
+  fcata[SBTMap, SBTFixFToNat][{n,m}]@*SBTToU[{n,m}]
 ```
 
 ```mathematica
@@ -1364,23 +1414,23 @@ Out[1] :=
 
 ![Two sorted trees](../img/godelencode1/godelencode14.png)
 
-...
+<a name="headingHeight"></a>
 
 
 Up till now, all my examples have been of dependent types which are initial (F, G)-dialgebras where G is trivial; i.e. an identity functor over its type family. What about dependent types which aren't so convenient? As an example, take height-bounded trees.
 
 ```
-HBTree : ℕ -> Type
-	leaf : ∀n ∈ ℕ. ℕ -> HBTree n
-	branch: ∀n ∈ ℕ. HBTree n -> HBTree n -> HBTree (n + 1)
+HBTree : ℕ → Type
+	leaf : ∀n ∈ ℕ. ℕ → HBTree n
+	branch: ∀n ∈ ℕ. HBTree n → HBTree n → HBTree (n + 1)
 ```
 
 This has a representation as an initial dialgebra with G(X)=(λ n . X n, λ n. X (n+1)). In general we have the ability to refactor this type so it's an initial fibrational algebra. We can do this by turning the pattern in the post-condition and into a unification check in the precondition, thus trivializing G. We can redefine this type as
 
 ```
-HBTree : ℕ -> Type
-	leaf : ∀n ∈ ℕ. ℕ -> HBTree n
-	branch : ∀n ∈ ℕ. (∃m.n=m+1) -> HBTree (n-1) -> HBTree (n-1) -> HBTree n
+HBTree : ℕ → Type
+	leaf : ∀n ∈ ℕ. ℕ → HBTree n
+	branch : ∀n ∈ ℕ. (∃m.n=m+1) → HBTree (n-1) → HBTree (n-1) → HBTree n
 ```
 
 Notice that we must undo the pattern on all the other arguments within view of the precondition. This means that we must start with a type where every case with a recursive position only applies injections in the postcondition. With that, we can formulate this type as an initial algebra over the fibrational functor
@@ -1426,11 +1476,11 @@ The isomorphism splits into two components. The branch case will be empty when t
 NatToHBTF[0] := NatToNTimesNat[1]
 NatToHBTF[n_]:= XSumsToYSums[{#&, NatToNatTuples[2]}]@*NatToNTimesNat[2]
 
-HBTFToNat[0] := NTimesNatToNat[1]
-HBTFToNat[n_]:= NTimesNatToNat[2]@*XSumsToYSums[{#&,NatTuplesToNat}]
+HBTFixFToNat[0] := NTimesNatToNat[1]
+HBTFixFToNat[n_]:= NTimesNatToNat[2]@*XSumsToYSums[{#&,NatTuplesToNat}]
 
 NatToHBT[n_] := UToHBT[n]@*fana[HBTMap, NatToHBTF][n]
-HBTToNat[n_] := fcata[HBTMap, HBTFToNat][n]@*HBTToU[n]
+HBTToNat[n_] := fcata[HBTMap, HBTFixFToNat][n]@*HBTToU[n]
 ```
 
 The functions will only give appropriate outputs when the heights are consistent with the fiber.
@@ -1455,15 +1505,15 @@ Out[1] := 117168207
 Out[2] := "*"["*"[53, 28], "*"[56, 61]]
 ```
 
-...
+<a name="headingFinal"></a>
 
 This basic recipe described can be attempted for any dependent type describable as an initial dialgebra, though such a project may not always be successful. By the nature of dependent types, generating an appropriate isomorphism over a fiber will be undecidable in general. For example, various logics over a notion of formula have semantics in terms of dependent types. They are dialgebras fibered over a type of formulas. The simply typed SK combinator calculus/positive implicational calculus, for instance, can be defined as
 
 ```
-SK : WFF -> Type
+SK : WFF → Type
 	k : ∀p q ∈ WFF .   SK (p ⇒(q⇒p))
 	s : ∀p q r ∈ WFF . SK ((p⇒(q⇒r))⇒((p⇒q)⇒(p⇒r)))
-	a : ∀p q ∈ WFF .   SK p ->S K (p⇒q) -> SK q
+	a : ∀p q ∈ WFF .   SK p →S K (p⇒q) → SK q
 ```
 
 Leading to a definition as the initial dialgebra over
