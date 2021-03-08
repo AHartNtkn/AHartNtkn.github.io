@@ -196,6 +196,8 @@ List A := 1 + A × List A
         = ...
 ```
 
+At each step of the recursion, we gain two options according to the coproduct; either a 1 or `A × List A`. That first case corresponds to the empty list; choosing it will end the list construction. The second option corresponds to the cons case, where we prepend an A to our list.
+
 For an arbitrary endofunctor F, (co)recursion over the initial algebra can be formulated via recursion schemes.
 
 - [Functional programming with bananas, lenses, envelopes and barbed wire"](https://dl.acm.org/doi/10.1145/1671970.1671972)
