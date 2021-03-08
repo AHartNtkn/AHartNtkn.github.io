@@ -621,7 +621,21 @@ Out[1] := {"x", "y", "z", 0, 1, "~"["x"], "*"["x", "x"],
 Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 ```
 
-And that's the end of the construction. I will wrap this up with some misc. notes on potential future directions.
+Varying this to other constructions is trivial. We can, for example, get a Gödel encoding for SK combinator expressions.
+
+```mathematica
+In[1] := Array[NatToTermAlg[{}, {k,s}, {{"@",2}}], {10}, 0]
+In[2] := TermAlgToNat[{}, {k,s}, {{"@",2}}]/@%
+```
+
+```mathematica
+Out[1] := {
+  k, s, "@"[k, k], "@"[k, s], "@"[s, k], "@"[s, s],
+  "@"[k, "@"[k, k]], "@"[k, "@"[k, s]],
+  "@"[s, "@"[k, k]], "@"[s, "@"[k, s]]}
+Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+```
+
 
 There are a few interesting tricks that can be used to encode other things. For example, there's a simple bijection between lists, multisets, and sets. Multisets of natural numbers will be canonically described as ordered lists of natural numbers. Starting with a list of natural numbers, a multiset of nats can be obtained by accumulating each number to get an increasing sequence
 
@@ -1376,13 +1390,13 @@ Out[2] := 5[3[1["*", "*"], "*"], 7[6["*", "*"], "*"]]
 ```
 
 ```mathematica
-In[1]:= SBTToNat[{0,∞}]@5[3[1["*","*"],"*"],7[6["*","*"],"*"]]
+In[1] := SBTToNat[{0,∞}]@5[3[1["*","*"],"*"],7[6["*","*"],"*"]]
 In[2] := NatToSBT[{0,∞}]@%
 ```
 
 ```mathematica
-Out[1]= 21238820
-Out[2]= 5[3[1["*", "*"], "*"], 7[6["*", "*"], "*"]]
+Out[1] := 21238820
+Out[2] := 5[3[1["*", "*"], "*"], 7[6["*", "*"], "*"]]
 ```
 
 ```mathematica
