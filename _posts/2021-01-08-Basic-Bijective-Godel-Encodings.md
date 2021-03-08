@@ -1470,7 +1470,7 @@ Out[1] :=
 Out[2] :=
 ```
 
-![A tree of fixed height](../img/godelencode1/godelencode14.png)
+![A tree of fixed height](../img/godelencode1/godelencode15.png)
 
 The isomorphism splits into two components. The branch case will be empty when the fiber is 0, so we must choose the leaf case. Otherwise, we are free to choose either case, which will both be isomorphic to ℕ.
 
