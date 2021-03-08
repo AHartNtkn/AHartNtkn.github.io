@@ -9,7 +9,7 @@
 - [Final Thoughts](#headingFinal)
 
 
-I've been researching methods for generating data the past few months and, as part of that, I looked into Godel encodings. In my wildest dreams, I dreamt of being able to simply count through all examples of some complex class and remove the need for ordinary search. That dream has yet to come, but what I did find is an exceptionally simple and elegant theory that allows one to create bijections between natural numbers and arbitrary inductive datatypes.
+I've been researching methods for generating data the past few months and, as part of that, I looked into Godel encodings. In my wildest dreams, I dreamt of being able to simply count through all examples of some complex class and remove the need for ordinary search. That dream has yet to come, but what I did find is an exceptionally simple and elegant theory that allows one to create bijections between natural numbers and nearly arbitrary inductive datatypes.
 
 Much of this work was done by Paul Tarau in
  - [Isomorphic Data Encodings in Haskell and their Generalization to Hylomorphisms on Hereditarily Finite Data Types](https://arxiv.org/pdf/0808.2953.pdf)
@@ -450,33 +450,34 @@ toFiniteSet[n_Integer] := # &
 We are now in a position to define the function generating the isomorphism between ℕ and F ℕ for arbitrary polynomial F. This is the most complex part of the construction, but mostly because there are so many cases to consider. Each individual case is in fact very simple, largely being compositions and/or mappings of previously defined functions.
 
 ```mathematica
-NatToFixFNat[coproduct[A_, B_]] :=
+NatToFNat[coproduct[A_, B_]] :=
   With[{sa = typeSize[A], sb = typeSize[B]},
     Which[
       sa < ∞ == sb, 
-      XSumsToYSums[{fromFiniteSet[A], NatToFixFNat[B]}]@*NatToNPlusNat[sa],
+      XSumsToYSums[{fromFiniteSet[A], NatToFNat[B]}]@*NatToNPlusNat[sa],
       sb < ∞ == sa, 
-      XSumsToYSums[{NatToFixFNat[A], fromFiniteSet[B]}]@*NatToNatPlusN[sb],
+      XSumsToYSums[{NatToFNat[A], fromFiniteSet[B]}]@*NatToNatPlusN[sb],
       sa == ∞ == sb, 
-      XSumsToYSums[{NatToFixFNat[A], NatToFixFNat[B]}]@*NatToNTimesNat[2]
+      XSumsToYSums[{NatToFNat[A], NatToFNat[B]}]@*NatToNTimesNat[2]
     ]
   ]
-NatToFixFNat[coproduct[T__]] /; AllTrue[{T}, typeSize@# == ∞ &] := XSumsToYSums[NatToFixFNat /@ {T}]@*NatToNTimesNat[Length@{T}]
-NatToFixFNat[product[A_, B_]] :=
+NatToFNat[coproduct[T__]] /; AllTrue[{T}, typeSize@# == ∞ &] :=
+  XSumsToYSums[NatToFNat /@ {T}]@*NatToNTimesNat[Length@{T}]
+NatToFNat[product[A_, B_]] :=
   With[{sa = typeSize[A], sb = typeSize[B]},
     Which[
       sa < ∞ == sb, 
-      XTuplesToYTuples[{fromFiniteSet[A], NatToFixFNat[B]}]@*NatToNTimesNat[sa],
+      XTuplesToYTuples[{fromFiniteSet[A], NatToFNat[B]}]@*NatToNTimesNat[sa],
       sb < ∞ == sa, 
-      XTuplesToYTuples[{NatToFixFNat[A], fromFiniteSet[B]}]@*NatToNatTimesN[sb],
+      XTuplesToYTuples[{NatToFNat[A], fromFiniteSet[B]}]@*NatToNatTimesN[sb],
       sa == ∞ == sb, 
-      XTuplesToYTuples[{NatToFixFNat[A], NatToFixFNat[B]}]@*NatToNatTuples[2]
+      XTuplesToYTuples[{NatToFNat[A], NatToFNat[B]}]@*NatToNatTuples[2]
     ]
   ]
-NatToFixFNat[product[T__]] /; AllTrue[{T}, typeSize@# == ∞ &] :=
-  XTuplesToYTuples[NatToFixFNat /@ {T}]@*NatToNatTuples[Length@{T}]
-NatToFixFNat[nat] := # &
-NatToFixFNat[$X] := # &
+NatToFNat[product[T__]] /; AllTrue[{T}, typeSize@# == ∞ &] :=
+  XTuplesToYTuples[NatToFNat /@ {T}]@*NatToNatTuples[Length@{T}]
+NatToFNat[nat] := # &
+NatToFNat[$X] := # &
 ```
 
 ```mathematica
@@ -635,7 +636,6 @@ Out[1] := {
   "@"[s, "@"[k, k]], "@"[s, "@"[k, s]]}
 Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 ```
-
 
 There are a few interesting tricks that can be used to encode other things. For example, there's a simple bijection between lists, multisets, and sets. Multisets of natural numbers will be canonically described as ordered lists of natural numbers. Starting with a list of natural numbers, a multiset of nats can be obtained by accumulating each number to get an increasing sequence
 
@@ -919,7 +919,7 @@ NatToASF[k_] :=
   NatToNPlusNat[k]
 
 (*Fin k + (ℕ + (ℕ × ℕ)) → ℕ*)
-ASFixFToNat[k_] := 
+ASFToNat[k_] := 
  NPlusNatToNat[k]@*
   XSumsToYSums[{# &, 
     NTimesNatToNat[2]@*XSumsToYSums[{# &, NatTuplesToNat}]}]
@@ -929,7 +929,7 @@ In this case, I'm setting `X k` to `ℕ` for all `k`. That seemed better than be
 
 ```mathematica
 NatToAS[k_] := ASUtoAS[k]@*fana[ASMap][NatToASF][k]
-ASToNat[k_] := fcata[ASMap][ASFixFToNat][k]@*AStoASU[k]
+ASToNat[k_] := fcata[ASMap][ASFToNat][k]@*AStoASU[k]
 ```
 
 ```mathematica
@@ -1015,23 +1015,23 @@ In the case of natural number encodings, we need to be careful about our fiber. 
 
 ```mathematica
 NatToNLamUF[k_] := XSumsToYSums[{NatToNLamAU[k],#&}]@*NatToNTimesNat[2]
-NLamUFixFToNat[k_] := NTimesNatToNat[2]@*XSumsToYSums[{NLamAUToNat[k],#&}]
+NLamUFToNat[k_] := NTimesNatToNat[2]@*XSumsToYSums[{NLamAUToNat[k],#&}]
 
 NatToNLamAUF[k_] := 
   XSumsToYSums[{# &,
     XTuplesToYTuples[{#&, NatToNLamU[k]}]@*
       NatToNatTuples[2]}]
   @*NatToNPlusNat[k]
-NLamAUFixFToNat[k_] :=
+NLamAUFToNat[k_] :=
   NPlusNatToNat[k]
   @*XSumsToYSums[{# &,
     NatTuplesToNat@*XTuplesToYTuples[{#&, NLamUToNat[k]}]}]
 
 NatToNLamU[k_] /; k > 0  := fana[NLamMap, NatToNLamUF][k]
-NLamUToNat[k_] /; k > 0  := fcata[NLamMap, NLamUFixFToNat][k]
+NLamUToNat[k_] /; k > 0  := fcata[NLamMap, NLamUFToNat][k]
 
 NatToNLamAU[k_] /; k > 0  := fana[NLamAMap, NatToNLamAUF][k]
-NLamAUToNat[k_] /; k > 0  := fcata[NLamAMap, NLamAUFixFToNat][k]
+NLamAUToNat[k_] /; k > 0  := fcata[NLamAMap, NLamAUFToNat][k]
 ```
 
 All normalized expressions begin with a lambda binder since, as stated before, applications without variables cannot be completed and there are no variables to reference.
@@ -1134,7 +1134,7 @@ NumExpToU[k_] := fana[NumExpMap, NumExpToUCoalg][k]
 UToNumExp[k_] := fcata[NumExpMap, UToNumExpAlg][k]
 ```
 
-With these, we can now define the procedure for converting foll Peano expressions into a uniform representation. To be expedient, I will skip to defining the functions and let the reader devise a description of appropriate dialgebras as an exercise if they so choose. 
+With these, we can now define the procedure for converting Peano expressions into a uniform representation. To be expedient, I will skip to defining the functors and let the reader devise a description of appropriate dialgebras as an exercise if they so choose. 
 
 ```mathematica
 PeanoExpToUCoalg[k_][eq[n1_,n2_]] :=
@@ -1185,14 +1185,14 @@ NatToNumF[k_] :=
     @*NatToNTimesNat[3]}]
   @*NatToNPlusNat[k+1]
 
-NumFixFToNat[k_] := 
+NumFToNat[k_] := 
   NPlusNatToNat[k+1]
   @*XSumsToYSums[{# &,
     NTimesNatToNat[3]
     @*XSumsToYSums[{# &, NatTuplesToNat, NatTuplesToNat}]}]
 
 NatToNumExpU := fana[NumExpMap, NatToNumF]
-NumExpUToNat := fcata[NumExpMap, NumFixFToNat]
+NumExpUToNat := fcata[NumExpMap, NumFToNat]
 ```
 
 ```mathematica
@@ -1224,7 +1224,7 @@ NatToPeanoF[k_] :=
                 @*NatToNatTuples[2], # &, NatToNatTuples[2], # &}]
   @*NatToNTimesNat[4]
 
-PeanoFixFToNat[k_] := 
+PeanoFToNat[k_] := 
   NTimesNatToNat[4]
   @*XSumsToYSums[{NatTuplesToNat
                   @*XTuplesToYTuples[{NumExpUToNat[k], NumExpUToNat[k]}],
@@ -1232,7 +1232,7 @@ PeanoFixFToNat[k_] :=
 
 NatToPeanoExp[k_] := UToPeanoExp[k]@*fana[PeanoExpMap, NatToPeanoF][k]
 
-PeanoExpToNat[k_] := fcata[PeanoExpMap, PeanoFixFToNat][k]@*PeanoExpToU[k]
+PeanoExpToNat[k_] := fcata[PeanoExpMap, PeanoFToNat][k]@*PeanoExpToU[k]
 ```
 
 ```mathematica
@@ -1359,11 +1359,11 @@ NatToSBTF[{n_, m_Integer}] /; n≤m :=
   XSumsToYSums[{#&, XTuplesToYTuples[{#+n&, NatToNatTuples[2]}]
                     @*NatToNTimesNat[m-n+1]}]@*NatToNPlusNat[1]
 
-SBTFixFToNat[{n_, ∞}] :=
+SBTFToNat[{n_, ∞}] :=
   NPlusNatToNat[1]
   @*XSumsToYSums[{#&,NatTuplesToNat
                      @*XTuplesToYTuples[{#-n&, NatTuplesToNat}]}]
-SBTFixFToNat[{n_, m_Integer}] /; n≤m := 
+SBTFToNat[{n_, m_Integer}] /; n≤m := 
   NPlusNatToNat[1]
   @*XSumsToYSums[{#&,NTimesNatToNat[m-n+1]
                      @*XTuplesToYTuples[{#-n&, NatTuplesToNat}]}]
@@ -1375,7 +1375,7 @@ We may now complete the construction by shoving these into fcata and fana.
 NatToSBT[{n_,m_}] /; n≤m :=
   UToSBT[{n,m}]@*fana[SBTMap, NatToSBTF][{n,m}]
 SBTToNat[{n_,m_}] /; n≤m :=
-  fcata[SBTMap, SBTFixFToNat][{n,m}]@*SBTToU[{n,m}]
+  fcata[SBTMap, SBTFToNat][{n,m}]@*SBTToU[{n,m}]
 ```
 
 ```mathematica
@@ -1492,11 +1492,11 @@ The isomorphism splits into two components. The branch case will be empty when t
 NatToHBTF[0] := NatToNTimesNat[1]
 NatToHBTF[n_]:= XSumsToYSums[{#&, NatToNatTuples[2]}]@*NatToNTimesNat[2]
 
-HBTFixFToNat[0] := NTimesNatToNat[1]
-HBTFixFToNat[n_]:= NTimesNatToNat[2]@*XSumsToYSums[{#&,NatTuplesToNat}]
+HBTFToNat[0] := NTimesNatToNat[1]
+HBTFToNat[n_]:= NTimesNatToNat[2]@*XSumsToYSums[{#&,NatTuplesToNat}]
 
 NatToHBT[n_] := UToHBT[n]@*fana[HBTMap, NatToHBTF][n]
-HBTToNat[n_] := fcata[HBTMap, HBTFixFToNat][n]@*HBTToU[n]
+HBTToNat[n_] := fcata[HBTMap, HBTFToNat][n]@*HBTToU[n]
 ```
 
 The functions will only give appropriate outputs when the heights are consistent with the fiber.
