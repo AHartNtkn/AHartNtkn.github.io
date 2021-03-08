@@ -868,19 +868,614 @@ In[2]  := ASToNat[0] /@ %
 ```
 
 ```mathematica
-Out[1] :=
-  {lam[var[0]],
-   app[lam[var[0]], lam[var[0]]],
-   lam[lam[var[0]]], 
-   app[lam[var[0]], app[lam[var[0]], lam[var[0]]]], 
-   lam[app[var[0], var[0]]], 
-   app[app[lam[var[0]], lam[var[0]]], lam[var[0]]],
-   lam[lam[var[1]]], 
-   app[app[lam[var[0]], lam[var[0]]], app[lam[var[0]], lam[var[0]]]], 
-   lam[app[var[0], lam[var[0]]]],
-   app[lam[var[0]], lam[lam[var[0]]]]}
+Out[1] :={
+  lam[var[0]],
+  app[lam[var[0]], lam[var[0]]],
+  lam[lam[var[0]]], 
+  app[lam[var[0]], app[lam[var[0]], lam[var[0]]]], 
+  lam[app[var[0], var[0]]], 
+  app[app[lam[var[0]], lam[var[0]]], lam[var[0]]],
+  lam[lam[var[1]]], 
+  app[app[lam[var[0]], lam[var[0]]], app[lam[var[0]], lam[var[0]]]], 
+  lam[app[var[0], lam[var[0]]]],
+  app[lam[var[0]], lam[lam[var[0]]]]}
 Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 ```
+
+I'll finish up with a few more examples. 
+
+...
+
+For various purposed, it can be useful to enumerate only the normalized lambda expressions. This is important for viewing the lambda calculus as some kind of universal function over binary strings. Unlike strings for Turing machines, lambda expressions cannot in general be the output of a program if they aren't normalized. Creating a dedicated bijective encoding for normalized terms is then necessary to see all possible strings as being in the codomain of the universal function defined by the lambda calculus. Data is also often encoded using normalized terms making an encoding specialized to normalized terms better suited for encoding lambda-encoded data.
+
+Normalized expressions differ from non-normalized forms in that they have a lambda binding applied to an argument. By stratifying the type to prevent such an occurrence we only have normalized forms.
+
+```
+NLambdaExp : ℕ -> Type
+	dum : ∀ n ∈ ℕ . NLambdaApp n -> LambdaExp n
+	lam : ∀ n ∈ ℕ . LambdaExp (n+1) -> LambdaExp n
+
+NLambdaApp : ℕ -> Type
+	var: ∀ n ∈ ℕ. Fin n -> NLambdaApp n
+	app: ∀ n ∈ ℕ. NLambdaApp n -> LambdaExp n -> NLambdaApp n
+```
+
+This inductive-inductive datatype, while theoretically more complicated, does not impose any substantial difficulty on our encoding. It does force us to thread mutual recursive calls across our implementations, often referencing functions before they are defined. However, the conceptual nature of our code is not so complicated despite this.
+
+```mathematica
+NLamMap[k_][f_][{0, e_}] := {0, e}
+NLamMap[k_][f_][{1, e_}] := {1, f[k + 1][e]}
+
+NLamAMap[k_][f_][{0, n_}] := {0, n}
+NLamAMap[k_][f_][{1, {e1_, e2_}}] := {1, {f[k][e1], e2}}
+```
+
+The conversion between the uniform and a nicer notation demonstrates the aforementioned mutual recursion.
+
+```mathematica
+NLamAlg[k_][{0, e_}] := NLamAUToNLamA[k][e]
+NLamAlg[k_][{1, e_}] := lam[e]
+
+NLamCoalg[k_][lam[e_]] := {1, e}
+NLamCoalg[k_][e_] := {0, NLamAToNLamAU[k][e]}
+
+NLamAAlg[k_][{0, n_}] /; n < k := var[n]
+NLamAAlg[k_][{1, {e1_, e2_}}] := app[e1, NLamUToNLam[k][e2]]
+
+NLamACoalg[k_][var[n_]] /; n < k := {0, n}
+NLamACoalg[k_][app[e1_, e2_]] := {1, {e1, NLamToNLamU[k][e2]}}
+
+NLamToNLamU[k_] := fana[NLamMap, NLamCoalg][k]
+NLamUToNLam[k_] := fcata[NLamMap, NLamAlg][k]
+
+NLamAToNLamAU[k_] := fana[NLamAMap, NLamACoalg][k]
+NLamAUToNLamA[k_] := fcata[NLamAMap, NLamAAlg][k]
+```
+
+```mathematica
+In[1] := NLamToNLamU[0]@lam[lam[app[app[var[0],lam[var[0]]],var[1]]]]
+In[2] := NLamUToNLam[0]@%
+```
+
+```mathematica
+Out[1] :=
+  {1, {1, {0, {1, {{1, {{0, 0}, {1, {0, {0, 0}}}}}, {0, {0, 1}}}}}}}
+Out[2] := lam[lam[app[app[var[0], lam[var[0]]], var[1]]]]
+```
+
+Future functions will need to be implemented in a similar way.
+
+In the case of natural number encodings, we need to be careful about our fiber. If it is 0, we cannot form a normalized expression with an application. This is because the only things which can appear as the function being applied are either a variable or another application. If our fiber is 0, there won't be any variables available and we will only be able to form an infinite tower of applications. To avoid this, we only allow recursive calls when our fiber is greater than 0.
+
+```mathematica
+NatToNLamUF[k_] := XSumsToYSums[{NatToNLamAU[k],#&}]@*NatToNTimesNat[2]
+NLamUFToNat[k_] := NTimesNatToNat[2]@*XSumsToYSums[{NLamAUToNat[k],#&}]
+
+NatToNLamAUF[k_] := 
+  XSumsToYSums[{# &,
+    XTuplesToYTuples[{#&, NatToNLamU[k]}]@*
+      NatToNatTuples[2]}]
+  @*NatToNPlusNat[k]
+NLamAUFToNat[k_] :=
+  NPlusNatToNat[k]
+  @*XSumsToYSums[{# &,
+    NatTuplesToNat@*XTuplesToYTuples[{#&, NLamUToNat[k]}]}]
+
+NatToNLamU[k_] /; k > 0  := fana[NLamMap, NatToNLamUF][k]
+NLamUToNat[k_] /; k > 0  := fcata[NLamMap, NLamUFToNat][k]
+
+NatToNLamAU[k_] /; k > 0  := fana[NLamAMap, NatToNLamAUF][k]
+NLamAUToNat[k_] /; k > 0  := fcata[NLamAMap, NLamAUFToNat][k]
+```
+
+All normalized expressions begin with a lambda binder since, as stated before, applications without variables cannot be completed and there are no variables to reference.
+
+```mathematica
+NLamToNat[lam[x_]] := NLamUToNat[1][NLamToNLamU[1][x]]
+NatToNLam[x_] := lam[NLamUToNLam[1][NatToNLamU[1][x]]]
+```
+
+```mathematica
+In[1] := Array[NatToNLam, {10}, 0]
+In[2] := NLamToNat/@%
+```
+
+```mathematica
+Out[1] := {
+  lam[var[0]], 
+  lam[lam[var[0]]], 
+  lam[app[var[0], var[0]]],
+  lam[lam[lam[var[0]]]], 
+  lam[app[var[0], lam[var[0]]]], 
+  lam[lam[var[1]]], 
+  lam[app[app[var[0], var[0]], var[0]]], 
+  lam[lam[lam[lam[var[0]]]]], 
+  lam[app[app[var[0], var[0]], lam[var[0]]]], 
+  lam[lam[app[var[0], var[0]]]]}
+Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+```
+
+...
+
+The first application of Gödel encodings was to encode formulas of Peano Arithmetic for the sake of embedding Peano Arithmetic into itself. The original encoding used by Gödel was quite inefficient, leading to natural numbers which were exponentially large in the length of the expression being coded. We may use the methods described here to devise a much more efficient encoding of these formulas.
+
+PA comes in two parts, syntactically. Firstly, we have a type of numerical expressions, which may mention but not bind variables;
+
+```
+NumExp : ℕ -> Type
+	var :   ∀ n ∈ ℕ. Fin n -> NumExp n
+	zero :  ∀ n ∈ ℕ. NumExp n
+	succ :  ∀ n ∈ ℕ. NumExp n -> NumExp n
+	plus :  ∀ n ∈ ℕ. NumExp n -> NumExp n -> NumExp n
+	times : ∀ n ∈ ℕ. NumExp n -> NumExp n -> NumExp n
+```
+
+And a logic layer where variables may be bound but not mentioned.
+
+```
+PeanoExp : ℕ -> Type
+	eq:      ∀ n ∈ ℕ. NumExp n -> NumExp n -> PeanoExp n
+	not:     ∀ n ∈ ℕ. PeanoExp n -> PeanoExp n
+	implies: ∀ n ∈ ℕ. PeanoExp n -> PeanoExp n -> PeanoExp n
+	forall:  ∀ n ∈ ℕ. PeanoExp (n+1) -> PeanoExp n
+```
+
+In the case of `NumExp`, a dialgebra over the same functors will be of the form
+
+```
+(∀k:ℕ.Fin k → X k)
+× (∀k:ℕ. X k)
+× (∀k:X. k → X k)
+× (∀k:ℕ.X k → X k → X k)
+× (∀k:ℕ.X k → X k → X k)
+```
+
+Similar to the case with lambda expressions, we may rewrite this into an isomorphic form as
+
+```
+(∀k:ℕ. Fin (k + 1) + X k + (X k × X k) + (X k × X k) → X k)
+```
+
+Notice that the zero case has been consolidated into the finite set with the variables so we do not need to deal with an extra coproduct layer. For pedagogical reasons, it would be best to define the algebras for converting back and forth between a nice representation and the uniform one. We'll start with the numerical expressions.
+
+```mathematica
+UToNumExpAlg[k_][{0, n_}] /; n < k := var[n]
+UToNumExpAlg[k_][{0, k_}] := zero
+UToNumExpAlg[k_][{1, {0, e_}}] := succ[e]
+UToNumExpAlg[k_][{1, {1, {e1_, e2_}}}] := plus[e1,e2]
+UToNumExpAlg[k_][{1, {2, {e1_, e2_}}}] := times[e1,e2]
+
+NumExpToUCoalg[k_][var[n_]] /; n < k := {0, n}
+NumExpToUCoalg[k_][zero] := {0, k}
+NumExpToUCoalg[k_][succ[e_]] := {1, {0, e}}
+NumExpToUCoalg[k_][plus[e1_,e2_]] := {1, {1, {e1, e2}}}
+NumExpToUCoalg[k_][times[e1_,e2_]] := {1, {2, {e1, e2}}}
+```
+
+To make use of these we, of course, need the appropriate functorial maps.
+
+```mathematica
+NumExpMap[k_][f_][{0, n_}] := {0, n}
+NumExpMap[k_][f_][{1, {0, e_}}] := {1, {0, f[k][e]}}
+NumExpMap[k_][f_][{1, {1, {e1_, e2_}}}] := {1, {1, {f[k][e1], f[k][e2]}}}
+NumExpMap[k_][f_][{1, {2, {e1_, e2_}}}] := {1, {2, {f[k][e1], f[k][e2]}}}
+```
+
+And we may combine these to get functions which translate between the uniform and nicer representations.
+
+```mathematica
+NumExpToU[k_] := fana[NumExpMap, NumExpToUCoalg][k]
+UToNumExp[k_] := fcata[NumExpMap, UToNumExpAlg][k]
+```
+
+With these, we can now define the procedure for converting foll Peano expressions into a uniform representation. To be expedient, I will skip to defining the functions and let the reader devise a description of appropriate dialgebras as an exercise if they so choose. 
+
+```mathematica
+PeanoExpToUCoalg[k_][eq[n1_,n2_]] :=
+  {0, {NumExpToU[k][n1], NumExpToU[k][n2]}}
+PeanoExpToUCoalg[k_][not[e_]] := {1, e}
+PeanoExpToUCoalg[k_][implies[e1_,e2_]] := {2, {e1, e2}}
+PeanoExpToUCoalg[k_][forall[e_]] := {3, e}
+
+UToPeanoExpAlg[k_][{0, {n1_,n2_}}] :=
+  eq[UToNumExp[k][n1], UToNumExp[k][n2]]
+UToPeanoExpAlg[k_][{1, e_}] := not[e]
+UToPeanoExpAlg[k_][{2, {e1_, e2_}}] := implies[e1,e2]
+UToPeanoExpAlg[k_][{3, e_}] := forall[e]
+```
+
+We may define the map for Peano expressions.
+
+```mathematica
+PeanoExpMap[k_][f_][{0, {n1_,n2_}}] := {0, {n1,n2}}
+PeanoExpMap[k_][f_][{1, e_}] := {1, f[k][e]}
+PeanoExpMap[k_][f_][{2, {e1_, e2_}}] := {2, {f[k][e1], f[k][e2]}}
+PeanoExpMap[k_][f_][{3, e_}] := {3, f[k+1][e]}
+```
+
+And we may finally wrap things up with `fana` and `fcata`.
+
+```mathematica
+PeanoExpToU := fana[PeanoExpMap, PeanoExpToUCoalg]
+UToPeanoExp := fcata[PeanoExpMap, UToPeanoExpAlg]
+```
+
+```mathematica
+In[1] := PeanoExpToU[0]@forall[not[eq[zero,succ[var[0]]]]]
+In[2] := UToPeanoExp[0]@%
+```
+
+```mathematica
+Out[1] := {3, {1, {0, {{0, 1}, {1, {0, {0, 0}}}}}}}
+Out[2] := forall[not[eq[zero, succ[var[0]]]]]
+```
+
+To get the isomorphisms, we only need to compose these with isomorphisms in the form of the appropriate dialgebras. In the case of NumExp, this will simply be an isomorphism between ℕ and `Fin (k + 1)+(ℕ+(ℕ×ℕ) +(ℕ×ℕ))`. 
+
+```mathematica
+NatToNumF[k_] := 
+  XSumsToYSums[{# &,
+    XSumsToYSums[{# &, NatToNatTuples[2], NatToNatTuples[2]}]
+    @*NatToNTimesNat[3]}]
+  @*NatToNPlusNat[k+1]
+
+NumFToNat[k_] := 
+  NPlusNatToNat[k+1]
+  @*XSumsToYSums[{# &,
+    NTimesNatToNat[3]
+    @*XSumsToYSums[{# &, NatTuplesToNat, NatTuplesToNat}]}]
+
+NatToNumExpU := fana[NumExpMap, NatToNumF]
+NumExpUToNat := fcata[NumExpMap, NumFToNat]
+```
+
+```mathematica
+In[1] := Array[UToNumExp[1]@*NatToNumExpU[1],{10},0]
+In[2] := NumExpUToNat[1]@*NumExpToU[1]/@%
+```
+
+```mathematica
+Out[1] := {
+  var[0], 
+  zero, 
+  succ[var[0]], 
+  plus[var[0], var[0]], 
+  times[var[0], var[0]], 
+  succ[zero], 
+  plus[var[0], zero], 
+  times[var[0], zero], 
+  succ[succ[var[0]]], 
+  plus[zero, var[0]] }
+
+Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+```
+
+In the case of PeanoExp, this will simply be an isomorphism between ℕ and `(NumExp k × NumExp k) + ℕ + (ℕ × ℕ) + ℕ`.
+
+```mathematica
+NatToPeanoF[k_] :=
+  XSumsToYSums[{XTuplesToYTuples[{NatToNumExpU[k], NatToNumExpU[k]}]
+                @*NatToNatTuples[2], # &, NatToNatTuples[2], # &}]
+  @*NatToNTimesNat[4]
+
+PeanoFToNat[k_] := 
+  NTimesNatToNat[4]
+  @*XSumsToYSums[{NatTuplesToNat
+                  @*XTuplesToYTuples[{NumExpUToNat[k], NumExpUToNat[k]}],
+                  # &, NatTuplesToNat, # &}]
+
+NatToPeanoExp[k_] := UToPeanoExp[k]@*fana[PeanoExpMap, NatToPeanoF][k]
+
+PeanoExpToNat[k_] := fcata[PeanoExpMap, PeanoFToNat][k]@*PeanoExpToU[k]
+```
+
+```mathematica
+In[1] := Array[UToNumExp[1]@*NatToNumExpU[1],{10},0]
+In[2] := NumExpUToNat[1]@*NumExpToU[1]/@%
+```
+
+```mathematica
+Out[1] := {
+  eq[zero, zero], 
+  not[eq[zero, zero]], 
+  implies[eq[zero, zero], 
+  eq[zero, zero]], 
+  forall[eq[var[0], var[0]]], 
+  eq[zero, succ[zero]], 
+  not[not[eq[zero, zero]]], 
+  implies[eq[zero, zero], 
+  not[eq[zero, zero]]], 
+  forall[not[eq[var[0], var[0]]]], 
+  eq[succ[zero], zero], 
+  not[implies[eq[zero, zero], eq[zero, zero]]]}
+
+Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+```
+
+```mathematica
+In[1] := PeanoExpToNat[0]@forall[not[eq[zero,succ[var[0]]]]]
+In[2] := NatToPeanoExp[0]@%
+```
+
+```mathematica
+Out[1] := 391
+Out[2] := forall[not[eq[zero, succ[var[0]]]]]
+```
+
+If we wanted to, we could incorporate the commutativity trick mentioned earlier to, for example, encode addition, multiplication, and equality only up to commutativity.
+
+...
+
+A sorted binary tree (storing data at its branches) is a standard data-structure for many applications. For example, it acts as the intermediate data type in many quicksort implementations. It has a description as the following dependent type.
+
+```
+SortedTree : ℕ*ℕ∞->Type
+	leaf  : ∀(n,m) ∈ ℕ×ℕ∞. SortedTree (n, m)
+	branch: ∀(n,m) ∈ ℕ×ℕ∞. (x : ℕ) -> n≤x≤m -> SortedTree (n, x)
+                       -> SortedTree (x, m) -> SortedTree (n, m)
+```
+
+The ordered pair which acts as a fiber represents the upper and lower bounds within which the tree is allowed to contain numbers. ℕ∞ is the type of natural numbers extended with a point at infinity sorted above all others.We can describe this as the initial dialgebra between
+
+```
+F(X)=(λ n m. 1, λ n m . {x ∈ ℕ | n≤x≤m} × X (n, x) × X (x, n))
+G(X)=(λ n m. X (n, m), λ n m. X (n, m))
+```
+
+We can write the type of any (F, G)-dialgebra, X, then as
+
+```
+(∀(n,m)∈ℕ×ℕ∞. X (n, m))
+× (∀(n,m)∈ℕ×ℕ∞. {x ∈ ℕ | n≤x≤m} × X (n, x) × X (x, m) → X (n, m))
+```
+
+Which we can rewrite as
+
+```
+(∀(n,m)∈ℕ×ℕ∞. 1+ ({x ∈ ℕ | n≤x≤m} × X (n, x) × X (x, n)) → X (n, m))
+```
+
+In this example, we'll have to be more clever about how we define our type family. We need a type family that's closely related to ℕ while still being isomorphic to SortedTree (n, m) for any pair. I'll use the following family;
+
+```
+X (n, m) = if n≤m then ℕ else Fin 0
+```
+
+It's also worth noting that `n≤m` is isomorphic to `Fin 1` when the condition is true and `Fin 0` otherwise. The prefix on the branch case, `{x ∈ ℕ | n≤x≤m}`, is isomorphic to `Fin (m-n+1)`. This will be key when later constructing the isomorphism.
+
+First, I'll define the appropriate translations between the uniform and a nicer syntax.
+
+```mathematica
+UToSBTAlg[{n_,m_}][{0, 0}] := "*"
+UToSBTAlg[{n_,m_}][{1, {x_,{t1_,t2_}}}] := x[t1,t2]
+
+SBTToUCoalg[{n_,m_}]["*"] := {0, 0}
+SBTToUCoalg[{n_,m_}][x_Integer[e1_, e2_]] := {1, {x, {e1, e2}}}
+```
+
+We can then define the appropriate functorial mapping as
+
+```mathematica
+SBTMap[{n_, m_}][f_][{0, 0}] := {0, 0}
+SBTMap[{n_, m_}][f_][{1, {x_,{t1_,t2_}}}] :=
+  {1, {x, {f[{n,x}][t1], f[{x,m}][t2]}}}
+```
+
+And we may complete the translation as
+
+```mathematica
+UToSBT := fcata[SBTMap, UToSBTAlg]
+SBTToU := fana[SBTMap, SBTToUCoalg]
+```
+
+```mathematica
+In[1] := SBTToU[{0,∞}]@5[3[1["*","*"],"*"],7[6["*","*"],"*"]]
+In[2] := TreeForm@UToSBT[{0,∞}]@%
+```
+
+```mathematica
+Out[1] := 
+  {1, {5, {{1, {3, {{1, {1, {{0, 0}, {0, 0}}}}, {0, 0}}}},
+  {1, {7, {{1, {6, {{0, 0}, {0, 0}}}}, {0, 0}}}}}}}
+
+Out[2] := 
+```
+
+![An encoded tree](../img/godelencode1/godelencode13.png)
+
+All that's left is to define the family of isomorphisms for any given `(n, m)`. Here we have to put some thought into the isomorphisms. In order to avoid the empty cases, we need to generate a member from the finite set `Fin (m-n+1)`. This can then be increased by n to act as a valid entry at a branch. Ultimately, we want to end up with an isomorphism from `ℕ` to `Fin 1+({x ∈ ℕ | n≤x≤m}×(ℕ×ℕ))`  which passes through `Fin 1+(Fin (m-n+1)×(ℕ×ℕ))`.
+
+```mathematica
+NatToSBTF[{n_, ∞}] := 
+  XSumsToYSums[{#&, XTuplesToYTuples[{#+n&, NatToNatTuples[2]}]
+                    @*NatToNatTuples[2]}]@*NatToNPlusNat[1]
+NatToSBTF[{n_, m_Integer}] /; n≤m := 
+  XSumsToYSums[{#&, XTuplesToYTuples[{#+n&, NatToNatTuples[2]}]
+                    @*NatToNTimesNat[m-n+1]}]@*NatToNPlusNat[1]
+
+SBTFToNat[{n_, ∞}] :=
+  NPlusNatToNat[1]
+  @*XSumsToYSums[{#&,NatTuplesToNat
+                     @*XTuplesToYTuples[{#-n&, NatTuplesToNat}]}]
+SBTFToNat[{n_, m_Integer}] /; n≤m := 
+  NPlusNatToNat[1]
+  @*XSumsToYSums[{#&,NTimesNatToNat[m-n+1]
+                     @*XTuplesToYTuples[{#-n&, NatTuplesToNat}]}]
+```
+
+We may now complete the construction by shoving these into fcata and fana.
+
+```mathematica
+NatToSBT[{n_,m_}] /; n≤m :=
+  UToSBT[{n,m}]@*fana[SBTMap, NatToSBTF][{n,m}]
+SBTToNat[{n_,m_}] /; n≤m :=
+  fcata[SBTMap, SBTFToNat][{n,m}]@*SBTToU[{n,m}]
+```
+
+```mathematica
+In[1] := 
+  SBTToNat[{0,10}]@5[3[1["*","*"],"*"],7[6["*","*"],"*"]]
+In[2] := NatToSBT[{0,10}]@%
+```
+
+```mathematica
+Out[1] := 42653
+Out[2] := 5[3[1["*", "*"], "*"], 7[6["*", "*"], "*"]]
+```
+
+```mathematica
+In[1]:= SBTToNat[{0,∞}]@5[3[1["*","*"],"*"],7[6["*","*"],"*"]]
+In[2] := NatToSBT[{0,∞}]@%
+```
+
+```mathematica
+Out[1]= 21238820
+Out[2]= 5[3[1["*", "*"], "*"], 7[6["*", "*"], "*"]]
+```
+
+```mathematica
+In[1] := Array[NatToSBT[{0,2}],{10},0]
+In[2] := SBTToNat[{0,2}]/@%
+```
+
+```mathematica
+Out[1] := {
+  "*", 0["*", "*"], 1["*", "*"], 2["*", "*"],
+  0["*", 0["*", "*"]],  1["*", 1["*", "*"]],
+  2["*", 2["*", "*"]], 0[0["*", "*"], "*"], 
+  1[0["*", "*"], "*"], 2[0["*", "*"], "*"]}
+
+Out[2]= {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+```
+
+One may notice that many trees will be biased toward generating chains of the same number. The reason for this is that each among a finite number within the bound is given an a priori equal likelihood. When the bounds are smaller, the probability of that choice is then split equally among fewer options than larger bounds. In the limit, this makes chains of the same or similar numbers exponentially more likely. As a consequence, this encoding is far from size-proportionate. Though, there is a certain sense in which the size of the encoded number represents the amount of information we're using. When the bounds get smaller, each choice is between fewer options, implying fewer bits per choice.
+
+```mathematica
+In[1]:= TableForm@{{
+TreeForm@NatToSBT[{0,∞}]@4315957397,
+TreeForm@NatToSBT[{0,∞}]@
+  1461501637330902918283223693888627139985833727537
+}}
+```
+
+```mathematica
+Out[1] :=
+```
+
+![Two sorted trees](../img/godelencode1/godelencode14.png)
+
+...
+
+
+Up till now, all my examples have been of dependent types which are initial (F, G)-dialgebras where G is trivial; i.e. an identity functor over its type family. What about dependent types which aren't so convenient? As an example, take height-bounded trees.
+
+```
+HBTree : ℕ -> Type
+	leaf : ∀n ∈ ℕ. ℕ -> HBTree n
+	branch: ∀n ∈ ℕ. HBTree n -> HBTree n -> HBTree (n + 1)
+```
+
+This has a representation as an initial dialgebra with G(X)=(λ n . X n, λ n. X (n+1)). In general we have the ability to refactor this type so it's an initial fibrational algebra. We can do this by turning the pattern in the post-condition and into a unification check in the precondition, thus trivializing G. We can redefine this type as
+
+```
+HBTree : ℕ -> Type
+	leaf : ∀n ∈ ℕ. ℕ -> HBTree n
+	branch : ∀n ∈ ℕ. (∃m.n=m+1) -> HBTree (n-1) -> HBTree (n-1) -> HBTree n
+```
+
+Notice that we must undo the pattern on all the other arguments within view of the precondition. This means that we must start with a type where every case with a recursive position only applies injections in the postcondition. With that, we can formulate this type as an initial algebra over the fibrational functor
+
+```
+F(X) = λ n . ℕ + (∃m.n=m+1) × X (n-1) × X (n-1)
+```
+
+Here,  I'm treating ∃m.n=m+1 as a proposition, isomorphic to Fin 1 when true and Fin 0 otherwise. When it fails to be true, we'll be forced to use the leaf. All the previous examples could have been expressed in this way. From here, we can define a nice notation and the appropriate mapping functions.
+
+```mathematica
+UToHBTAlg[n_][{0, m_}] := m
+UToHBTAlg[n_][{1, {t1_, t2_}}] := "*"[t1, t2]
+
+HBTToUCoalg[n_][m_Integer] := {0, m}
+HBTToUCoalg[n_]["*"[e1_, e2_]] := {1, {e1, e2}}
+
+HBTMap[n_][f_][{0, m_}] := {0, m}
+HBTMap[n_][f_][{1, {t1_, t2_}}] := {1, {f[n-1][t1], f[n-1][t2]}}
+
+UToHBT := fcata[HBTMap, UToHBTAlg]
+HBTToU := fana[HBTMap, HBTToUCoalg]
+```
+
+```mathematica
+In[1] := HBTToU[10]@"*"["*"["*"[5,3],2],"*"["*"[7,6],1]]
+In[2] := TreeForm@UToHBT[{0,∞}]@%
+```
+
+```mathematica
+Out[1] :=
+  {1, {{1, {{1, {{0, 5}, {0, 3}}}, {0, 2}}}
+      ,{1, {{1, {{0, 7}, {0, 6}}}, {0, 1}}}}}
+
+Out[2] :=
+```
+
+![A tree of fixed height](../img/godelencode1/godelencode14.png)
+
+The isomorphism splits into two components. The branch case will be empty when the fiber is 0, so we must choose the leaf case. Otherwise, we are free to choose either case, which will both be isomorphic to ℕ.
+
+```mathematica
+NatToHBTF[0] := NatToNTimesNat[1]
+NatToHBTF[n_]:= XSumsToYSums[{#&, NatToNatTuples[2]}]@*NatToNTimesNat[2]
+
+HBTFToNat[0] := NTimesNatToNat[1]
+HBTFToNat[n_]:= NTimesNatToNat[2]@*XSumsToYSums[{#&,NatTuplesToNat}]
+
+NatToHBT[n_] := UToHBT[n]@*fana[HBTMap, NatToHBTF][n]
+HBTToNat[n_] := fcata[HBTMap, HBTFToNat][n]@*HBTToU[n]
+```
+
+The functions will only give appropriate outputs when the heights are consistent with the fiber.
+
+```mathematica
+In[1] := HBTToNat[20]@"*"["*"["*"[5,3],2],"*"["*"[7,6],1]]
+In[2] := NatToHBT[20]@%
+```
+
+```mathematica
+Out[1]= 421550887143
+Out[2]= "*"["*"["*"[5, 3], 2], "*"["*"[7, 6], 1]]
+```
+
+```mathematica
+In[1] := Quiet@HBTToNat[2]@"*"["*"["*"[5,3],2],"*"["*"[7,6],1]]
+In[2] := NatToHBT[2]@%
+```
+
+```mathematica
+Out[1] := 117168207
+Out[2] := "*"["*"[53, 28], "*"[56, 61]]
+```
+
+...
+
+This basic recipe described can be attempted for any dependent type describable as an initial dialgebra, though such a project may not always be successful. By the nature of dependent types, generating an appropriate isomorphism over a fiber will be undecidable in general. For example, various logics over a notion of formula have semantics in terms of dependent types. They are dialgebras fibered over a type of formulas. The simply typed SK combinator calculus/positive implicational calculus, for instance, can be defined as
+
+```
+SK : WFF -> Type
+	k : ∀p q ∈ WFF .   SK (p ⇒(q⇒p))
+	s : ∀p q r ∈ WFF . SK ((p⇒(q⇒r))⇒((p⇒q)⇒(p⇒r)))
+	a : ∀p q ∈ WFF .   SK p ->S K (p⇒q) -> SK q
+```
+
+Leading to a definition as the initial dialgebra over
+
+```
+F(X)=(λp q .1,  λp q r .1,  λp q.X p*X (p⇒q))
+G(X)=(λp q.X (p⇒(q⇒p)), λp q r.X ((p⇒(q⇒r))⇒((p⇒q)⇒(p⇒r))), λp q.X q)
+```
+
+In order to define a Gödel encoding for this type, one would need to define a type family, X w, over well-formed formulas which is isomorphic to SK w for any formula w. This, at the very least, requires deciding if the type defined by w is inhabited. Outside of sufficiently simple logics, this won't be possible in general. Even when it is possible, formulating the dialgebra in a way that's amenable to implementation can, itself, be highly nontrivial.
+
+...
 
 And that's that. I think there might be a lot of stamp collecting moving forward, but this pretty thoroughly covers a vast swath of mathematical structures that one might care about. This also is a much neater way of encoding quantifiers than what's usually done.
 
