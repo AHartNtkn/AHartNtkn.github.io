@@ -1244,13 +1244,11 @@ In[2] := NumExpUToNat[1]@*NumExpToU[1]/@%
 Out[1] := {
   eq[zero, zero], 
   not[eq[zero, zero]], 
-  implies[eq[zero, zero], 
-  eq[zero, zero]], 
+  implies[eq[zero, zero], eq[zero, zero]], 
   forall[eq[var[0], var[0]]], 
   eq[zero, succ[zero]], 
   not[not[eq[zero, zero]]], 
-  implies[eq[zero, zero], 
-  not[eq[zero, zero]]], 
+  implies[eq[zero, zero], not[eq[zero, zero]]], 
   forall[not[eq[var[0], var[0]]]], 
   eq[succ[zero], zero], 
   not[implies[eq[zero, zero], eq[zero, zero]]]}
