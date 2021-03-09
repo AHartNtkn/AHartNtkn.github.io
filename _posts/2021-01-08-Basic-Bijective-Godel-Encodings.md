@@ -843,9 +843,9 @@ It's pretty obvious that we'll need to do something more clever than make three 
 ```
 AbstractSyntax n
 ≅ ∀ X : ℕ → * .
-  (∀ k : ℕ . Fin k → X k) →
-  (∀ k : ℕ . X (k + 1) → X k) →
-  (∀ k : ℕ . X k → X k → X k) →
+  (∀ k : ℕ . Fin k → X k) → 
+  (∀ k : ℕ . X (k + 1) → X k) → 
+  (∀ k : ℕ . X k → X k → X k) → 
   X n
 ```
 
@@ -853,7 +853,7 @@ which is isomorphic to
 
 ```
 ≅ ∀ X : ℕ → * .
-  (∀ k : ℕ . Fin k + X (k + 1) + (X k × X k) → X k) →
+  (∀ k : ℕ . Fin k + X (k + 1) + (X k × X k) → X k) → 
   X n
 ```
 
@@ -1275,7 +1275,7 @@ If we wanted to, we could incorporate the commutativity trick mentioned earlier 
 A sorted binary tree (storing data at its branches) is a standard data-structure for many applications. For example, it acts as the intermediate data type in many quicksort implementations. It has a description as the following dependent type.
 
 ```
-SortedTree : ℕ*ℕ∞→Type
+SortedTree : ℕ*ℕ∞→ Type
 	leaf  : ∀(n,m) ∈ ℕ×ℕ∞. SortedTree (n, m)
 	branch: ∀(n,m) ∈ ℕ×ℕ∞. (x : ℕ) → n≤x≤m → SortedTree (n, x)
                        → SortedTree (x, m) → SortedTree (n, m)
@@ -1529,7 +1529,7 @@ This basic recipe described can be attempted for any dependent type describable 
 SK : WFF → Type
 	k : ∀p q ∈ WFF .   SK (p ⇒(q⇒p))
 	s : ∀p q r ∈ WFF . SK ((p⇒(q⇒r))⇒((p⇒q)⇒(p⇒r)))
-	a : ∀p q ∈ WFF .   SK p →S K (p⇒q) → SK q
+	a : ∀p q ∈ WFF .   SK p → S K (p⇒q) → SK q
 ```
 
 Leading to a definition as the initial dialgebra over
