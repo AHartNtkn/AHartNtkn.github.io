@@ -2,6 +2,7 @@
 - [ℕ ≅ ℕ × ℕ](#headingTimes)
 - [ℕ ≅ ℕ + ℕ](#headingPlus)
 - [Initial Algebras](#headingInitial)
+- [Initial Algebras Extras](#headingComm)
 - [Lambda Expressions](#headingLambda)
 - [Peano Expressions](#headingPeano)
 - [Sorted Trees](#headingSorted)
@@ -559,6 +560,9 @@ In[1] := TreeForm@toGenericTree@NatToFixF[coproduct[1, product[$X, $X]]]@214
 ```
 
 ![Binary tree #214](../img/godelencode1/godelencode12.png)
+
+<a name="headingComm"></a>
+## Initial Algebras Extras
 
 For the case of arbitrary term algebras, we only need to generate an appropriate endofunctor and a translation that renames between the terms and the uniform type representation. Term algebras are split between three things; a list of variables, a list of constants, and a list of constructors. As a running example, take the following signature;
 
