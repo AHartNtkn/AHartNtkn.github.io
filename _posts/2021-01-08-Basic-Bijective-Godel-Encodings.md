@@ -9,6 +9,8 @@
 - [Final Thoughts](#headingFinal)
 
 
+## Introduction
+
 I've been researching methods for generating data the past few months and, as part of that, I looked into Godel encodings. In my wildest dreams, I dreamt of being able to simply count through all examples of some complex class and remove the need for ordinary search. That dream has yet to come, but what I did find is an exceptionally simple and elegant theory that allows one to create bijections between natural numbers and nearly arbitrary inductive datatypes.
 
 Much of this work was done by Paul Tarau in
@@ -20,6 +22,7 @@ However, the organization he uses is quite convoluted and unnatural, and some of
 Our end goal will be to encode arbitrary initial algebras over polynomial functors. To that end, we need a way to encode polynomial functors; tuples and sums of natural numbers with or without finite sets.
 
 <a name="headingTimes"></a>
+## ℕ ≅ ℕ × ℕ
 
 The standard method for encoding tuples with natural numbers is "Cantor tupling". However, the general n-tuple case is quite involved and inefficient. How to do (inverse) Cantor tupling efficiently is still a research topic to this day.
  - ["Deriving a Fast Inverse of the Generalized Cantor N-tupling Bijection" by Paul Tarau](https://drops.dagstuhl.de/opus/volltexte/2012/3632/pdf/30.pdf)
@@ -125,6 +128,7 @@ XTuplesToYTuples[XsToYs_][xs_] := MapThread[#1[#2] &, {XsToYs, xs}]
 ```
 
 <a name="headingPlus"></a>
+## ℕ ≅ ℕ + ℕ
 
 We can encode `n × ℕ` for finite `n` using a variation of a method used to encode coproducts. `ℕ + ℕ` can be encoded into `ℕ` by multiplying by 2 in the first case and multiplying by 2  and subtracting 1 in the second case. The other direction inverts those operations; the first in the even case and the second in the odd case. We can view `ℕ + ℕ` as being essentially like `2 × ℕ`. By generalizing the construction of that isomorphism, we can obtain an isomorphism into `n × ℕ` for general `n`.
 
@@ -182,6 +186,7 @@ Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 ```
 
 <a name="headingInitial"></a>
+## Initial Algebras
 
 Ordinary inductive datatypes such as lists and trees can be described as initial algebras of particular endofunctors.
 
@@ -801,6 +806,7 @@ With these constructs in mind, Tarau presented a few interesting encodings of di
 In one of his presentations, Tarau mentioned the open problem of encoding structures with transitivity. In particular, how would one encode finite preorders, lattices, topologies, or categories? To my knowledge, all these problems remain open.
 
 <a name="headingLambda"></a>
+## Lambda Expressions
 
 One of the more obvious missing pieces of our construction is the absence of binders which would be necessary for encoding things like lambda expressions or formulas with quantifiers. Intuitively, If our full type is `A`, then, upon recursing into a position with `n` bound variables, we are effectively dealing with the type `n + A`, with new terms coding for references to the bound arguments. Something like this trick is implemented in
 
@@ -1062,6 +1068,7 @@ Out[2] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 ```
 
 <a name="headingPeano"></a>
+## Peano Expressions
 
 The first application of Gödel encodings was to encode formulas of Peano Arithmetic for the sake of embedding Peano Arithmetic into itself. The original encoding used by Gödel was quite inefficient, leading to natural numbers which were exponentially large in the length of the expression being coded. We may use the methods described here to devise a much more efficient encoding of these formulas.
 
@@ -1269,6 +1276,7 @@ Out[2] := forall[not[eq[zero, succ[var[0]]]]]
 If we wanted to, we could incorporate the commutativity trick mentioned earlier to, for example, encode addition, multiplication, and equality only up to commutativity.
 
 <a name="headingSorted"></a>
+## Sorted Trees
 
 A sorted binary tree (storing data at its branches) is a standard data-structure for many applications. For example, it acts as the intermediate data type in many quicksort implementations. It has a description as the following dependent type.
 
@@ -1429,7 +1437,7 @@ Out[1] :=
 ![Two sorted trees](../img/godelencode1/godelencode14.png)
 
 <a name="headingHeight"></a>
-
+## Trees of Bounded Height
 
 Up till now, all my examples have been of dependent types which are initial (F, G)-dialgebras where G is trivial; i.e. an identity functor over its type family. What about dependent types which aren't so convenient? As an example, take height-bounded trees.
 
@@ -1520,6 +1528,7 @@ Out[2] := "*"["*"[53, 28], "*"[56, 61]]
 ```
 
 <a name="headingFinal"></a>
+## Final Thoughts
 
 This basic recipe described can be attempted for any dependent type describable as an initial dialgebra, though such a project may not always be successful. By the nature of dependent types, generating an appropriate isomorphism over a fiber will be undecidable in general. For example, various logics over a notion of formula have semantics in terms of dependent types. They are dialgebras fibered over a type of formulas. The simply typed SK combinator calculus/positive implicational calculus, for instance, can be defined as
 
@@ -1533,7 +1542,7 @@ SK : WFF → Type
 Leading to a definition as the initial dialgebra over
 
 ```
-F(X)=(λp q .1,  λp q r .1,  λp q.X p*X (p⇒q))
+F(X)=(λp q.1,  λp q r.1,  λp q.X p*X (p⇒q))
 G(X)=(λp q.X (p⇒(q⇒p)), λp q r.X ((p⇒(q⇒r))⇒((p⇒q)⇒(p⇒r))), λp q.X q)
 ```
 
