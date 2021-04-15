@@ -157,10 +157,16 @@ We can generalize beyond binary coproducts fairly easily by stripping of the lea
 NCodiagonal[n_][x_] := Floor[x/n]
 ```
 
+The actual constructor, the k in (k, m) ∈ n × ℕ, can be recovered using a simple mod.
+
+```mathematica
+NProj[n_][x_] := Mod[x, n]
+```
+
 In the n + ℕ case, we need a to use the step function to clear out whatever value we have up till we run our of entries in n.
 
 ```mathematica
-FinCodiagonal[x_][n_] := n - x UnitStep[n - x]
+FinCodiagonal[n_][x_] := x - n UnitStep[x - n]
 ```
 
 ![Codiagonal out of 3 + ℕ](../img/discCont/epiFinCodiagonal.png)
@@ -213,6 +219,12 @@ In the n + ℕ case, we can use the appropriate fusion function as well.
 
 ```mathematica
 FinSumMap[n_, f_][x_] := FinFuse[#&, (n + #)& @* f][x]
+```
+
+In the n × ℕ case, we can do the following to map onto the second argument.
+
+```mathematica
+FinProdMap[n_, f_][x_] := in[NProj[n][x]][f[FinCodiagonal[n][x]]]
 ```
 
 <a name="headingProd"></a>
@@ -343,7 +355,7 @@ What the hylomorphism does is unfold and then fold an intermediate datastructure
 hylo[BinTreeFMap, #^2 &, Floor[Sqrt[#]] &][2532345]
 ```
 
-returns 1681. Though, what that means, I'll leave up to you. A more practical algorithm is the following simple algorithm which computes the leaves of a tree;
+returns 1681. Though, what that means, I'll leave up to you. A more practical algorithm is the following simple algorithm which computes the number of leaves in a tree;
 
 ```mathematica
 hylo[BinTreeFMap, FinFuse[1, 1 &, CantorUncurry[Plus]], # &][2532345]
@@ -369,13 +381,76 @@ where `toGenericTree` came from my previous post. This returns
 
 which does, indeed, have 17 leaves.
 
+At this point, I can start constructing my purely numeric quicksort function. The basic action of quicksort is to unfold a list into a sorted tree which stores data on its branches before collapsing the tree into a sorted list. At each step, the element in the front of the list is popped off and stored on a tree branch. All the elements in the list which is less than that element is placed in the left branch and all the elements in the list which is greater than that element is stored in the right branch. This makes it a hylomorphism over this kind of tree.
 
+Before getting into the details of the algorithm, we need encodings for all the involved datatypes. We need basic functions for manipulating;
 
+- Lists
+- Lists with a designated minimal and maximal element
+- Sorted lists
+- Sorted Trees
 
+Since I want everything to be absolutely perfect, I want to bijectively encode all these types, which requires a bit more care.
 
+Lists are the easiest. This will be the initial algebra over X ↦ 1 + ℕ × X. This is a key application for Sierpiński pairing. With Cantor pairing, a random list would tend to have larger elements toward the begining of the list while Sierpiński pairing will generate random lists with elements roughly the same size. This also means that permatations of the same list will be of roughly the same size, which won't hold at all if we used Cantor pairing. I'll need four combinators to start out;
 
+```mathematica
+cons[n_, l_] := SierpińskiPair[n, l]+1
+head[l_] /; l > 0 := SierpińskiFst[l-1]
+tail[l_] /; l > 0 := SierpińskiSnd[l-1]
+listFMap[f_] := FinSumMap[1, SierpińskiBimap[#&, f]]
+```
 
+for testing purposes, we can define a few functions to translate back and forth between lists and ℕ.
 
+```mathematica
+ListFmap[f_][{0, 0}] := {0, 0}
+ListFmap[f_][{1, {n_, m_}}] := {1, {n, f[m]}}
+
+ListUnfoldCoalg[0] := {0, 0}
+ListUnfoldCoalg[n_] := {1, {SierpińskiFst[n - 1], SierpińskiSnd[n - 1]}}
+ListUnfold[x_] := ListFmap[ListUnfold][ListUnfoldCoalg[x]]
+NatToSList := ListToMList@*ListUnfold
+
+ListFoldAlg[{0, 0}] := 0
+ListFoldAlg[{1, {n_, l_}}] := 1 + SierpińskiPair[n, l]
+ListFold[x_] := ListFoldAlg[ListFmap[ListFold][x]]
+SListToNat := ListFold@*MListToList
+```
+
+```mathematica
+In  := Table[NatToSList[x], {x, 0, 20}]
+Out :=
+ {{}, {0}, {1}, {0, 0}, {2}, {0, 1}, {1, 0}, {0, 0, 0}, {3},
+  {0, 2}, {1, 1}, {0, 0, 1}, {2, 0}, {0, 1, 0}, {1, 0, 0},
+  {0, 0, 0, 0}, {4}, {0, 3}, {1, 2}, {0, 0, 2}, {2, 1}}
+
+In  := SListToNat /@ %
+Out := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+        11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
+
+In  := NatToSList@cons[1, SListToNat@{2, 3, 4}]
+Out := {1, 2, 3, 4}
+
+In  := NatToSList@tail[SListToNat@{1, 2, 3, 4}]
+Out := {2, 3, 4}
+```
+
+The other datatypes are dependent types. This means our operations may vary their behaviour depending on a given peice of data which is carried around signifying some structural constraint. The result of a list where all elements are filtered to be more or less than an element will be a list with a structural contraint reflecting that fact. The "fiber" of such a list will be a pair, (m, n), where m is a natural number and n is either a natural number or ∞, the later signifying no maximal element. We can make functions analagous to those for ordinary lists;
+
+```mathematica
+filCons[{b_, ∞}, n_, l_] /; n ≥ b := SierpińskiPair[n - b, l] + 1
+filCons[{b_, t_}, n_, l_] /; b ≤ n ≤ t := in[t - b + 1, n - b][l]
+
+filHead[{b_, ∞}, l_] /; l > 0 := SierpińskiFst[l - 1] + b
+filHead[{b_, t_}, l_] /; l > 0 := NProj[t - b + 1][l]
+
+filTail[{b_, ∞}, l_] /; l > 0 := SierpińskiSnd[l - 1]
+filTail[{b_, t_}, l_] /; l > 0 := NCodiagonal[t - b + 1][l]
+
+filListFMap[{b_, ∞}, f_] := FinSumMap[1, SierpińskiBimap[# &, f]]
+filListFMap[{b_, t_}, f_] := FinSumMap[1, FinProdMap[t - b + 1, f]]
+``` 
 
 
 
