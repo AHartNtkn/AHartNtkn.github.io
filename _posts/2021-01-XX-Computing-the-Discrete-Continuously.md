@@ -1,11 +1,13 @@
 {% raw %}
+!!!NOTE: THIS POST IS UNDER CONSTRUCTION. ERRORS ABOUND!!!
 
 - [Approximating Digital Functions](#headingApp)
 - [Iteration](#headingIter)
 - [Sums](#headingConst)
 - [Products](#headingProd)
-- [Recursive Types](#headingRec)
-- [Peano Expressions](#headingPeano)
+- [Recursive Types and Recursion](#headingRec)
+- [Quicksort, First Pass](#headingQ1)
+- [Defunctionalization](#headingDefun)
 - [Sorted Trees](#headingSorted)
 - [Trees of Bounded Height](#headingHeight)
 - [Final Thoughts](#headingFinal)
@@ -135,7 +137,7 @@ inr[x_] := 2 * x + 1
 Generalizing to the n × ℕ case is a minor variation of these functions.
 
 ```mathematica
-in[k_, n_][x_] /; k < n := n * x + k
+in[n_, k_][x_] /; k < n := n * x + k
 ```
 
 In the case of n + ℕ, we bijectively encode these elements by interpreting all numbers i < n as i (in other words, we do nothing to them) and interpreting all numbers i ≥ n as i-n. The constructors are then very simple.
@@ -157,13 +159,22 @@ We can generalize beyond binary coproducts fairly easily by stripping of the lea
 NCodiagonal[n_][x_] := Floor[x/n]
 ```
 
+This is, incidently, the same thing as the second projection out of the product.
+
 The actual constructor, the k in (k, m) ∈ n × ℕ, can be recovered using a simple mod.
 
 ```mathematica
 NProj[n_][x_] := Mod[x, n]
 ```
 
-In the n + ℕ case, we need a to use the step function to clear out whatever value we have up till we run our of entries in n.
+In the n + ℕ case, we can implement the codiagonal like so;
+
+```mathematica
+FinCodiagonal[n_][x_] /; x < n := x
+FinCodiagonal[n_][x_] := x - n
+```
+
+To take this to the continuous setting, we can use the step function to decide if we should subtract n.
 
 ```mathematica
 FinCodiagonal[n_][x_] := x - n UnitStep[x - n]
@@ -194,12 +205,6 @@ Using this, we can implement an if statement. `Mod[x + 1, 2] a + Mod[x, 2] b` wi
 Fuse[f_, g_][x_] := Mod[x + 1, 2] f[Codiagonal[x]] + Mod[x, 2] g[Codiagonal[x]]
 ```
 
-Fusion in the n + ℕ case requires a similar decision procedure. We need a method we can use to check for relative size of the input. We can to use `UnitStep` to detect the negativity of `n - k` which will indicate if `k` is greater than `n`.
-
-```mathematica
-FinFuse[n_, f_, g_][x_] :=  UnitStep[x - n + 1/2] g[x-n] + (1 - UnitStep[x - n + 1/2]) f[x]
-```  
-
 We can further generalize to arbitrary n, given a lists of functions.
 
 ```mathematica
@@ -209,22 +214,35 @@ NFuse[fns_][n_] :=
   ]
 ```
 
+Fusion in the n + ℕ case requires a similar decision procedure. 
+
+```mathematica
+FinFuse[n_, f_, g_][x_] /; x < n := f[x]
+FinFuse[n_, f_, g_][x_] /; x >= n := g[x - n]
+```
+
+We need a method to check for relative size of the input. We can to use `UnitStep` to detect the negativity of `n - k` which will indicate if `k` is greater than `n`.
+
+```mathematica
+FinFuse[n_, f_, g_][x_] :=  UnitStep[x - n + 1/2] g[x-n] + (1 - UnitStep[x - n + 1/2]) f[x]
+```  
+
 We can now perform all standard manipulations on sums. One of the more helpful utility functions is the sum bimap which leaves the leading constructor of the sum intact while applying either `f` or `g`.
 
 ```mathematica
-SumBimap[f_, g_][n_] := Fuse[inl@*f, inr@*g][n]
+SumBimap[f_, g_] := Fuse[inl@*f, inr@*g]
 ```
 
 In the n + ℕ case, we can use the appropriate fusion function as well.
 
 ```mathematica
-FinSumMap[n_, f_][x_] := FinFuse[#&, (n + #)& @* f][x]
+FinSumMap[n_, f_] := FinFuse[n, # &, (n + #) &@*f]
 ```
 
 In the n × ℕ case, we can do the following to map onto the second argument.
 
 ```mathematica
-FinProdMap[n_, f_][x_] := in[NProj[n][x]][f[FinCodiagonal[n][x]]]
+FinProdMap[n_, f_][x_] := in[n, NProj[n][x]][f[NCodiagonal[n][x]]]
 ```
 
 <a name="headingProd"></a>
@@ -331,14 +349,14 @@ SierpińskiUncurry[f_][x_] := f[SierpińskiFst@x, SierpińskiSnd@x]
 ```
 
 <a name="headingRec"></a>
-## Recursive Types
+## Recursive Types and Recursion
 
 Our recursive types will simply be iterated polynomial functors. I explained this in detail in my last post, so I'll be brief here. For example, binary trees are just F = X ↦ 1 + X × X iterated over and over. Since F[ℕ] ≅ ℕ, we can collapse an arbitrary number of itterations so long as the base case is itself isomorphic to ℕ. So BinTree = F[BinTree] ≅ ℕ, and an explicit construction of this and related isomophisms is detailed in my previous post.
 
 The main combinator for manipulating recursive types is the hylomorphism;
 
 ```
-hylo[fmap_, alg_, coalg_][x_] := alg[fmap[hylo[fmap, alg, coalg], coalg[x]]]
+hylo[fmap_, alg_, coalg_][x_] := alg[fmap[hylo[fmap, alg, coalg]][coalg[x]]]
 ```
 
 where `fmap` is the functorial map for the endofunctor which our recursive type is initial over. In the case of binary trees, it will be a function which, itself, takes a function f : X → Y and turns it into a function F[f] : F[X] → F[Y]. We define such functorial maps by composing the functorial maps already defined for sums and products. In the case of F, its respective Fmap will be;
@@ -381,6 +399,9 @@ where `toGenericTree` came from my previous post. This returns
 
 which does, indeed, have 17 leaves.
 
+<a name="headingQ1"></a>
+## Quicksort, First Pass
+
 At this point, I can start constructing my purely numeric quicksort function. The basic action of quicksort is to unfold a list into a sorted tree which stores data on its branches before collapsing the tree into a sorted list. At each step, the element in the front of the list is popped off and stored on a tree branch. All the elements in the list which is less than that element is placed in the left branch and all the elements in the list which is greater than that element is stored in the right branch. This makes it a hylomorphism over this kind of tree.
 
 Before getting into the details of the algorithm, we need encodings for all the involved datatypes. We need basic functions for manipulating;
@@ -408,15 +429,17 @@ ListFmap[f_][{0, 0}] := {0, 0}
 ListFmap[f_][{1, {n_, m_}}] := {1, {n, f[m]}}
 
 ListUnfoldCoalg[0] := {0, 0}
-ListUnfoldCoalg[n_] := {1, {SierpińskiFst[n - 1], SierpińskiSnd[n - 1]}}
+ListUnfoldCoalg[l_] := {1, {head[l], tail[l]}}
 ListUnfold[x_] := ListFmap[ListUnfold][ListUnfoldCoalg[x]]
 NatToSList := ListToMList@*ListUnfold
 
 ListFoldAlg[{0, 0}] := 0
-ListFoldAlg[{1, {n_, l_}}] := 1 + SierpińskiPair[n, l]
+ListFoldAlg[{1, {n_, l_}}] := cons[n, l]
 ListFold[x_] := ListFoldAlg[ListFmap[ListFold][x]]
 SListToNat := ListFold@*MListToList
 ```
+
+`MListToList` comes from my last post. Some tests:
 
 ```mathematica
 In  := Table[NatToSList[x], {x, 0, 20}]
@@ -434,23 +457,332 @@ Out := {1, 2, 3, 4}
 
 In  := NatToSList@tail[SListToNat@{1, 2, 3, 4}]
 Out := {2, 3, 4}
+
+In  := head[SListToNat@{22, 2, 3, 4}]
+Out := 22
 ```
 
-The other datatypes are dependent types. This means our operations may vary their behaviour depending on a given peice of data which is carried around signifying some structural constraint. The result of a list where all elements are filtered to be more or less than an element will be a list with a structural contraint reflecting that fact. The "fiber" of such a list will be a pair, (m, n), where m is a natural number and n is either a natural number or ∞, the later signifying no maximal element. We can make functions analagous to those for ordinary lists;
+The other datatypes are dependent types. This means our operations may vary their behaviour depending on a given peice of data which is carried around signifying some structural constraint. The result of a list where all elements are filtered to be more or less than an element will be a list with a structural contraint reflecting that fact. The "fiber" of such a list will be a pair, (m, n), where m is a natural number and n is either a natural number or ∞, the later signifying no maximal element. We can make functions analagous to those for ordinary lists. The main catch is the situation where the upper limit isn't ∞. In that case, we're encoding a list of elements pulled from a finite set, which requires iterating constructors for 1 + n × ℕ instead of 1 + ℕ × ℕ.
 
 ```mathematica
 filCons[{b_, ∞}, n_, l_] /; n ≥ b := SierpińskiPair[n - b, l] + 1
-filCons[{b_, t_}, n_, l_] /; b ≤ n ≤ t := in[t - b + 1, n - b][l]
+filCons[{b_, t_}, n_, l_] /; b ≤ n ≤ t := in[t - b + 1, n - b][l] + 1
 
 filHead[{b_, ∞}, l_] /; l > 0 := SierpińskiFst[l - 1] + b
-filHead[{b_, t_}, l_] /; l > 0 := NProj[t - b + 1][l]
+filHead[{b_, t_}, l_] /; l > 0 := NProj[t - b + 1][l - 1] + b
 
 filTail[{b_, ∞}, l_] /; l > 0 := SierpińskiSnd[l - 1]
-filTail[{b_, t_}, l_] /; l > 0 := NCodiagonal[t - b + 1][l]
+filTail[{b_, t_}, l_] /; l > 0 := NCodiagonal[t - b + 1][l - 1]
 
-filListFMap[{b_, ∞}, f_] := FinSumMap[1, SierpińskiBimap[# &, f]]
-filListFMap[{b_, t_}, f_] := FinSumMap[1, FinProdMap[t - b + 1, f]]
+filListFMap[{b_, ∞}, f_] := FinSumMap[1, SierpińskiBimap[# &, f[{b, ∞}, #]&]]
+filListFMap[{b_, t_}, f_] := FinSumMap[1, FinProdMap[t - b + 1, f[{b, t}, #]&]]
 ``` 
+
+Once these are established, other functions can be defined similarly. We just need to approrpriatly deliver the fiber to the functions who need it.
+
+```mathematica
+FilListFmap[k_, f_][{0, 0}] := {0, 0}
+FilListFmap[k_, f_][{1, {n_, m_}}] := {1, {n, f[k, m]}}
+
+FilListUnfoldCoalg[k_, 0] := {0, 0}
+FilListUnfoldCoalg[k_, l_] := {1, {filHead[k, l], filTail[k, l]}}
+FilListUnfold[k_, x_] := FilListFmap[k, FilListUnfold][FilListUnfoldCoalg[k, x]]
+NatToFilList[k_, x_] := ListToMList[FilListUnfold[k, x]]
+
+FilListFoldAlg[k_, {0, 0}] := 0
+FilListFoldAlg[k_, {1, {n_, l_}}] := filCons[k, n, l]
+
+FilListFold[k_, x_] := FilListFoldAlg[k, FilListFmap[k, FilListFold][x]]
+FilListToNat[k_, x_] := FilListFold[k, MListToList[x]]
+```
+
+Some tests:
+
+```mathematica
+In  := Table[NatToFilList[{0, ∞}, x], {x, 0, 20}]
+Out :=
+ {{}, {0}, {1}, {0, 0}, {2}, {0, 1}, {1, 0}, {0, 0, 0}, {3},
+  {0, 2}, {1, 1}, {0, 0, 1}, {2, 0}, {0, 1, 0}, {1, 0, 0},
+  {0, 0, 0, 0}, {4}, {0, 3}, {1, 2}, {0, 0, 2}, {2, 1}}
+
+In  := FilListToNat[{0, ∞}, #] & /@ %
+Out := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+        11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
+
+In  := Table[NatToFilList[{5, 8}, x], {x, 0, 20}]
+Out :=
+ {{}, {5}, {6}, {7}, {8}, {5, 5}, {6, 5}, {7, 5}, {8, 5}, {5, 6},
+  {6, 6}, {7, 6}, {8, 6}, {5, 7}, {6, 7}, {7, 7}, {8, 7}, {5, 8},
+  {6, 8}, {7, 8}, {8, 8}}
+
+In  := FilListToNat[{5, 8}, #] & /@ %
+Out := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+        11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
+```
+
+```mathematica
+In  := NatToFilList[{0, ∞}, filCons[{0, ∞}, 1, FilListToNat[{0, ∞}, {2, 3, 4}]]]
+Out := {1, 2, 3, 4}
+
+In  := NatToFilList[{4, 6}, filCons[{4, 6}, 5, FilListToNat[{4, 6}, {4, 5, 6}]]]
+Out := {5, 4, 5, 6}
+```
+
+```mathematica
+In  := filHead[{80, ∞}, FilListToNat[{80, ∞}, {101, 99, 88}]]
+Out := 101
+
+In  := NatToFilList[{80, ∞}, filTail[{80, ∞}, FilListToNat[{80, ∞}, {101, 99, 88}]]]
+Out := {99, 88}
+
+In  := filHead[{27, 33}, FilListToNat[{27, 33}, {30, 31, 32, 33}]]
+Out := 30
+
+In  := NatToFilList[{27, 33}, filTail[{27, 33}, FilListToNat[{27, 33}, {30, 31, 32, 33}]]]
+Out := {31, 32, 33}
+```
+
+Sorted lists carry around a fiber denoting what the largest element so far is. This gaurantees that whatever element is newly added won't be smaller than the largest element so far. Sorted lists are only more complicated than the last example in the sense that this fiber varies based on the layer of the list (and this is handled entirely by the functorial map); in all other respects sorted lists are simpler.
+
+```mathematica
+sortCons[k_, n_, l_] /; n ≥ k := SierpińskiPair[n - k, l] + 1
+
+sortHead[k_, l_] /; l > 0 := SierpińskiFst[l - 1] + k
+
+sortTail[k_, l_] /; l > 0 := SierpińskiSnd[l - 1]
+
+sortListFMap[k_, f_][l_] :=
+  FinSumMap[1, SierpińskiBimap[# &, f[sortHead[k, l], #]&]][l]
+``` 
+
+```mathematica
+SortListFmap[k_, f_][{0, 0}] := {0, 0}
+SortListFmap[k_, f_][{1, {n_, m_}}] := {1, {n, f[n, m]}}
+
+SortListUnfoldCoalg[k_, 0] := {0, 0}
+SortListUnfoldCoalg[k_, l_] := {1, {sortHead[k, l], sortTail[k, l]}}
+SortListUnfold[k_, x_] := SortListFmap[k, SortListUnfold][SortListUnfoldCoalg[k, x]]
+NatToSortList[k_, x_] := ListToMList[SortListUnfold[k, x]]
+
+SortListFoldAlg[k_, {0, 0}] := 0
+SortListFoldAlg[k_, {1, {n_, l_}}] := sortCons[k, n, l]
+SortListFold[k_, x_] := SortListFoldAlg[k, SortListFmap[k, SortListFold][x]]
+SortListToNat[k_, x_] := SortListFold[k, MListToList[x]]
+```
+
+Some tests:
+
+```mathematica
+In  := Table[NatToSortList[0, x], {x, 0, 20}]
+Out :=
+ {{}, {0}, {1}, {0, 0}, {2}, {0, 1}, {1, 1}, {0, 0, 0}, {3},
+  {0, 2}, {1, 2}, {0, 0, 1}, {2, 2}, {0, 1, 1}, {1, 1, 1},
+  {0, 0, 0, 0}, {4}, {0, 3}, {1, 3}, {0, 0, 2}, {2, 3}}
+
+In  := SortListToNat[0, #] & /@ %
+Out := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+        11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
+```
+
+```mathematica
+In  := NatToSortList[0, sortCons[0, 1, SortListToNat[1, {2, 3, 4}]]]
+Out := {1, 2, 3, 4}
+```
+
+Note that the encoding for `{2, 3, 4}` has to assume its at the end of a list which already had a `1` for the `cons` to be valid.
+
+```mathematica
+In  := sortHead[0, SortListToNat[0, {88, 99, 101}]]
+Out := 88
+
+In  := NatToSortList[88, sortTail[0, SortListToNat[0, {88, 99, 101}]]]
+Out := {99, 101}
+```
+
+Note that the decoding of the tail has to acknoledge the fact that 88 came before the tail for the decoding to be valid.
+
+Sorted trees were already described in detail in my last post, so I don't discuss them at length here; I'll just present my code for them.
+
+```mathematica
+sortBranch[{b_, ∞}, n_, t1_, t2_] /; n ≥ b := SierpińskiPair[n - b, CantorPair[t1, t2]] + 1
+sortBranch[{b_, t_}, n_, t1_, t2_] /; n ≥ b := in[t - b + 1, n - b][CantorPair[t1, t2]] + 1
+
+sortTreeElem[{b_, ∞}, l_] := SierpińskiFst[l - 1] + b
+sortTreeElem[{b_, t_}, l_] := NProj[t - b + 1][l - 1] + b
+
+sortLeft[{b_, ∞}, l_] /; l > 0 := CantorFst[SierpińskiSnd[l - 1]]
+sortLeft[{b_, t_}, l_] /; l > 0 := CantorFst[NCodiagonal[t - b + 1][l - 1]]
+
+sortRight[{b_, ∞}, l_] /; l > 0 := CantorSnd[SierpińskiSnd[l - 1]]
+sortRight[{b_, t_}, l_] /; l > 0 := CantorSnd[NCodiagonal[t - b + 1][l - 1]]
+
+sortTreeFMap[{b_, ∞}, f_][tr_] := 
+  FinSumMap[1,
+    SierpińskiBimap[#&, 
+      CantorBimap[f[{b, sortTreeElem[{b, ∞}, tr]}, #]&,
+                  f[{sortTreeElem[{b, ∞}, tr], ∞}, #]&
+  ]]][tr]
+sortTreeFMap[{b_, t_}, f_][tr_] :=
+  FinSumMap[1, 
+    FinProdMap[t-b+1, 
+      CantorBimap[f[{b, sortTreeElem[{b, t}, tr]}, #]&,
+                  f[{sortTreeElem[{b, t}, tr], t}, #]&
+  ]]][tr]
+```
+
+```mathematica
+SortTreeFmap[{b_, t_}, f_][L] := L
+SortTreeFmap[{b_, t_}, f_][e_[n_, m_]] := e[f[{b, e}, n], f[{e, t}, m]]
+
+SortTreeUnfoldCoalg[k_, 0] := L
+SortTreeUnfoldCoalg[k_, l_] := sortTreeElem[k, l][sortLeft[k, l], sortRight[k, l]]
+NatToSortTree[k_, x_] := SortTreeFmap[k, NatToSortTree][SortTreeUnfoldCoalg[k, x]]
+
+SortTreeFoldAlg[k_, L] := 0
+SortTreeFoldAlg[k_, e_[l_, r_]] := sortBranch[k, e, l, r]
+SortTreeToNat[k_, x_] := SortTreeFoldAlg[k, SortTreeFmap[k, SortTreeToNat][x]]
+```
+
+Some tests:
+
+```mathematica
+In  := Table[NatToSortTree[{0, ∞}, x], {x, 0, 20}]
+Out :=
+ {L, 0[L, L], 1[L, L], 0[L, 0[L, L]], 2[L, L], 
+  0[0[L, L], L], 1[L, 1[L, L]], 0[L, 1[L, L]], 
+  3[L, L], 0[0[L, L], 0[L, L]], 1[0[L, L], L], 
+  0[0[L, 0[L, L]], L], 2[L, 2[L, L]], 
+  0[L, 0[L, 0[L, L]]], 1[L, 2[L, L]], 
+  0[0[L, L], 1[L, L]], 4[L, L], 0[0[L, 0[L, L]],
+  0[L, L]], 1[0[L, L], 1[L, L]], 
+  0[0[0[L, L], L], L], 2[0[L, L], L]}
+
+In  := SortTreeToNat[{0, ∞}, #] & /@ %
+Out := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+        11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
+
+In  := Table[NatToSortTree[{5, 9}, x], {x, 0, 20}]
+Out :=
+ {L, 5[L, L], 6[L, L], 7[L, L], 8[L, L], 9[L, L],
+  5[L, 5[L, L]], 6[L, 6[L, L]], 7[L, 7[L, L]], 
+  8[L, 8[L, L]], 9[L, 9[L, L]], 5[5[L, L], L], 
+  6[5[L, L], L], 7[5[L, L], L], 8[5[L, L], L], 
+  9[5[L, L], L], 5[L, 6[L, L]], 6[L, 7[L, L]], 
+  7[L, 8[L, L]], 8[L, 9[L, L]], 9[L, 9[L, 9[L, L]]]}
+
+In  := SortTreeToNat[{5, 9}, #] & /@ %
+Out := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+        11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
+```
+
+With that setup, we can actually implement the algorithm. There are two recursive algorithms we need. Firstly, we need a program which takes an element `e` and a list `l` with min element `b` and max element `t` and returns a pair of lists, the first with min element `b` and max element `e` and the second with min element `e` and max element `t`. This will be applied each time we want to construct a single layer of our sorted tree.
+
+This algorithm can be implemented as a simple fold. We just recurse over the list, shoving an element into either of the two lists based on its comparison to `e` (starting with two empty lists) until we run out of elments.
+
+```mathematica
+fhylo[fmap_, alg_, coalg_][k_, x_] := 
+  alg[k, fmap[k, fhylo[fmap, alg, coalg]][coalg[k, x]]]
+
+bifilterPreAlg[{b_, t_}, e_, h_, lisPair_] :=
+  If[h ≤ e,
+     CantorBimap[filCons[{b, e}, h, #]&, #&][lisPair],
+     CantorBimap[#&, filCons[{e, t}, h, #]&][lisPair]
+  ]
+
+bifilterAlg[e_][{b_, t_}, l_] /; b ≤ e ≤ t :=
+  If[l == 0, 0, 
+    bifilterPreAlg[{b, t}, e, filHead[{b, t}, l], filTail[{b, t}, l]]
+  ]
+
+bifilter[{b_, t_}, e_, l_] := fhylo[{b, t}, filListFMap, bifilterAlg[e], #2&][l]
+```
+
+Here's a test;
+
+```mathematica
+In  := bifilter[{1, 10}, 5, FilListToNat[{1, 10}, {4, 2, 7, 5, 10, 9, 6, 8, 3, 1}]]
+Out := 24322964
+
+In  := NatToFilList[{1, 5}, CantorFst@%]
+Out := {4, 2, 5, 3, 1}
+
+In  := NatToFilList[{5, 10}, CantorSnd@%%]
+Out := {7, 10, 9, 6, 8}
+```
+
+So we have successfully made a filtering function. The second step of quicksort rquires collapsing our sorted tree into a sorted list. To do this, we need a function which can append a sorted list to the end of another sorted list. The exact encoding of an element varies based on the previous elements. However, the additional data carried by the sorted tree means we don't need to do anything fiddly to get the encodings to line up. All sorted lists on the right will be encoded to assume the branching element came beforehand. Additionally, we can look up the largest element on any left branch in the fiber of the sorted list and use that while concatenating the branching elements to the right list. All we need, then, is a function which can recursively append the right-list plus branching element to the end of the left list; the procedure we'll apply at each layer.
+
+```mathematica
+sortedConcatAlg[e_, r_][k_, l_] := If[l == 0, sortCons[k, e, r], l]
+
+sortedConcat[k_, l_, e_, r_] := 
+  fhylo[sortListFMap, sortedConcatAlg[e, r], #2 &][k, l]
+```
+
+```mathematica
+In  := NatToSortList[2, 334]
+Out := {3, 3, 3, 5, 6}
+
+In  := NatToSortList[8, 1432]
+Out := {11, 11, 13, 13, 14}
+
+In  := NatToSortList[6, sortCons[6, 8, 1432]]
+Out := {8, 11, 11, 13, 13, 14}
+
+In  := sortedConcat[2, 334, 8, 1432]
+Out := 5867854
+
+In  := NatToSortList[2, 733518]
+Out := {3, 3, 3, 5, 6, 8, 11, 11, 13, 13, 14}
+```
+
+We can now complete our quicksort implementation.
+
+```mathematica
+quickSortCoalg[k_, l_] := 
+  If[l == 0, 0,
+    bifilter[k, filHead[k, l], filTail[k, l]] + 1
+  ]
+
+quickSortAlg[{b_, t_}, l_] :=
+  If[l == 0, 0,
+    sortedConcat[b, sortLeft[{b, t}, l], sortTreeElem[{b, t}, l], sortRight[{b, t}, l]]
+  ]
+
+quickSort[l_] = fhylo[sortTreeFMap, quickSortAlg, quickSortCoalg][{0, ∞}, l]
+```
+
+and some final tests
+
+```mathematica
+In  := SListToNat@{9, 2, 4, 7, 3, 8, 1, 6, 5}
+Out := 9149311703192064
+
+In  := quickSort@%
+Out := 174762
+
+In  := NatToSortList[0, %]
+Out := {1, 2, 3, 4, 5, 6, 7, 8, 9}
+```
+
+And we now have a quicksort implementation which operates soly on natural numbers, never seeing any other data structure. We're not quite at the point where we can implement this on an analog computer, but we're close.
+
+There's something difficult to articulate which I really, really like about this code. There's an elegant beauty to its overall design; the same beauty in any recursuve scheme implementation. Tied to that is a delicate soffistication to its particular manipulations which is usually sweapt under the rug.
+
+
+<a name="headingDefun"></a>
+## Defunctionalization
+
+With the tools used so far, we're almost able to turn this into a 
+
+
+
+
+
+
+
+
+
 
 
 
