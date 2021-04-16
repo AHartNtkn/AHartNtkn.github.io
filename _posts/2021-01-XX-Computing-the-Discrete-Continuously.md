@@ -719,6 +719,8 @@ sortedConcat[k_, l_, e_, r_] :=
   fhylo[sortListFMap, sortedConcatAlg[e, r], #2 &][k, l]
 ```
 
+Testing:
+
 ```mathematica
 In  := NatToSortList[2, 334]
 Out := {3, 3, 3, 5, 6}
@@ -752,7 +754,7 @@ quickSortAlg[{b_, t_}, l_] :=
 quickSort[l_] = fhylo[sortTreeFMap, quickSortAlg, quickSortCoalg][{0, ∞}, l]
 ```
 
-and some final tests
+and a final test
 
 ```mathematica
 In  := SListToNat@{9, 2, 4, 7, 3, 8, 1, 6, 5}
@@ -767,14 +769,46 @@ Out := {1, 2, 3, 4, 5, 6, 7, 8, 9}
 
 And we now have a quicksort implementation which operates soly on natural numbers, never seeing any other data structure. We're not quite at the point where we can implement this on an analog computer, but we're close.
 
-There's something difficult to articulate which I really, really like about this code. There's an elegant beauty to its overall design; the same beauty in any recursuve scheme implementation. Tied to that is a delicate soffistication to its particular manipulations which is usually sweapt under the rug.
+There's something difficult to articulate which I really, really like about this code. There's an elegant beauty to its overall design; the same beauty in any recursive scheme implementation. Tied to that is a delicate soffistication to its precise bit manipulations.
 
 
 <a name="headingDefun"></a>
 ## Defunctionalization
 
-With the tools used so far, we're almost able to turn this into a 
+With the tools used so far, we're almost able to turn this into a fully analytic function. But recursion is standing in our way. While `hylo` and `fhylo` are simple and elegant, they do perform non-trivial combinatorial manipulations on functions themselves, which don't exist at first-order. The generic tequnique for rendering higher-order functions into first-order functions is called "defunctionalization".
 
+- [Defunctionalization at Work](https://www.cs.cornell.edu/courses/cs6110/2012sp/Defunctionalization-at-work-Danvy.pdf) by Olivier Danvy, Lasse R. Nielsen
+
+Defunctionalization covers a board set of tequniques; for my porposes I will cover the case of coverting recursive hylomorphisms into a stack-based alternative. Here's a rough outline of the algorithm;
+
+- We'll have two stacks.
+  - The first will have a stack of natural numbers, initialized with only our input number.
+  - The secod will have a stack of characters collectively describing, in reverse polish notation, the syntax of the intermediate data structure
+- Each recursive call can then be converted into an appropriate stack operation.
+  - There will be two phases
+    - an "anamorphic" phase which constructs the intermediate data structure in the second stack
+      - At each step, a symbol for the constuructor will be generated and added to the second stack as appropriate.
+      - This phase ends when the first stack is empty
+    - a "catamorphic" phase which constructs the output
+      - At each step, a character is popped off the second stack and parsed into the appropriate data structure.
+      - This phase ends when the second stack is empty.
+      - The full output is the first thing in the first stack.
+
+The full recursion is then an iteration of these operations. Since stacks, and pairs of stacks, can be encoded, we can perform the same operation as a hylomorphism only using first-order functions.
+
+The first stack will just be a list of natural numbers which we feed into a coalgebra and receive from and algebra. Since I'm using bijective encodings, it does not matter at all what functions are used for the (co)algebra; anything will work. What does matter is appropriate manipulation of the second stack. We will have to vary how its interpreted based on the intermediate type of our hylomorphism. In general, it will be initial over some endofunctor
+
+F[X] = c0 + c1 X + c2 X² + ...
+
+Where c0, c1, ... are either finite sets or ℕ. The symbols for our reverse polish notation will then be
+
+RPN[F] = c0 + c1 + c2 + ...
+
+Merely remobing the recursive cases.
+
+Using binary trees (the ones that store no data) as an example, lets say we had a number, say 53, in the first stack. Applying the coalgebra might yeild 234. This would encode a branch layer with 2 and 19 on the branches. We'd push these numbers onto the first stack, while pushing a token representing the branch state, say the symbol "B", onto the second stack. We'd then apply the coalgebra to 2. If that yeilded a 0 it would represent a leaf, so we'd push an "L" onto the stack. If the coalgebra also returned 0 on 19, we'd end up with an empty first stack, and a second stack of the form `{L, L, B}`, representing the binary tree `B[L, L]`, in reverse polish notation. In the catamorphism stage, we'd apply our algebra first to "L", yeilding, say, 23, and we'd push that onto the first stack. Repeating that, we'd have two 23s on the first stack and a B left in the second. When the B is received, two elements would be popped off the first stack, combined into a number representing a branch layer with two 23s on both branches (1105) and fed into the algebra. Whatever that outputed would be pushed onto the first stack. We'd be left with one number in the first stack and nothing in the second, so whatever's in that first stack would be our ultimate return value.
+
+Let me code up an explicit example using binary trees before I convert quicksort into this format.
 
 
 
