@@ -8,7 +8,7 @@
 - [Recursive Types and Recursion](#headingRec)
 - [Quicksort, First Pass](#headingQ1)
 - [Defunctionalization](#headingDefun)
-- [Sorted Trees](#headingSorted)
+- [Final Quicksort](#headingQ1)
 - [Trees of Bounded Height](#headingHeight)
 - [Final Thoughts](#headingFinal)
 
@@ -159,7 +159,7 @@ We can generalize beyond binary coproducts fairly easily by stripping of the lea
 NCodiagonal[n_][x_] := Floor[x/n]
 ```
 
-This is, incidently, the same thing as the second projection out of the product.
+This is, incidently, the same thing as the second projection out of the finite product.
 
 The actual constructor, the k in (k, m) ∈ n × ℕ, can be recovered using a simple mod.
 
@@ -351,7 +351,14 @@ SierpińskiUncurry[f_][x_] := f[SierpińskiFst@x, SierpińskiSnd@x]
 <a name="headingRec"></a>
 ## Recursive Types and Recursion
 
-Our recursive types will simply be iterated polynomial functors. I explained this in detail in my last post, so I'll be brief here. For example, binary trees are just F = X ↦ 1 + X × X iterated over and over. Since F[ℕ] ≅ ℕ, we can collapse an arbitrary number of itterations so long as the base case is itself isomorphic to ℕ. So BinTree = F[BinTree] ≅ ℕ, and an explicit construction of this and related isomophisms is detailed in my previous post.
+Our recursive types will simply be iterated polynomial functors. I explained this in detail in my last post, so I'll be brief here. For example, binary trees are just F = X ↦ 1 + X × X iterated over and over. Since F[ℕ] ≅ ℕ, we can collapse an arbitrary number of itterations so long as the base case is itself isomorphic to ℕ. So BinTree = F[BinTree] ≅ ℕ, and an explicit construction of this and related isomophisms is detailed in my previous post. Here are some basic combinators for manipulating ℕ as a binary tree;
+
+```mathematica
+branch[l_, r_] := CantorPair[l, r] + 1
+
+treeLeft[t_] /; l > 0 := CantorFst[t - 1]
+treeRight[t_] /; l > 0 := CantorSnd[t - 1]
+```
 
 The main combinator for manipulating recursive types is the hylomorphism;
 
@@ -383,7 +390,7 @@ Which returns 17. We can write some code to print this tree in a more comprehens
 
 ```mathematica
 TreeUnfoldAlg[0] := {0, 0}
-TreeUnfoldAlg[n_] := {1, {CantorFst[n - 1], CantorSnd[n - 1]}}
+TreeUnfoldAlg[n_] := {1, {treeLeft[n], treeRight[n]}}
 
 TreeFmap[f_][{0, 0}] := {0, 0}
 TreeFmap[f_][{1, {n_, m_}}] := {1, {f[n], f[m]}}
@@ -798,26 +805,128 @@ The full recursion is then an iteration of these operations. Since stacks, and p
 
 The first stack will just be a list of natural numbers which we feed into a coalgebra and receive from and algebra. Since I'm using bijective encodings, it does not matter at all what functions are used for the (co)algebra; anything will work. What does matter is appropriate manipulation of the second stack. We will have to vary how its interpreted based on the intermediate type of our hylomorphism. In general, it will be initial over some endofunctor
 
+```
 F[X] = c0 + c1 X + c2 X² + ...
+```
 
-Where c0, c1, ... are either finite sets or ℕ. The symbols for our reverse polish notation will then be
+Where `c0`, `c1`, ... are either finite sets or ℕ. The symbols for our reverse polish notation will then be
 
+```
 RPN[F] = c0 + c1 + c2 + ...
+```
 
-Merely remobing the recursive cases.
+Merely removing the recursive cases.
 
-Using binary trees (the ones that store no data) as an example, lets say we had a number, say 53, in the first stack. Applying the coalgebra might yeild 234. This would encode a branch layer with 2 and 19 on the branches. We'd push these numbers onto the first stack, while pushing a token representing the branch state, say the symbol "B", onto the second stack. We'd then apply the coalgebra to 2. If that yeilded a 0 it would represent a leaf, so we'd push an "L" onto the stack. If the coalgebra also returned 0 on 19, we'd end up with an empty first stack, and a second stack of the form `{L, L, B}`, representing the binary tree `B[L, L]`, in reverse polish notation. In the catamorphism stage, we'd apply our algebra first to "L", yeilding, say, 23, and we'd push that onto the first stack. Repeating that, we'd have two 23s on the first stack and a B left in the second. When the B is received, two elements would be popped off the first stack, combined into a number representing a branch layer with two 23s on both branches (1105) and fed into the algebra. Whatever that outputed would be pushed onto the first stack. We'd be left with one number in the first stack and nothing in the second, so whatever's in that first stack would be our ultimate return value.
+Using binary trees (the ones that store no data) as an example, lets say we had a number, say 53, in the first stack. In the anamorphism stage we'd apply the coalgebra repeatedly to build up an intermediate tree. Applying the coalgebra might yeild 234. This would encode a branch layer with 2 and 19 on the branches. We'd push these numbers onto the first stack, while pushing a token representing the branch state, say the symbol "B", onto the second stack. We'd then apply the coalgebra to 2. If that yeilded a 0 it would represent a leaf, so we'd push an "L" onto the second stack. If the coalgebra also returned 0 on 19, we'd end up with an empty first stack, and a second stack of the form `{L, L, B}`, representing the binary tree `B[L, L]` in reverse polish notation. In the catamorphism stage, we'd apply our algebra first to "L", yielding, say, 23, and we'd push that onto the first stack. Repeating that, we'd have two 23s on the first stack and a B left in the second. When the B is received, two elements would be popped off the first stack, combined into a number representing a branch layer with two 23s on both branches (1105) and fed into the algebra. Whatever that outputed would be pushed onto the first stack. We'd be left with one number in the first stack and nothing in the second, so whatever's in that first stack would be our ultimate return value.
 
 Let me code up an explicit example using binary trees before I convert quicksort into this format.
 
+```mathematica
+treeAnaStep[coalg_, {{}, {s___}}] := {{}, {s}}
+treeAnaStep[coalg_, {{n_, ns___}, {s___}}] :=
+ With[{l = coalg@n},
+  If[
+   l == 0,
+   {{ns}, {L, s}},
+   {{treeLeft[l], treeRight[l], ns}, {B, s}}
+   ]]
 
+treeCataStep[alg_, {{n___}, {}}] := {{n}, {}}
+treeCataStep[alg_, {{ns___}, {L, s___}}] := {{alg[0], ns}, {s}}
+treeCataStep[
+  alg_, {{l_, r_, ns___}, {B, s___}}] := {{alg[branch[l, r]], 
+   ns}, {s}}
+```
 
+We can repeatedly itterate these functions to manipulate the stack. It may be helpful to see an example evaluated over time. I'll calculate the number of leaves in an input tree. Since the input is being interpreted as a tree, we can use the idenity function as our coalgebra so it doesn't effect its strucutre. The algebra will simply return 1 on a leaf and add the two branches together on anything else.
 
+```matheamtica
+In  := NestList[treeAnaStep[# &, #] &, {{5}, {}}, 7]
+Out := {
+  {{5}, {}},
+  {{1, 1}, {B}},
+  {{0, 0, 1}, {B, B}},
+  {{0, 1}, {L, B, B}},
+  {{1}, {L, L, B, B}},
+  {{0, 0}, {B, L, L, B, B}},
+  {{0}, {L, B, L, L, B, B}}, 
+  {{}, {L, L, B, L, L, B, B}}
+}
 
+In  := NestList[
+         treeCataStep[If[# == 0, 1, treeLeft[#] + treeRight[#]] &, #] &,
+         {{}, {L, L, B, L, L, B, B}},
+         7]
+Out := {
+  {{}, {L, L, B, L, L, B, B}},
+  {{1}, {L, B, L, L, B, B}},
+  {{1, 1}, {B, L, L, B, B}},
+  {{2}, {L, L, B, B}},
+  {{1, 2}, {L, B, B}},
+  {{1, 1, 2}, {B, B}},
+  {{2, 2}, {B}},
+  {{4}, {}}
+}
+```
 
+So our final answer is 4. We have successfully described a recusive algorithm in purely iterative terms. But we need to convert this into a format that only uses ℕ. This means writing `treeAnaStep` and `treeCataStep` as functions which manipulates encodings of List[ℕ] × List[2]. We need a few combinators for manipulating lists from a finite set, `n`, encoded as ℕs.
 
+```mathematica
+finCons[n_, e_, l_] /; n > e := in[n, e][l] + 1
 
+finHead[n_, l_] /; l > 0 := NProj[n][l-1]
 
+finTail[n_, l_] /; l > 0 := NCodiagonal[n][l-1]
+```
+
+```mathematica
+treeAnaStepN[coalg_, s_] := 
+  With[{s1 = CantorFst@s, s2 = CantorSnd@s},
+    If[s1 == 0, s,
+      With[{l = coalg@head@s1},
+        If[
+         l == 0,
+         CantorPair[tail@s1, finCons[2, 0, s]],
+         CantorPair[
+            cons[treeLeft[l], cons[treeRight[l], ns]], 
+            finCons[2, 1, s]]
+         ]
+      ]
+    ]
+  ]
+
+treeCataStepN[alg_, s_] :=
+  With[{s1 = CantorFst@s, s2 = CantorSnd@s},
+    If[s2 == 0, s,
+      With[{c = finHead[2, s2]},
+        Which[
+          c == 0, CantorPair[cons[alg[0], s1], finTail[2, s2]],
+          c == 1, CantorPair[cons[alg[branch[head[s1], head[tail[s1]]]], tail[tail[s1]]],
+                             finTail[2, s2]]
+        ]
+      ]
+    ]
+  ]
+```
+
+And we can run these functions much like the previous versions, getting the same answer as before;
+
+```mathematica
+In  := Nest[treeAnaStepN[# &, #] &, CantorPair[cons[5, 0], 0], 7]
+Out := 25878
+
+In  := Nest[
+         treeCataStepN[
+           If[# == 0, 1, treeLeft[#] + treeRight[#]] &, #] &
+         , %, 7]
+Out := 152
+
+In  := head@CantorFst@%
+Out := 4
+```
+
+<a name="headingQ2"></a>
+## Final Quicksort
 
 
 
