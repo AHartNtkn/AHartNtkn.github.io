@@ -8,8 +8,7 @@
 - [Recursive Types and Recursion](#headingRec)
 - [Quicksort, First Pass](#headingQ1)
 - [Defunctionalization](#headingDefun)
-- [Final Quicksort](#headingQ1)
-- [Trees of Bounded Height](#headingHeight)
+- [Final Quicksort](#headingQ2)
 - [Final Thoughts](#headingFinal)
 
 ## Introduction
@@ -888,9 +887,9 @@ treeAnaStepN[coalg_, s_] :=
          l == 0,
          CantorPair[tail@s1, finCons[2, 0, s]],
          CantorPair[
-            cons[treeLeft[l], cons[treeRight[l], ns]], 
+            cons[treeLeft@l, cons[treeRight@l, ns]], 
             finCons[2, 1, s]]
-         ]
+        ]
       ]
     ]
   ]
@@ -900,8 +899,9 @@ treeCataStepN[alg_, s_] :=
     If[s2 == 0, s,
       With[{c = finHead[2, s2]},
         Which[
-          c == 0, CantorPair[cons[alg[0], s1], finTail[2, s2]],
-          c == 1, CantorPair[cons[alg[branch[head[s1], head[tail[s1]]]], tail[tail[s1]]],
+          c == 0, CantorPair[cons[alg@0, s1], finTail[2, s2]],
+          c == 1, CantorPair[cons[alg@branch[head@s1, head@tail@s1],
+                                  tail@tail@s1],
                              finTail[2, s2]]
         ]
       ]
@@ -916,14 +916,24 @@ In  := Nest[treeAnaStepN[# &, #] &, CantorPair[cons[5, 0], 0], 7]
 Out := 25878
 
 In  := Nest[
-         treeCataStepN[
-           If[# == 0, 1, treeLeft[#] + treeRight[#]] &, #] &
-         , %, 7]
+         treeCataStepN[If[# == 0, 1, treeLeft[#] + treeRight[#]] &, #] &,
+         %, 7]
 Out := 152
 
 In  := head@CantorFst@%
 Out := 4
 ```
+
+This construction could be made more efficient by treating the second stack as a dependent type. The index is a number signifying how many characters needed to make a well-formed expression. We start with 1 for an empty list, we add 2 and subtract 1 for each branch, and we subtract 1 for each leaf. We could define it as something like;
+
+```
+BinTreeRPN : ℕ → Type where
+  nil : BinTreeRPN 1
+  leaf : BinTreeRPN (1 + n) → BinTreeRPN n
+  branch : BinTreeRPN (1 + n) → BinTreeRPN (2 + n)
+```
+
+and using the techniques explained in my last post, we can make a bijective encoding of this type for all indices. Using this would make the construction slightly more complicated and we'd need to store the index along side both stacks, so I decided not to incorporate it, but it might be worth exploring in future iterations of this idea as it would make the stack representations more data efficient.
 
 <a name="headingQ2"></a>
 ## Final Quicksort
@@ -933,5 +943,54 @@ Out := 4
 
 
 
+
+Similar to the last algorithm, we can make the representaiton of the second stack more efficient by formalizing the reverse polish notation representation of sorted lists, trees, and bounded lists as dependent types.
+
+```
+ListRPN ((n, m) : ℕ × ℕ∞) : Bool → Type
+  nil : BoundListRPN 1
+  nilNil : BoundListRPN 1 → 
+           BoundListRPN 0
+  cons : {x : ℕ∞ | n ≤ x ≤ m} → 
+         BoundListRPN 1 → 
+         BoundListRPN 1
+```
+
+```
+SortListRPN : List[ℕ] → Type
+  nil : (l : List[ℕ]) → SortListRPN l
+  nilNil : SortListRPN [] → 
+           SortListRPN []
+  cons : (n : ℕ) → 
+         SortTreeRPN (n :: xs) → 
+         SortTreeRPN xs
+```
+
+```
+SortTreeRPN : List[ℕ × ℕ∞] → Type
+  nil : SortTreeRPN [(0, ∞)]
+  leaf : (x : ℕ × ℕ∞) → 
+         SortTreeRPN (x :: xs) → 
+         SortTreeRPN xs
+  branch : {x : ℕ∞ | n ≤ x ≤ m} → 
+           SortTreeRPN ((x, y) :: xs) → 
+           SortTreeRPN ((x, n) :: (n, y) :: xs)
+```
+
+
+<a name="headingFinal"></a>
+## Final Thoughts
+
+Some of the constructs here could certainly be improved. The key adjictive in the paper on simulating turing machines is "Robust". It's extremely important in analog computation to be able to acount for and handle error accumulation. A lot of the fiddliness with the constructions in that paper stem from such concerns. As I honestly don't know much about the topic, and I also didn't want to make this topic any more confusing than it already is, I ignored the concern, but such things can't be ignored in any concrete implementation.
+
+ Of course, the analog aspects of this post could be ignored, and one can appreciate the calculations using only ℕ. This whole idea of "everything is everything", as [Paul Tarau put it](https://content.wolfram.com/uploads/sites/13/2019/03/18-4-6.pdf), is quite interesting and I think has much potential. I don't have an alalog computer to try implementing this, but I think the perspective offered hear points to clearer paths for implementing essentailly arbitrary computations put in the format of a functional program on potentially very essitaric hardware.
+
+I've been obsessed with mechanical and analog computers over the last few weeks. I think some of the algorithms here could be implemented in a way similar to old mechanical calculators, for example the [CURTA](https://www.youtube.com/watch?v=loI1Kwed8Pk&list=UUyx5AKwWRJHT6Z-G_JawKGQ&index=9).
+
+Since everything is essentially an incremental manipulation of natural numbers with very few memory requirements, I think this could be turned into an extension of existing [mental arithmetic](https://worldmentalcalculation.com/learning-training/) tequniques allowing for an elegant system of arbitrary mental computation. Honestly, I think that's what I'll be working on next.
+
+There are also a few loose ends. The treatement of dependent types is no as ssytematic as I'd hope. In general, a systematic treateement of dependent types can't be given in the first place, but I think much more could be done since we're assuming the fiber is always a countable type. I think the only thing which might be needed in general is some notion of quotation, which is essentially a beuracratic mechanism anyway. The problem comes in with quotations by undecidable relations, which works fine but doesn't allow bijective encodings. Even when the relation is decidable, I don't actually know how (or if it's possible in general) to create a bijective encoding. Maybe with some form of Knuth-Bendix completion? It's clear to me that there's so many benifits to using dependent types in this format, but I really won't be satisfied until many of those can described systematically. Maybe using some form of ornementation a la. [algebraic ornements](https://www.cs.ox.ac.uk/people/hsiang-shang.ko/algOrn/algOrn.pdf) could work as a systematic acount of all the pragmatic cases. This is probably the loosest end which is partially solved.
+
+Another loose end I have is graphs with structure. Graphs with little structure (e.g. arbitrary graphs, digraphs, with no structural requirements) can be encoded quite easily, but what about, say, a graph where each node has at most three edges, but no more? Even basic structural requirements like that elude me. There are nice notions of hylomorphisms for graphs via so-called [inductive graphs](https://web.engr.oregonstate.edu/~erwig/papers/InductiveGraphs_JFP01.pdf), but I don't think they give the same gaurantees as ordinary cata/ana/hylomorphisms. More importantly, I don't know how such constructs could be placed in a dependently typed setting. I assume someone's already worked on that problem and I just haven't found their papers, but it seems like obvious low-hanging fruit to me, even outside of the nitch of this post.
 
 {% endraw %}
