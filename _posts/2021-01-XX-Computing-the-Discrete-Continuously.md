@@ -938,8 +938,84 @@ and using the techniques explained in my last post, we can make a bijective enco
 <a name="headingQ2"></a>
 ## Final Quicksort
 
+There are three recursive functions in our previous quicksort implementation and they must all be turned into purly numeric iterative versions.
 
+The first is the filter function. Our secondary stack will represent the syntax of the bounded list. It's essentially just a regular bounded list but reversed. Additionally, since the first stack never has more than one element, we don't actually need a stack in the first place. The second stack will be a regular list of elements taken from 1 + ℕ, standing for the nil and cons constructors. The main fly in the ointment is the fiber; something we'll have to deal with for all three of our functions. In the filter function we need to know the upper and lower bounds of our list. Thankfully, since that fiber doesn't vary based on where we are in the structure, we can just issue it as an argument to our recursion scheme.
 
+```mathematica
+filAnaStep[k_, coalg_, {0, {s___}}] := {0, {s}}
+filAnaStep[k_, coalg_, {n_, {s___}}] :=
+ With[{l = coalg[k, n]},
+  If[
+   filTail[k, l] == 0,
+   {0, {Nil, Cons[filHead[k, l]], s}},
+   {filTail[k, l], {Cons[filHead[k, l]], s}}
+   ]]
+
+filCataStep[k_, alg_, {n_, {}}] := {n, {}}
+filCataStep[k_, alg_, {n_, {Nil, s___}}] := {alg[k, 0], {s}}
+filCataStep[k_, alg_, {n_, {Cons[a_], s___}}] := {alg[k, filCons[k, a, n]], {s}}
+```
+
+we can easily run it on the same calculations as before to verify it has similat behaviours.
+
+```mathematica
+In  := Nest[
+ filAnaStep[{1, 10}, #2 &, #] &,
+ {FilListToNat[{1, 10}, {4, 2, 7, 5, 10, 9, 6, 8, 3, 1}], {}},
+ 10]
+Out :=
+  {0, {Nil, Cons[1], Cons[3], Cons[8], Cons[6], Cons[9], Cons[10], 
+  Cons[5], Cons[7], Cons[2], Cons[4]}}
+
+In  := Nest[
+   filCataStep[{1, 10}, bifilterAlg[5], #] &,
+   %,
+   11]
+Out := {24322964, {}}
+
+In  := NatToFilList[{1, 5}, CantorFst@%[[1]]]
+Out := {4, 2, 5, 3, 1}
+
+In  := NatToFilList[{5, 10}, CantorSnd@%%[[1]]]
+Out := {7, 10, 9, 6, 8}
+```
+
+And converting this into a completely numerical function is fairly straightforward.
+
+```mathematica
+filAnaStepN[k_, coalg_, stk_] :=
+ With[{fst = CantorFst@stk, snd = CantorSnd@stk},
+  If[fst == 0, stk,
+   With[{l = coalg[k, fst]},
+    If[
+     filTail[k, l] == 0,
+     CantorPair[0, cons[0, cons[filHead[k, l] + 1, snd]]],
+     CantorPair[filTail[k, l], cons[filHead[k, l] + 1, snd]]
+     ]]]]
+
+filCataStepN[k_, alg_, stk_] :=
+ With[{fst = CantorFst@stk, snd = CantorSnd@stk},
+  If[snd == 0, stk,
+   With[{h = head@snd},
+    If[h == 0,
+     CantorPair[alg[k, 0], tail@snd],
+     CantorPair[alg[k, filCons[k, h - 1, fst]], tail@snd]
+     ]]]]
+
+bifilterN[k_, e_, l_] :=
+ CantorFst@NestWhile[filCataStepN[k, bifilterAlg[e], #] &,
+  NestWhile[filAnaStepN[k, #2 &, #] &, l, CantorFst@# != 0 &],
+  CantorSnd@# != 0 &]
+```
+
+```mathematica
+In  := CantorPair[FilListToNat[{1, 10}, {4, 2, 7, 5, 10, 9, 6, 8, 3, 1}], 0]
+Out := 961892441284890674
+
+In  := bifilterN[{1, 10}, 5, %]
+Out := 24322964
+```
 
 
 
@@ -981,13 +1057,19 @@ SortTreeRPN : List[ℕ × ℕ∞] → Type
 <a name="headingFinal"></a>
 ## Final Thoughts
 
-Some of the constructs here could certainly be improved. The key adjictive in the paper on simulating turing machines is "Robust". It's extremely important in analog computation to be able to acount for and handle error accumulation. A lot of the fiddliness with the constructions in that paper stem from such concerns. As I honestly don't know much about the topic, and I also didn't want to make this topic any more confusing than it already is, I ignored the concern, but such things can't be ignored in any concrete implementation.
+Some of the constructs here could certainly be improved. The key adjictive in the paper on simulating turing machines is "Robust". It's extremely important in analog computation to be able to acount for and handle error accumulation. A lot of the fiddliness with the constructions in that paper stem from such concerns. As I honestly don't know much about the topic, and I also didn't want to make this topic any more confusing than it already is, I ignored the concern, but such things can't be ignored in any concrete implementation in an actual analog medium.
 
- Of course, the analog aspects of this post could be ignored, and one can appreciate the calculations using only ℕ. This whole idea of "everything is everything", as [Paul Tarau put it](https://content.wolfram.com/uploads/sites/13/2019/03/18-4-6.pdf), is quite interesting and I think has much potential. I don't have an alalog computer to try implementing this, but I think the perspective offered hear points to clearer paths for implementing essentailly arbitrary computations put in the format of a functional program on potentially very essitaric hardware.
+The same line of reasearch as the Turing machine simulating ODE led to this paper on a universal ODE;
 
-I've been obsessed with mechanical and analog computers over the last few weeks. I think some of the algorithms here could be implemented in a way similar to old mechanical calculators, for example the [CURTA](https://www.youtube.com/watch?v=loI1Kwed8Pk&list=UUyx5AKwWRJHT6Z-G_JawKGQ&index=9).
+- [A Universal Ordinary Differential Equation](https://arxiv.org/pdf/1702.08328.pdf) by Olivier Bournez and Amaury Pouly
 
-Since everything is essentially an incremental manipulation of natural numbers with very few memory requirements, I think this could be turned into an extension of existing [mental arithmetic](https://worldmentalcalculation.com/learning-training/) tequniques allowing for an elegant system of arbitrary mental computation. Honestly, I think that's what I'll be working on next.
+The premis of the paper is to present an ODE with about 300 parameters such that the adjustement of said parameters can cause the solution of the ODE to asymptotically approximate the solution of any other ODE. Pretty cool, but the construction is quite involved and there is ongoing reasearch into improving it. I think what I presented here might allow a much simpler presentation of such a thing. Encoding polynomials isn't hard. Given a list [a1, a2, a3...], we can interpret these as the coefficients of x^0, x^1, x^2, or as the coefficients of x^0 y^0, x^1 y^0, x^0, y^1, x^1 y^1, etc. Using this, giving an encoding of a polynomial inital value ODE system is fairly easy. We can define a function f(n, t) where n decodes to a polynomial ODE system and t is fed into the first function in the solution of said system. By creating an analytic approximation for f we could define a universal ODE in a way which is, perhapse, conceptually simpler than what's in that paper. 
+
+Of course, the analog aspects of this post could be ignored, and one can appreciate the calculations using only ℕ. This whole idea of "everything is everything", as [Paul Tarau put it](https://content.wolfram.com/uploads/sites/13/2019/03/18-4-6.pdf), is quite interesting and I think has much potential. I don't have an alalog computer to try implementing this, but I think the perspective offered hear points to clearer paths for implementing essentailly arbitrary computations put in the format of a functional program on potentially very essitaric hardware.
+
+I've been obsessed with mechanical and analog computers over the last few weeks. I think some of the algorithms here could be implemented in a way similar to old mechanical calculators such as the [CURTA](https://www.youtube.com/watch?v=loI1Kwed8Pk&list=UUyx5AKwWRJHT6Z-G_JawKGQ&index=9).
+
+Since everything is essentially an incremental manipulation of natural numbers with very few memory requirements, I think this could be turned into an extension of existing [mental arithmetic](https://worldmentalcalculation.com/learning-training/) tequniques allowing for an elegant system of arbitrary mental computation. I think that's what I'll be working on next.
 
 There are also a few loose ends. The treatement of dependent types is no as ssytematic as I'd hope. In general, a systematic treateement of dependent types can't be given in the first place, but I think much more could be done since we're assuming the fiber is always a countable type. I think the only thing which might be needed in general is some notion of quotation, which is essentially a beuracratic mechanism anyway. The problem comes in with quotations by undecidable relations, which works fine but doesn't allow bijective encodings. Even when the relation is decidable, I don't actually know how (or if it's possible in general) to create a bijective encoding. Maybe with some form of Knuth-Bendix completion? It's clear to me that there's so many benifits to using dependent types in this format, but I really won't be satisfied until many of those can described systematically. Maybe using some form of ornementation a la. [algebraic ornements](https://www.cs.ox.ac.uk/people/hsiang-shang.ko/algOrn/algOrn.pdf) could work as a systematic acount of all the pragmatic cases. This is probably the loosest end which is partially solved.
 
