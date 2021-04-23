@@ -363,10 +363,12 @@ To pack a point quadratically tighter we can use shells of the form x^2 + y = s.
 
 ![The shells of the quadratic pairing function](../img/discCont/polyShells.png)
 
+Each one of those lines corresponds to the curve s - x^2.
+
 To actually define this pairing function, we need to identify the shell, the number of elements which preceded that shell, and how far along in the shell we are. Our shell is just x^2 + y. We may notice that shell s has `Ceiling[Sqrt[s]]` items in it. So summing that up to our shell and adding x (which tells us how far along the shell we are) gets us our encoding.
 
 ```mathematica
-QuadPair[{x_, y_}] := Sum[Ceiling[Sqrt[n]], {n, 0, x^2 + y}] + x
+QuadPair[x_, y_] := Sum[Ceiling[Sqrt[n]], {n, 0, x^2 + y}] + x
 ```
 
 This is all well and good, but it's horendouslly inefficient to actually carry out this sum. We may notice that 
@@ -393,13 +395,47 @@ Sum[Ceiling[Sqrt[n]], {n, 0, s}]
 
 allowing us to rewrite the pairing function as
 
-```methematica
-QuadPair[{x_, y_}] := (x^2 + y - 1/6) # + 1/2 #^2 - 1/3 #^3 &[Ceiling[Sqrt[x^2 + y]]] + x
+```mathematica
+CeilingSqrtSum[s_] := ((s - 1/6) # + 1/2 #^2 - 1/3 #^3 &[Ceiling[Sqrt[s]]])
+QuadPair[x_, y_] := CeilingSqrtSum[x^2 + y] + x
 ```
 
-which is clearly efficient to evaluate. Of course, a pairing function isn't so useful if it can't be unpaired.
+which is clearly efficient to evaluate. Of course, a pairing function isn't so useful if it can't be unpaired. The pairing functions are conceptually simple. There's a straightforward, if not so efficient, method for finding the shell of an encoded pair by simply finding the largest shell who's `CeilingSqrtSum` is below the input.
 
-...
+```mathematica
+QuadShell[n_] :=
+ Block[{s},
+  s = 0;
+  While[n - CeilingSqrtSum[s] ≤ 0, s++];
+  s - 1]
+```
+
+With the shell in hand, the exact coordinates of an encoded pair, `n`, can be easily calculated.
+
+```mathematica
+QuadUnpair[n_] :=
+  Block[{s, x, y},
+    s = QuadShell@n;
+    x = n - CeilingSqrtSum@s;
+    y = s - x^2;
+    {x, y}]
+QuadFst[n_] := QuadUnpair[n][[1]]
+QuadSnd[n_] := QuadUnpair[n][[2]]
+```
+
+However, that `QuadShell` implementation is clearly too slow for our purposes. There is an easy way to make it faster. We can remove the ceiling function from the `CeilingSqrtSum` function and calculate its inverse as the root of a particular polynomial. Taking the floor of that yeilds;
+
+```mathematica
+QuadShell[n_] := Floor@Root[-36 n^2 + (1 + 36 n) #1 - 17 #1^2 + 16 #1^3 &, 1]
+```
+
+Which is quite nice, I think. We can then get the same structural functions we had for the other pairing functions;
+
+```mathematica
+QuadFork[f_, g_][x_] := QuadPair[f[x], g[x]]
+QuadBimap[f_, g_] := QuadFork[f@*QuadFst, g@*QuadSnd]
+QuadUncurry[f_][x_] := f[QuadFst@x, QuadSnd@x]
+```
 
 <a name="headingRec"></a>
 ## Recursive Types and Recursion
