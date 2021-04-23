@@ -1266,8 +1266,72 @@ Out := {1, 2, 3, 4, 5, 6, 7, 8, 9}
 
 Translating this into a purely numerif function requires encoding the fiber. This can simply be done by encoding ∞ ∈ ℕ∞ as 0 and all other x ∈ ℕ∞ as x + 1. We can then encode the fiber as a simple pair.
 
+Unfortunately, this is the part where I'll have to end things prematurely. No matter what I did at this point, my programs kept running into precision errors centered around caclulating the square roots of large numbers. As a consiquence, I wasn't able to test the following code;
 
-Similar to the previous tree algorithm, we can make the representation of the second stack more efficient by formalizing the reverse polish notation representation of sorted lists, trees, and bounded lists as dependent types.
+```mathematica
+sortTreeAnaStepN[coalg_, stk_] :=
+ With[{fst = CantorFst@stk, snd = CantorSnd@stk},
+  If[fst == 0, stk,
+   Block[{h, n, k, b, tp, t, ns},
+    ns = tail@fst;
+    h = head@fst;
+    n = CantorSnd@h;
+    k = CantorFst@h;
+    b = CantorFst@k;
+    tp = CantorSnd@k;
+    If[tp == 0, t = \[Infinity], t = tp - 1];
+    With[{l = coalg[{b, t}, n]},
+     If[l == 0,
+      CantorPair[ns, cons[inl[k], snd]],
+      With[{e = sortTreeElem[{b, t}, l]},
+       CantorPair[
+        cons[
+         CantorPair[CantorPair[b, e], sortLeft[{b, t}, l]],
+         cons[
+          CantorPair[CantorPair[e, tp], sortRight[{b, t}, l]],
+          ns]],
+        cons[inr[e], snd]]
+       ]]]]]]
+
+sortTreeCataStepN[alg_, stk_] :=
+ With[{fst = CantorFst@stk, snd = CantorSnd@stk},
+  If[snd == 0, stk,
+   Fuse[
+     Function[k,
+      Block[{b, t},
+       b = CantorFst@k;
+       t = CantorSnd@k;
+       If[t == 0, t = \[Infinity], t = t - 1];
+       CantorPair[cons[CantorPair[alg[{b, t}, 0], k], fst], tail@snd]
+       ]],
+     Function[h,
+      Block[{l, r, bl, trp, tr, ns},
+       l = CantorFst@head@fst;
+       bl = CantorFst@CantorSnd@head@fst;
+       r = CantorFst@head@tail@fst;
+       trp = CantorSnd@CantorSnd@head@tail@fst;
+       If[trp == 0, tr = \[Infinity], tr = trp - 1];
+       ns = tail@tail@fst;
+       CantorPair[
+        cons[
+         CantorPair[CantorPair[bl, trp], 
+          alg[{bl, tr}, sortBranch[{bl, tr}, h, l, r]]], ns],
+        tail@snd]
+       ]
+      ]][head@snd]
+   ]]
+
+sortTreeHyloN[k_, alg_, coalg_, l_] :=
+ CantorFst@head@CantorFst@
+    NestWhile[sortTreeCataStepN[alg, #] &,
+     NestWhile[sortTreeAnaStepN[coalg, #] &, 
+      CantorPair[cons[CantorPair[k, l], 0], 0], CantorFst@# != 0 &],
+     CantorSnd@# != 0 &]
+
+quicksortN[l_] := sortTreeHyloN[0, quickSortAlgN, quickSortCoalgN, l]
+```
+
+However, all the concepts are there. I tried Varying the particular pair encodings, swapping our different pair encodings, but nothing worked. Similar to the previous tree algorithm, we can make the representation of the second stack more efficient by formalizing the reverse polish notation representation of sorted lists, trees, and bounded lists as dependent types.
 
 ```
 BoundListRPN ((n, m) : ℕ × ℕ∞) : Bool → Type
@@ -1298,6 +1362,7 @@ SortTreeRPN : List[ℕ × ℕ∞] → Type
            SortTreeRPN ((x, n) :: (n, y) :: xs)
 ```
 
+This would help things, but I think something more custom is neccessary to give all these concepts more room to breath.
 
 <a name="headingFinal"></a>
 ## Final Thoughts
