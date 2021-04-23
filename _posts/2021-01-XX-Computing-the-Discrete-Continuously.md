@@ -5,6 +5,7 @@
 - [Iteration](#headingIter)
 - [Sums](#headingConst)
 - [Products](#headingProd)
+- [A Quadratic Product](#headingQProd)
 - [Recursive Types and Recursion](#headingRec)
 - [Quicksort, First Pass](#headingQ1)
 - [Defunctionalization](#headingDefun)
@@ -347,6 +348,59 @@ CantorUncurry[f_][x_] := f[CantorFst@x, CantorSnd@x]
 SierpińskiUncurry[f_][x_] := f[SierpińskiFst@x, SierpińskiSnd@x]
 ```
 
+<a name="headingQProd"></a>
+## A Quadratic Product
+
+I want to create a custom pairing function with a packing efficiency between Cantor and Sierpiński. Cantor packs x the same as y; Sierpiński packs y exponentially denser than x; what if we need something that packs one element merely quadratically denser?
+
+This topic is explored in detail in the paper;
+
+- [Efficient Pairing Functions - and Why You Should Care](https://www.semanticscholar.org/paper/Efficient-Pairing-Functions-and-Why-You-Should-Care-Rosenberg/df4778586b6eb27d8152742d36b28420061b136f) by A. Rosenberg
+
+The paper outlines a procedure for creating Cantor-like pairing functions. This excludes something like the bit-manipulation pairing function I presented in my last post, but it offers a lot of flexibility and conceptual clearity. At its core, Cantor-like pairing functions define a series of shells which in total cover the integer parts of the positive plane. In the case of Cantor pairing itself, the shells are made up of relations of the form x + y = s, where s is the shell which contains the point (x, y). Have a look at the paper for some nice illistrations of these shells.
+
+To pack a point quadratically tighter we can use shells of the form x^2 + y = s. This will create shells of the following shape;
+
+![The shells of the quadratic pairing function](../img/discCont/polyShells.png)
+
+To actually define this pairing function, we need to identify the shell, the number of elements which preceded that shell, and how far along in the shell we are. Our shell is just x^2 + y. We may notice that shell s has `Ceiling[Sqrt[s]]` items in it. So summing that up to our shell and adding x (which tells us how far along the shell we are) gets us our encoding.
+
+```mathematica
+QuadPair[{x_, y_}] := Sum[Ceiling[Sqrt[n]], {n, 0, x^2 + y}] + x
+```
+
+This is all well and good, but it's horendouslly inefficient to actually carry out this sum. We may notice that 
+
+```mathematica
+Sum[Ceiling[Sqrt[n]], {n, 0, s}]
+```
+
+is adding up (1^2 - 0^2) 1s, (2^2 - 1^2) 2s, (3^2 - 2^2) 3s, etc. Based on that, we can get something close via;
+
+```mathematica
+Sum[n*(n^2 - (n - 1)^2), {n, 1, Ceiling[Sqrt[s]]}]
+```
+
+The error of this term is of order `Ceiling[Sqrt[s]]` and is proporitional to the difference between `Ceiling[Sqrt[s]]^2` and `s`. So, with some additional sum algebra, we can observe that
+
+```mathematica
+Sum[Ceiling[Sqrt[n]], {n, 0, s}]
+== Sum[n*(n^2 - (n - 1)^2), {n, 1, Ceiling[Sqrt[s]]}]
+   - Ceiling[Sqrt[s]]*(Ceiling[Sqrt[s]]^2 - s)
+== (-(1/6) + s) Ceiling[Sqrt[s]] + 1/2 Ceiling[Sqrt[s]]^2 - 1/3 Ceiling[Sqrt[s]]^3
+== (s - 1/6) # + 1/2 #^2 - 1/3 #^3 &[Ceiling[Sqrt[s]]]
+```
+
+allowing us to rewrite the pairing function as
+
+```methematica
+QuadPair[{x_, y_}] := (x^2 + y - 1/6) # + 1/2 #^2 - 1/3 #^3 &[Ceiling[Sqrt[x^2 + y]]] + x
+```
+
+which is clearly efficient to evaluate. Of course, a pairing function isn't so useful if it can't be unpaired.
+
+...
+
 <a name="headingRec"></a>
 ## Recursive Types and Recursion
 
@@ -471,80 +525,80 @@ Out := 22
 The other datatypes are dependent types. This means our operations may vary their behaviour depending on a given peice of data which is carried around signifying some structural constraint. The result of a list where all elements are filtered to be more or less than an element will be a list with a structural contraint reflecting that fact. The "fiber" of such a list will be a pair, (m, n), where m is a natural number and n is either a natural number or ∞, the later signifying no maximal element. We can make functions analagous to those for ordinary lists. The main catch is the situation where the upper limit isn't ∞. In that case, we're encoding a list of elements pulled from a finite set, which requires iterating constructors for 1 + n × ℕ instead of 1 + ℕ × ℕ.
 
 ```mathematica
-filCons[{b_, ∞}, n_, l_] /; n ≥ b := SierpińskiPair[n - b, l] + 1
-filCons[{b_, t_}, n_, l_] /; b ≤ n ≤ t := in[t - b + 1, n - b][l] + 1
+boundCons[{b_, ∞}, n_, l_] /; n ≥ b := SierpińskiPair[n - b, l] + 1
+boundCons[{b_, t_}, n_, l_] /; b ≤ n ≤ t := in[t - b + 1, n - b][l] + 1
 
-filHead[{b_, ∞}, l_] /; l > 0 := SierpińskiFst[l - 1] + b
-filHead[{b_, t_}, l_] /; l > 0 := NProj[t - b + 1][l - 1] + b
+boundHead[{b_, ∞}, l_] /; l > 0 := SierpińskiFst[l - 1] + b
+boundHead[{b_, t_}, l_] /; l > 0 := NProj[t - b + 1][l - 1] + b
 
-filTail[{b_, ∞}, l_] /; l > 0 := SierpińskiSnd[l - 1]
-filTail[{b_, t_}, l_] /; l > 0 := NCodiagonal[t - b + 1][l - 1]
+boundTail[{b_, ∞}, l_] /; l > 0 := SierpińskiSnd[l - 1]
+boundTail[{b_, t_}, l_] /; l > 0 := NCodiagonal[t - b + 1][l - 1]
 
-filListFMap[{b_, ∞}, f_] := FinSumMap[1, SierpińskiBimap[# &, f[{b, ∞}, #]&]]
-filListFMap[{b_, t_}, f_] := FinSumMap[1, FinProdMap[t - b + 1, f[{b, t}, #]&]]
+boundListFMap[{b_, ∞}, f_] := FinSumMap[1, SierpińskiBimap[# &, f[{b, ∞}, #]&]]
+boundListFMap[{b_, t_}, f_] := FinSumMap[1, FinProdMap[t - b + 1, f[{b, t}, #]&]]
 ``` 
 
 Once these are established, other functions can be defined similarly. We just need to approrpriatly deliver the fiber to the functions who need it.
 
 ```mathematica
-FilListFmap[k_, f_][{0, 0}] := {0, 0}
-FilListFmap[k_, f_][{1, {n_, m_}}] := {1, {n, f[k, m]}}
+BoundListFmap[k_, f_][{0, 0}] := {0, 0}
+BoundListFmap[k_, f_][{1, {n_, m_}}] := {1, {n, f[k, m]}}
 
-FilListUnfoldCoalg[k_, 0] := {0, 0}
-FilListUnfoldCoalg[k_, l_] := {1, {filHead[k, l], filTail[k, l]}}
-FilListUnfold[k_, x_] := FilListFmap[k, FilListUnfold][FilListUnfoldCoalg[k, x]]
-NatToFilList[k_, x_] := ListToMList[FilListUnfold[k, x]]
+BoundListUnfoldCoalg[k_, 0] := {0, 0}
+BoundListUnfoldCoalg[k_, l_] := {1, {boundHead[k, l], boundTail[k, l]}}
+BoundListUnfold[k_, x_] := BoundListFmap[k, BoundListUnfold][BoundListUnfoldCoalg[k, x]]
+NatToBoundList[k_, x_] := ListToMList[BoundListUnfold[k, x]]
 
-FilListFoldAlg[k_, {0, 0}] := 0
-FilListFoldAlg[k_, {1, {n_, l_}}] := filCons[k, n, l]
+BoundListFoldAlg[k_, {0, 0}] := 0
+BoundListFoldAlg[k_, {1, {n_, l_}}] := boundCons[k, n, l]
 
-FilListFold[k_, x_] := FilListFoldAlg[k, FilListFmap[k, FilListFold][x]]
-FilListToNat[k_, x_] := FilListFold[k, MListToList[x]]
+BoundListFold[k_, x_] := BoundListFoldAlg[k, BoundListFmap[k, BoundListFold][x]]
+BoundListToNat[k_, x_] := BoundListFold[k, MListToList[x]]
 ```
 
 Some tests:
 
 ```mathematica
-In  := Table[NatToFilList[{0, ∞}, x], {x, 0, 20}]
+In  := Table[NatToBoundList[{0, ∞}, x], {x, 0, 20}]
 Out :=
  {{}, {0}, {1}, {0, 0}, {2}, {0, 1}, {1, 0}, {0, 0, 0}, {3},
   {0, 2}, {1, 1}, {0, 0, 1}, {2, 0}, {0, 1, 0}, {1, 0, 0},
   {0, 0, 0, 0}, {4}, {0, 3}, {1, 2}, {0, 0, 2}, {2, 1}}
 
-In  := FilListToNat[{0, ∞}, #] & /@ %
+In  := BoundListToNat[{0, ∞}, #] & /@ %
 Out := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
         11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
 
-In  := Table[NatToFilList[{5, 8}, x], {x, 0, 20}]
+In  := Table[NatToBoundList[{5, 8}, x], {x, 0, 20}]
 Out :=
  {{}, {5}, {6}, {7}, {8}, {5, 5}, {6, 5}, {7, 5}, {8, 5}, {5, 6},
   {6, 6}, {7, 6}, {8, 6}, {5, 7}, {6, 7}, {7, 7}, {8, 7}, {5, 8},
   {6, 8}, {7, 8}, {8, 8}}
 
-In  := FilListToNat[{5, 8}, #] & /@ %
+In  := BoundListToNat[{5, 8}, #] & /@ %
 Out := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
         11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
 ```
 
 ```mathematica
-In  := NatToFilList[{0, ∞}, filCons[{0, ∞}, 1, FilListToNat[{0, ∞}, {2, 3, 4}]]]
+In  := NatToBoundList[{0, ∞}, boundCons[{0, ∞}, 1, BoundListToNat[{0, ∞}, {2, 3, 4}]]]
 Out := {1, 2, 3, 4}
 
-In  := NatToFilList[{4, 6}, filCons[{4, 6}, 5, FilListToNat[{4, 6}, {4, 5, 6}]]]
+In  := NatToBoundList[{4, 6}, boundCons[{4, 6}, 5, BoundListToNat[{4, 6}, {4, 5, 6}]]]
 Out := {5, 4, 5, 6}
 ```
 
 ```mathematica
-In  := filHead[{80, ∞}, FilListToNat[{80, ∞}, {101, 99, 88}]]
+In  := boundHead[{80, ∞}, BoundListToNat[{80, ∞}, {101, 99, 88}]]
 Out := 101
 
-In  := NatToFilList[{80, ∞}, filTail[{80, ∞}, FilListToNat[{80, ∞}, {101, 99, 88}]]]
+In  := NatToBoundList[{80, ∞}, boundTail[{80, ∞}, BoundListToNat[{80, ∞}, {101, 99, 88}]]]
 Out := {99, 88}
 
-In  := filHead[{27, 33}, FilListToNat[{27, 33}, {30, 31, 32, 33}]]
+In  := boundHead[{27, 33}, BoundListToNat[{27, 33}, {30, 31, 32, 33}]]
 Out := 30
 
-In  := NatToFilList[{27, 33}, filTail[{27, 33}, FilListToNat[{27, 33}, {30, 31, 32, 33}]]]
+In  := NatToBoundList[{27, 33}, boundTail[{27, 33}, BoundListToNat[{27, 33}, {30, 31, 32, 33}]]]
 Out := {31, 32, 33}
 ```
 
@@ -691,28 +745,28 @@ fhylo[fmap_, alg_, coalg_][k_, x_] :=
 
 bifilterPreAlg[{b_, t_}, e_, h_, lisPair_] :=
   If[h ≤ e,
-     CantorBimap[filCons[{b, e}, h, #]&, #&][lisPair],
-     CantorBimap[#&, filCons[{e, t}, h, #]&][lisPair]
+     CantorBimap[boundCons[{b, e}, h, #]&, #&][lisPair],
+     CantorBimap[#&, boundCons[{e, t}, h, #]&][lisPair]
   ]
 
 bifilterAlg[e_][{b_, t_}, l_] /; b ≤ e ≤ t :=
   If[l == 0, 0, 
-    bifilterPreAlg[{b, t}, e, filHead[{b, t}, l], filTail[{b, t}, l]]
+    bifilterPreAlg[{b, t}, e, boundHead[{b, t}, l], boundTail[{b, t}, l]]
   ]
 
-bifilter[{b_, t_}, e_, l_] := fhylo[{b, t}, filListFMap, bifilterAlg[e], #2&][l]
+bifilter[{b_, t_}, e_, l_] := fhylo[{b, t}, boundListFMap, bifilterAlg[e], #2&][l]
 ```
 
 Here's a test;
 
 ```mathematica
-In  := bifilter[{1, 10}, 5, FilListToNat[{1, 10}, {4, 2, 7, 5, 10, 9, 6, 8, 3, 1}]]
+In  := bifilter[{1, 10}, 5, BoundListToNat[{1, 10}, {4, 2, 7, 5, 10, 9, 6, 8, 3, 1}]]
 Out := 24322964
 
-In  := NatToFilList[{1, 5}, CantorFst@%]
+In  := NatToBoundList[{1, 5}, CantorFst@%]
 Out := {4, 2, 5, 3, 1}
 
-In  := NatToFilList[{5, 10}, CantorSnd@%%]
+In  := NatToBoundList[{5, 10}, CantorSnd@%%]
 Out := {7, 10, 9, 6, 8}
 ```
 
@@ -749,7 +803,7 @@ We can now complete our quicksort implementation.
 ```mathematica
 quickSortCoalg[k_, l_] := 
   If[l == 0, 0,
-    bifilter[k, filHead[k, l], filTail[k, l]] + 1
+    bifilter[k, boundHead[k, l], boundTail[k, l]] + 1
   ]
 
 quickSortAlg[{b_, t_}, l_] :=
@@ -940,90 +994,247 @@ and using the techniques explained in my last post, we can make a bijective enco
 
 There are three recursive functions in our previous quicksort implementation and they must all be turned into purly numeric iterative versions.
 
-The first is the filter function. Our secondary stack will represent the syntax of the bounded list. It's essentially just a regular bounded list but reversed. Additionally, since the first stack never has more than one element, we don't actually need a stack in the first place. The second stack will be a regular list of elements taken from 1 + ℕ, standing for the nil and cons constructors. The main fly in the ointment is the fiber; something we'll have to deal with for all three of our functions. In the filter function we need to know the upper and lower bounds of our list. Thankfully, since that fiber doesn't vary based on where we are in the structure, we can just issue it as an argument to our recursion scheme.
+The first is the filter function. Our secondary stack will represent the syntax of the bounded list. It's essentially just a regular bounded list but reversed. Additionally, since the first stack never has more than one element, we don't actually need a stack in the first place. Instead we'll use 1 + ℕ, with the left-hand case marking an empty stack, the halting state. The second stack will be a regular list of elements taken from 1 + ℕ, standing for the nil and cons constructors. The main fly in the ointment is the fiber; something we'll have to deal with for all three of our functions. In the filter function we need to know the upper and lower bounds of our list. Thankfully, since that fiber doesn't vary based on where we are in the structure, we can just issue it as an argument to our recursion scheme.
 
 ```mathematica
-filAnaStep[k_, coalg_, {0, {s___}}] := {0, {s}}
-filAnaStep[k_, coalg_, {n_, {s___}}] :=
+boundAnaStep[k_, coalg_, {L, {s___}}] := {L, {s}}
+boundAnaStep[k_, coalg_, {R[n_], {s___}}] :=
  With[{l = coalg[k, n]},
-  If[
-   filTail[k, l] == 0,
-   {0, {Nil, Cons[filHead[k, l]], s}},
-   {filTail[k, l], {Cons[filHead[k, l]], s}}
-   ]]
+  If[l == 0,
+    {L, {Nil, s}},
+    If[
+     boundTail[k, l] == 0,
+     {L, {Nil, Cons[boundHead[k, l]], s}},
+     {R[boundTail[k, l]], {Cons[boundHead[k, l]], s}}
+     ]]]
 
-filCataStep[k_, alg_, {n_, {}}] := {n, {}}
-filCataStep[k_, alg_, {n_, {Nil, s___}}] := {alg[k, 0], {s}}
-filCataStep[k_, alg_, {n_, {Cons[a_], s___}}] := {alg[k, filCons[k, a, n]], {s}}
+boundCataStep[k_, alg_, {n_, {}}] := {n, {}}
+boundCataStep[k_, alg_, {_, {Nil, s___}}] := {R[alg[k, 0]], {s}}
+boundCataStep[k_, alg_, {R[n_], {Cons[a_], s___}}] :=
+  {R[alg[k, boundCons[k, a, n]]], {s}}
 ```
 
 we can easily run it on the same calculations as before to verify it has similat behaviours.
 
 ```mathematica
 In  := Nest[
- filAnaStep[{1, 10}, #2 &, #] &,
- {FilListToNat[{1, 10}, {4, 2, 7, 5, 10, 9, 6, 8, 3, 1}], {}},
+ boundAnaStep[{1, 10}, #2 &, #] &,
+ {R[FilListToNat[{1, 10}, {4, 2, 7, 5, 10, 9, 6, 8, 3, 1}]], {}},
  10]
 Out :=
-  {0, {Nil, Cons[1], Cons[3], Cons[8], Cons[6], Cons[9], Cons[10], 
+  {L, {Nil, Cons[1], Cons[3], Cons[8], Cons[6], Cons[9], Cons[10], 
   Cons[5], Cons[7], Cons[2], Cons[4]}}
 
 In  := Nest[
-   filCataStep[{1, 10}, bifilterAlg[5], #] &,
+   boundCataStep[{1, 10}, bifilterAlg[5], #] &,
    %,
    11]
-Out := {24322964, {}}
+Out := {R[24322964], {}}
 
-In  := NatToFilList[{1, 5}, CantorFst@%[[1]]]
+In  := NatToBoundList[{1, 5}, CantorFst@%[[1, 1]]]
 Out := {4, 2, 5, 3, 1}
 
-In  := NatToFilList[{5, 10}, CantorSnd@%%[[1]]]
+In  := NatToBoundList[{5, 10}, CantorSnd@%%[[1, 1]]]
 Out := {7, 10, 9, 6, 8}
 ```
 
 And converting this into a completely numerical function is fairly straightforward.
 
 ```mathematica
-filAnaStepN[k_, coalg_, stk_] :=
- With[{fst = CantorFst@stk, snd = CantorSnd@stk},
-  If[fst == 0, stk,
-   With[{l = coalg[k, fst]},
-    If[
-     filTail[k, l] == 0,
-     CantorPair[0, cons[0, cons[filHead[k, l] + 1, snd]]],
-     CantorPair[filTail[k, l], cons[filHead[k, l] + 1, snd]]
-     ]]]]
+boundAnaStepN[k_, coalg_, stk_] :=
+  With[{fst = CantorFst@stk, snd = CantorSnd@stk},
+   If[fst == 0, stk,
+    With[{l = coalg[k, fst - 1]},
+     If[l == 0,
+      CantorPair[0, cons[0, snd]],
+      If[boundTail[k, l] == 0,
+       CantorPair[0, cons[0, cons[boundHead[k, l] + 1, snd]]],
+       CantorPair[boundTail[k, l] + 1, cons[boundHead[k, l] + 1, snd]]
+       ]]]]]
 
-filCataStepN[k_, alg_, stk_] :=
+boundCataStepN[k_, alg_, stk_] :=
  With[{fst = CantorFst@stk, snd = CantorSnd@stk},
   If[snd == 0, stk,
    With[{h = head@snd},
     If[h == 0,
-     CantorPair[alg[k, 0], tail@snd],
-     CantorPair[alg[k, filCons[k, h - 1, fst]], tail@snd]
+     CantorPair[alg[k, 0] + 1, tail@snd],
+     CantorPair[alg[k, boundCons[k, h - 1, fst - 1]] + 1, tail@snd]
      ]]]]
 
-bifilterN[k_, e_, l_] :=
- CantorFst@NestWhile[filCataStepN[k, bifilterAlg[e], #] &,
-  NestWhile[filAnaStepN[k, #2 &, #] &, l, CantorFst@# != 0 &],
-  CantorSnd@# != 0 &]
+boundHyloN[k_, alg_, coalg_, l_] :=
+ CantorFst@
+   NestWhile[boundCataStepN[k, alg, #] &,
+    NestWhile[boundAnaStepN[k, coalg, #] &, CantorPair[l + 1, 0], 
+     CantorFst@# != 0 &],
+    CantorSnd@# != 0 &] - 1
+
+bifilterN[k_, e_, l_] := boundHyloN[k, bifilterAlg[e], #2 &, l]
 ```
 
 ```mathematica
-In  := CantorPair[FilListToNat[{1, 10}, {4, 2, 7, 5, 10, 9, 6, 8, 3, 1}], 0]
+In  := CantorPair[BoundListToNat[{1, 10}, {4, 2, 7, 5, 10, 9, 6, 8, 3, 1}], 0]
 Out := 961892441284890674
 
 In  := bifilterN[{1, 10}, 5, %]
 Out := 24322964
 ```
 
+Our second recursive function is the sorted list concatenation function. The fiber is a bit more complex to deal with, but we can simply look ahead in the (now reversed) list to figure out what the correct fiber should be at any given step. The only exception is the empty list, for which we need to issue an additional argument which I'll call `zk`. Similar to the last function, since the first stack will only ever have one thing in it, we can simply use a natural number instead.
+
+```mathematica
+sortAnaStep[zk_, coalg_, {L, {s___}}] := {L, {s}}
+sortAnaStep[zk_, coalg_, {R[n_], {Cons[k_], s___}}] :=
+ With[{l = coalg[k, n]},
+  If[l == 0,
+   {L, {Nil, Cons[k], s}},
+   If[
+    sortTail[k, l] == 0,
+    {L, {Nil, Cons[sortHead[k, l]], Cons[k], s}},
+    {R[sortTail[k, l]], {Cons[sortHead[k, l]], Cons[k], s}}
+    ]]]
+sortAnaStep[zk_, coalg_, {R[n_], {}}] :=
+ With[{l = coalg[zk, n]},
+  If[l == 0,
+   {L, {Nil}},
+   If[
+    sortTail[zk, l] == 0,
+    {L, {Nil, Cons[sortHead[zk, l]]}},
+    {R[sortTail[zk, l]], {Cons[sortHead[zk, l]]}}
+    ]]]
+
+sortCataStep[zk_, alg_, {n_, {}}] := {n, {}}
+sortCataStep[zk_, 
+  alg_, {_, {Nil, Cons[k_], s___}}] := {R[alg[k, 0]], {Cons[k], s}}
+sortCataStep[zk_, 
+  alg_, {R[n_], {Cons[a_], Cons[k_], s___}}] := {R[
+   alg[k, sortCons[k, a, n]]], {Cons[k], s}}
+sortCataStep[zk_, alg_, {_, {Nil}}] := {R[alg[zk, 0]], {}}
+sortCataStep[zk_, 
+  alg_, {R[n_], {Cons[a_]}}] := {R[alg[zk, sortCons[zk, a, n]]], {}}
+```
+
+```mathematica
+In  := Nest[sortAnaStep[2, #2 &, #] &, {R[334], {}}, 5]
+Out := {L, {Nil, Cons[6], Cons[5], Cons[3], Cons[3], Cons[3]}}
+
+In  := Nest[sortCataStep[2, sortedConcatAlg[8, 1432], #] &, %, 6]
+Out := {R[5867854], {}}
+```
+
+There's nothing special about turning these into purly numeric equivalents.
+
+```mathematica
+sortAnaStepN[zk_, coalg_, stk_] :=
+  With[{fst = CantorFst@stk, snd = CantorSnd@stk},
+   If[fst == 0, stk,
+    Block[{k},
+     If[snd == 0, k = zk,
+      If[head@snd == 0, k = zk,
+       k = head@snd - 1
+       ]];
+     With[{l = coalg[k, fst - 1]},
+      If[l == 0,
+       CantorPair[0, cons[0, snd]],
+       If[
+        sortTail[k, l] == 0,
+        CantorPair[0, cons[0, cons[sortHead[k, l] + 1, snd]]],
+        CantorPair[sortTail[k, l] + 1, cons[sortHead[k, l] + 1, snd]]
+        ]]]]]]
+
+sortCataStepN[zk_, alg_, stk_] :=
+ With[{fst = CantorFst@stk, snd = CantorSnd@stk},
+  If[snd == 0, stk,
+   With[{h = head@snd, t = tail@snd},
+    Block[{k},
+     If[t == 0, k = zk, k = head@t - 1];
+     If[h == 0,
+      CantorPair[alg[k, 0] + 1, t],
+      CantorPair[alg[k, sortCons[k, h - 1, fst - 1]] + 1, t]
+      ]]]]]
+
+sortHyloN[zk_, alg_, coalg_, l_] :=
+ CantorFst@
+   NestWhile[sortCataStepN[zk, alg, #] &,
+    NestWhile[sortAnaStepN[zk, coalg, #] &, CantorPair[l + 1, 0], 
+     CantorFst@# != 0 &],
+    CantorSnd@# != 0 &] - 1
+
+sortConcatN[zk_, l_, e_, r_] := 
+ sortHyloN[zk, sortedConcatAlg[e, r], #2 &, l]
+```
+
+```mathematica
+In  := sortConcatN[2, 334, 8, 1432]
+Out := 5867854
+```
+
+The final thing we need is the quicksort function itself to be purely numeric. We first need to make our algebra and coalgebra purely numeric by replacing the non-numeric functions with the numeric ones I just defined;
+
+```mathematica
+quickSortCoalgN[k_, l_] :=
+ If[l == 0, 0,
+  With[{h = boundHead[k, l]},
+   sortBranch[k, h, CantorFst@#, CantorSnd@#] &@
+    bifilterN[k, h, boundTail[k, l]]
+   ]]
+
+quickSortAlgN[{b_, t_}, l_] := 
+ If[l == 0, 0, 
+  sortConcatN[b, sortLeft[{b, t}, l], sortTreeElem[{b, t}, l], 
+   sortRight[{b, t}, l]]]
+```
+
+We then need a way to keep track of the fiber in the stack. I don't know what the best thing to do is, but something which will work is to simply store the fiber along with the encoded item within each stack. The leaves in the second stack (but not the branches) will also need to store their fiber. With these sorted, making a defunctionalized quicksort is straightforward;
+
+```mathematica
+sortTreeAnaStep[coalg_, {{}, {s___}}] := {{}, {s}}
+sortTreeAnaStep[coalg_, {{{n_, {b_, t_}}, ns___}, {s___}}] :=
+ With[{l = coalg[{b, t}, n]},
+  If[
+   l == 0,
+   {{ns}, {L[{b, t}], s}},
+   {{{sortLeft[{b, t}, l], {b, #}}, {sortRight[{b, t}, l], {#, t}}, 
+       ns}, {B[#], s}} &[sortTreeElem[{b, t}, l]]
+   ]]
+
+sortTreeCataStep[alg_, {{n___}, {}}] := {{n}, {}}
+sortTreeCataStep[
+  alg_, {{ns___}, {L[k_], s___}}] := {{{alg[k, 0], k}, ns}, {s}}
+sortTreeCataStep[
+  alg_, {{{l_, {bl_, tl_}}, {r_, {br_, tr_}}, ns___}, {B[h_], 
+    s___}}] :=
+ {{{alg[{bl, tr}, sortBranch[{bl, tr}, h, l, r]], {bl, tr}}, ns}, {s}}
+```
+
+```mathematica
+In  := SListToNat@{9, 2, 4, 7, 3, 8, 1, 6, 5}
+Out := 9149311703192064
+
+In  := Nest[
+         sortTreeAnaStep[quickSortCoalgN, #] &,
+         {{{%, {0, ∞}}}, {}},
+         19]
+Out := {{}, {L[{9, ∞}], L[{8, 9}], L[{7, 8}], B[8], L[{6, 7}], 
+  L[{5, 6}], L[{4, 5}], B[5], B[6], B[7], L[{3, 4}], L[{2, 3}], B[3], 
+  B[4], L[{1, 2}], L[{0, 1}], B[1], B[2], B[9]}}
+
+In  := Nest[
+         sortTreeCataStep[quickSortAlgN, #] &,
+         %,
+         19]
+Out := {{{174762, {0, ∞}}}, {}}
+
+In  := NatToSortList[0, %[[1, 1, 1]]]
+Out := {1, 2, 3, 4, 5, 6, 7, 8, 9}
+```
+
+Translating this into a purely numerif function requires encoding the fiber. This can simply be done by encoding ∞ ∈ ℕ∞ as 0 and all other x ∈ ℕ∞ as x + 1. We can then encode the fiber as a simple pair.
 
 
-
-Similar to the last algorithm, we can make the representaiton of the second stack more efficient by formalizing the reverse polish notation representation of sorted lists, trees, and bounded lists as dependent types.
+Similar to the previous tree algorithm, we can make the representation of the second stack more efficient by formalizing the reverse polish notation representation of sorted lists, trees, and bounded lists as dependent types.
 
 ```
-ListRPN ((n, m) : ℕ × ℕ∞) : Bool → Type
+BoundListRPN ((n, m) : ℕ × ℕ∞) : Bool → Type
   nil : BoundListRPN 1
   nilNil : BoundListRPN 1 → 
            BoundListRPN 0
@@ -1033,13 +1244,11 @@ ListRPN ((n, m) : ℕ × ℕ∞) : Bool → Type
 ```
 
 ```
-SortListRPN : List[ℕ] → Type
-  nil : (l : List[ℕ]) → SortListRPN l
-  nilNil : SortListRPN [] → 
-           SortListRPN []
-  cons : (n : ℕ) → 
-         SortTreeRPN (n :: xs) → 
-         SortTreeRPN xs
+SortListRPN : ℕ → Type
+  nil : SortListRPN zk
+  cons1 : {n : ℕ | n ≤ k} → 
+          SortTreeRPN k → 
+          SortTreeRPN n
 ```
 
 ```
@@ -1069,10 +1278,14 @@ Of course, the analog aspects of this post could be ignored, and one can appreci
 
 I've been obsessed with mechanical and analog computers over the last few weeks. I think some of the algorithms here could be implemented in a way similar to old mechanical calculators such as the [CURTA](https://www.youtube.com/watch?v=loI1Kwed8Pk&list=UUyx5AKwWRJHT6Z-G_JawKGQ&index=9).
 
-Since everything is essentially an incremental manipulation of natural numbers with very few memory requirements, I think this could be turned into an extension of existing [mental arithmetic](https://worldmentalcalculation.com/learning-training/) tequniques allowing for an elegant system of arbitrary mental computation. I think that's what I'll be working on next.
+Since everything is essentially an incremental manipulation of natural numbers with very few memory requirements, I think this could be turned into an extension of existing [mental arithmetic](https://worldmentalcalculation.com/learning-training/) tequniques allowing for an elegant system of arbitrary mental computation. At the very least, these can be modified into operations that one could perform on an abacus; perhapse a large one.
 
-There are also a few loose ends. The treatement of dependent types is no as ssytematic as I'd hope. In general, a systematic treateement of dependent types can't be given in the first place, but I think much more could be done since we're assuming the fiber is always a countable type. I think the only thing which might be needed in general is some notion of quotation, which is essentially a beuracratic mechanism anyway. The problem comes in with quotations by undecidable relations, which works fine but doesn't allow bijective encodings. Even when the relation is decidable, I don't actually know how (or if it's possible in general) to create a bijective encoding. Maybe with some form of Knuth-Bendix completion? It's clear to me that there's so many benifits to using dependent types in this format, but I really won't be satisfied until many of those can described systematically. Maybe using some form of ornementation a la. [algebraic ornements](https://www.cs.ox.ac.uk/people/hsiang-shang.ko/algOrn/algOrn.pdf) could work as a systematic acount of all the pragmatic cases. This is probably the loosest end which is partially solved.
+Also, as a loose thought, since all data can be interpreted as an ordered pair, and all functions ℕ → ℕ can be interpreted as ℕ × ℕ → ℕ, we can treat all functions as an evaluation function, seeing the first number as a program and the second as the argument to that program. This should connect to notions of [higher-order computability](https://www.springer.com/gp/book/9783662479919).
+
+There are also a few loose ends. The treatement of dependent types is no as sytematic as I'd hope. In general, a systematic treateement of dependent types can't be given in the first place, but I think much more could be done since we're assuming the fiber is always a countable type. I think the only thing which might be needed in general is some notion of quotienting, which is mostly a beuracratic mechanism anyway. The problem comes in with quotients by undecidable relations, which works fine but doesn't allow bijective encodings. Even when the relation is decidable, I don't actually know how (or if it's possible in general) to create a bijective encoding. Maybe with some form of Knuth-Bendix completion? It's clear to me that there's so many benifits to using dependent types in this format, but I really won't be satisfied until many of those can described systematically. Maybe using some form of ornementation a la. [algebraic ornements](https://www.cs.ox.ac.uk/people/hsiang-shang.ko/algOrn/algOrn.pdf) could work as a systematic acount of all the pragmatic cases. This is probably the loosest end which is partially solved.
 
 Another loose end I have is graphs with structure. Graphs with little structure (e.g. arbitrary graphs, digraphs, with no structural requirements) can be encoded quite easily, but what about, say, a graph where each node has at most three edges, but no more? Even basic structural requirements like that elude me. There are nice notions of hylomorphisms for graphs via so-called [inductive graphs](https://web.engr.oregonstate.edu/~erwig/papers/InductiveGraphs_JFP01.pdf), but I don't think they give the same gaurantees as ordinary cata/ana/hylomorphisms. More importantly, I don't know how such constructs could be placed in a dependently typed setting. I assume someone's already worked on that problem and I just haven't found their papers, but it seems like obvious low-hanging fruit to me, even outside of the nitch of this post.
+
+The fact that I know very little about enumerative combinatorics might be holding me back. I'll look into that next. 
 
 {% endraw %}
