@@ -252,7 +252,7 @@ The other part of polynomial endofunctors is the product. In my last post, I def
 
 - [The Rosenberg-Strong Pairing Function](https://arxiv.org/pdf/1706.04129.pdf) by Matthew P. Szudzik
 
-In my last post, I used one based on bit interlacing, but this is hard to make continuous. I'll use two encodings, the O.G. Cantor pairing, and Hyperbolic pairing. The pairing functions themselves are already analytic for both.
+In my last post, I used one based on bit interlacing, but this is hard to make continuous. I'll use two encodings, the O.G. Cantor pairing, and Sierpinski pairing. The pairing functions themselves are already analytic for both.
 
 ```mathematica
 CantorPair[x_, y_] := (x^2 + 2 x y + y^2 + 3 x + y)/2
@@ -261,12 +261,12 @@ CantorPair[x_, y_] := (x^2 + 2 x y + y^2 + 3 x + y)/2
 ![Contour Plot of CantorPair](../img/discCont/CantorPairContourPlot.png)
 
 ```mathematica
-HyperbolicPair[x_, y_] := 2^x (2 y + 1) - 1
+SierpinskiPair[x_, y_] := 2^x (2 y + 1) - 1
 ```
 
-![Contour Plot of HyperbolicPair](../img/discCont/SierpinskiPairContourPlot.png)
+![Contour Plot of SierpinskiPair](../img/discCont/SierpinskiPairContourPlot.png)
 
-The reason I highlighted these is their packing characteristics. `CantorPair` packs things fairly, so a random number decoded into a Cantor pair will, on average, have both entries be about the same size. `HyperbolicPair`, on the other hand, packs `y` much more tightly than `x` so that a random number will decode to a pair where `x` is exponentially larger than `y`, on average. Depending on the application, I'll use either one of the functions.
+The reason I highlighted these is their packing characteristics. `CantorPair` packs things fairly, so a random number decoded into a Cantor pair will, on average, have both entries be about the same size. `SierpinskiPair`, on the other hand, packs `y` much more tightly than `x` so that a random number will decode to a pair where `x` is exponentially larger than `y`, on average. Depending on the application, I'll use either one of the functions.
 
 Manipulating products requires constructors and destructors. The destructors are just the projection functions that extract the first and second elements. The universal constructor is a fork map that takes an argument, `x`, and two functions, `f` and `g`, and returns a pair (`f[x]`, `g[x]`).
 
@@ -288,7 +288,7 @@ CantorSnd[z_] := preSnd[z + 1/2] + 1/2
 
 ![Plot of CantorSnd](../img/discCont/epiSnd.png)
 
-Projecting out of `HyperbolicPair` is more complicated. Standard implementations of projection functions require inspecting the binary expansion of the numbers. Specifically, the number of 1s at the end of the binary expansion of the number is the first number while the remaining bits (ignoring the last 0) encodes the second number. For example `HyperbolicPair[7, 2345] == 600447` whose binary expansion is
+Projecting out of `SierpinskiPair` is more complicated. Standard implementations of projection functions require inspecting the binary expansion of the numbers. Specifically, the number of 1s at the end of the binary expansion of the number is the first number while the remaining bits (ignoring the last 0) encodes the second number. For example `SierpinskiPair[7, 2345] == 600447` whose binary expansion is
 
 ```
 10010010100101111111
@@ -299,29 +299,29 @@ There are 7 1s at the end, so that's our first number. The remaining bits (ignor
 These algorithms are not hard to implement. In fact, one of the projections is even a built-in function in Mathematica.
 
 ```
-HyperbolicFst[z_] := IntegerExponent[z + 1, 2]
-HyperbolicSnd[z_] := ((z + 1) 2^-HyperbolicFst[z] - 1)/2
+SierpinskiFst[z_] := IntegerExponent[z + 1, 2]
+SierpinskiSnd[z_] := ((z + 1) 2^-SierpinskiFst[z] - 1)/2
 ```
 
 However, these functions are tricky to make continuous. If the first can be made that way, the second comes along for free. The `Fst` function is simply the largest power of 2, `n`, such that `Mod[z + 1, 2^n] == 0`. This is the same as the number of powers of 2 greater than 0 which `z` is divisible by. We can actually calculate this by integration. Consider the graph of `1 - UnitStep[Mod[k, 2^Floor@n]-1/2]`. At each unit interval, if the mod power of 2 is 0, the value will be 1 over that interval; if the mod power of 2 is greater than 0, the interval will be 0. By integrating that function from 1 to `Ceiling[Log[2, z]]`, we'll calculate the first component, adding 1 for every power of 2 which the number is divisible by.
 
 ```mathematica
-HyperbolicFst[x_] :=
+SierpinskiFst[x_] :=
   Integrate[1 - UnitStep[Mod[x + 1, 2^Floor[n]] - 1/2], {n, 1, Ceiling[Log[2, x + 1]]}]
 ```
 
 Note that this implementation doesn't really work. This is more of a design for a hypothetical analog circuit. If you want to play around with a continuous version of this function, use this, which isn't really the same function, but it should work fine;
 
 ```mathematica
-HyperbolicFst[z_] := IntegerExponent[Round[z] + 1, 2]
+SierpinskiFst[z_] := IntegerExponent[Round[z] + 1, 2]
 ```
 
-![Plot of HyperbolicFst and HyperbolicSnd](../img/discCont/SFst.png)
+![Plot of SierpinskiFst and SierpinskiSnd](../img/discCont/SFst.png)
 
 That basic trick of integrating something sandwiched between a step function and a floor function is a generic method for counting numbers satisfying some property in a continuous way. It's a method for defining discrete sums in terms of continuous ones. Based on that, we can get the following alternative definition;
 
 ```mathematica
-HyperbolicFst[x_] := Sum[1 - UnitStep[Mod[x + 1, 2^n] - 1/2], {n, 1, Ceiling[Log[2, x + 1]]}]
+SierpinskiFst[x_] := Sum[1 - UnitStep[Mod[x + 1, 2^n] - 1/2], {n, 1, Ceiling[Log[2, x + 1]]}]
 ```
 
 At this point, we can define the universal properties of the product fairly easily. The fork functions can be defined as;
@@ -329,7 +329,7 @@ At this point, we can define the universal properties of the product fairly easi
 ```mathematica
 CantorFork[f_, g_][x_] := CantorPair[f[x], g[x]]
 
-HyperbolicFork[f_, g_][x_] := HyperbolicPair[f[x], g[x]]
+SierpinskiFork[f_, g_][x_] := SierpinskiPair[f[x], g[x]]
 ```
 
 and we can similarly define the product functorial bimap.
@@ -337,7 +337,7 @@ and we can similarly define the product functorial bimap.
 ```mathematica
 CantorBimap[f_, g_] := CantorFork[f @* CantorFst, g @* CantorSnd]
 
-HyperbolicBimap[f_, g_] := HyperbolicFork[f @* HyperbolicFst, g @* HyperbolicSnd]
+SierpinskiBimap[f_, g_] := SierpinskiFork[f @* SierpinskiFst, g @* SierpinskiSnd]
 ```
 
 As a nice utility function, we can also define an uncurrying function that feeds a pair of values into a binary function.
@@ -345,13 +345,13 @@ As a nice utility function, we can also define an uncurrying function that feeds
 ```mathematica
 CantorUncurry[f_][x_] := f[CantorFst@x, CantorSnd@x]
 
-HyperbolicUncurry[f_][x_] := f[HyperbolicFst@x, HyperbolicSnd@x]
+SierpinskiUncurry[f_][x_] := f[SierpinskiFst@x, SierpinskiSnd@x]
 ```
 
 <a name="headingQProd"></a>
 ## A Quadratic Product
 
-I want to create a custom pairing function with a packing efficiency between Cantor and Hyperbolic. Cantor packs x the same as y; Hyperbolic packs y exponentially denser than x; what if we need something that packs one element merely quadratically denser?
+I want to create a custom pairing function with a packing efficiency between Cantor and Sierpinski. Cantor packs x the same as y; Sierpinski packs y exponentially denser than x; what if we need something that packs one element merely quadratically denser?
 
 This topic is explored in detail in the paper;
 
@@ -511,13 +511,13 @@ Before getting into the details of the algorithm, we need encodings for all the 
 
 Since I want everything to be absolutely perfect, I want to bijectively encode all these types, which requires a bit more care.
 
-Lists are the easiest. This will be the initial algebra over X ↦ 1 + ℕ × X. This is a key application for Hyperbolic pairing. With Cantor pairing, a random list would tend to have larger elements toward the beginning of the list while Hyperbolic pairing will generate random lists with elements roughly the same size. This also means that permutations of the same list will be of roughly the same size, which won't hold at all if we used Cantor pairing. I'll need four combinators to start;
+Lists are the easiest. This will be the initial algebra over X ↦ 1 + ℕ × X. This is a key application for Sierpinski pairing. With Cantor pairing, a random list would tend to have larger elements toward the beginning of the list while Sierpinski pairing will generate random lists with elements roughly the same size. This also means that permutations of the same list will be of roughly the same size, which won't hold at all if we used Cantor pairing. I'll need four combinators to start;
 
 ```mathematica
-cons[n_, l_] := HyperbolicPair[n, l]+1
-head[l_] /; l > 0 := HyperbolicFst[l-1]
-tail[l_] /; l > 0 := HyperbolicSnd[l-1]
-listFMap[f_] := FinSumMap[1, HyperbolicBimap[#&, f]]
+cons[n_, l_] := SierpinskiPair[n, l]+1
+head[l_] /; l > 0 := SierpinskiFst[l-1]
+tail[l_] /; l > 0 := SierpinskiSnd[l-1]
+listFMap[f_] := FinSumMap[1, SierpinskiBimap[#&, f]]
 ```
 
 for testing purposes, we can define a few functions to translate back and forth between lists and ℕ.
@@ -563,16 +563,16 @@ Out := 22
 The other data types are dependent types. This means our operations may vary their behavior depending on a given piece of data which is carried around signifying some structural constraint. The result of a list where all elements are filtered to be more or less than an element will be a list with a structural constraint reflecting that fact. The "fiber" of such a list will be a pair, (m, n), where m is a natural number and n is either a natural number or ∞, the latter signifying no maximal element. We can make functions analogous to those for ordinary lists. The main catch is the situation where the upper limit isn't ∞. In that case, we're encoding a list of elements pulled from a finite set, which requires iterating constructors for 1 + n × ℕ instead of 1 + ℕ × ℕ.
 
 ```mathematica
-boundCons[{b_, ∞}, n_, l_] /; n ≥ b := HyperbolicPair[n - b, l] + 1
+boundCons[{b_, ∞}, n_, l_] /; n ≥ b := SierpinskiPair[n - b, l] + 1
 boundCons[{b_, t_}, n_, l_] /; b ≤ n ≤ t := in[t - b + 1, n - b][l] + 1
 
-boundHead[{b_, ∞}, l_] /; l > 0 := HyperbolicFst[l - 1] + b
+boundHead[{b_, ∞}, l_] /; l > 0 := SierpinskiFst[l - 1] + b
 boundHead[{b_, t_}, l_] /; l > 0 := NProj[t - b + 1][l - 1] + b
 
-boundTail[{b_, ∞}, l_] /; l > 0 := HyperbolicSnd[l - 1]
+boundTail[{b_, ∞}, l_] /; l > 0 := SierpinskiSnd[l - 1]
 boundTail[{b_, t_}, l_] /; l > 0 := NCodiagonal[t - b + 1][l - 1]
 
-boundListFMap[{b_, ∞}, f_] := FinSumMap[1, HyperbolicBimap[# &, f[{b, ∞}, #]&]]
+boundListFMap[{b_, ∞}, f_] := FinSumMap[1, SierpinskiBimap[# &, f[{b, ∞}, #]&]]
 boundListFMap[{b_, t_}, f_] := FinSumMap[1, FinProdMap[t - b + 1, f[{b, t}, #]&]]
 ``` 
 
@@ -643,14 +643,14 @@ Out := {31, 32, 33}
 Sorted lists carry around a fiber denoting what the largest element so far is. This guarantees that whatever element is newly added won't be smaller than the largest element so far. Sorted lists are only more complicated than the last example in the sense that this fiber varies based on the layer of the list (and this is handled entirely by the functorial map); in all other respects sorted lists are simpler.
 
 ```mathematica
-sortCons[k_, n_, l_] /; n ≥ k := HyperbolicPair[n - k, l] + 1
+sortCons[k_, n_, l_] /; n ≥ k := SierpinskiPair[n - k, l] + 1
 
-sortHead[k_, l_] /; l > 0 := HyperbolicFst[l - 1] + k
+sortHead[k_, l_] /; l > 0 := SierpinskiFst[l - 1] + k
 
-sortTail[k_, l_] /; l > 0 := HyperbolicSnd[l - 1]
+sortTail[k_, l_] /; l > 0 := SierpinskiSnd[l - 1]
 
 sortListFMap[k_, f_][l_] :=
-  FinSumMap[1, HyperbolicBimap[# &, f[sortHead[k, l], #]&]][l]
+  FinSumMap[1, SierpinskiBimap[# &, f[sortHead[k, l], #]&]][l]
 ``` 
 
 ```mathematica
@@ -702,21 +702,21 @@ Note that the decoding of the tail has to acknowledge the fact that 88 came befo
 Sorted trees were already described in detail in my last post, so I don't discuss them at length here; I'll just present my code for them.
 
 ```mathematica
-sortBranch[{b_, ∞}, n_, t1_, t2_] /; n ≥ b := HyperbolicPair[n - b, CantorPair[t1, t2]] + 1
+sortBranch[{b_, ∞}, n_, t1_, t2_] /; n ≥ b := SierpinskiPair[n - b, CantorPair[t1, t2]] + 1
 sortBranch[{b_, t_}, n_, t1_, t2_] /; n ≥ b := in[t - b + 1, n - b][CantorPair[t1, t2]] + 1
 
-sortTreeElem[{b_, ∞}, l_] := HyperbolicFst[l - 1] + b
+sortTreeElem[{b_, ∞}, l_] := SierpinskiFst[l - 1] + b
 sortTreeElem[{b_, t_}, l_] := NProj[t - b + 1][l - 1] + b
 
-sortLeft[{b_, ∞}, l_] /; l > 0 := CantorFst[HyperbolicSnd[l - 1]]
+sortLeft[{b_, ∞}, l_] /; l > 0 := CantorFst[SierpinskiSnd[l - 1]]
 sortLeft[{b_, t_}, l_] /; l > 0 := CantorFst[NCodiagonal[t - b + 1][l - 1]]
 
-sortRight[{b_, ∞}, l_] /; l > 0 := CantorSnd[HyperbolicSnd[l - 1]]
+sortRight[{b_, ∞}, l_] /; l > 0 := CantorSnd[SierpinskiSnd[l - 1]]
 sortRight[{b_, t_}, l_] /; l > 0 := CantorSnd[NCodiagonal[t - b + 1][l - 1]]
 
 sortTreeFMap[{b_, ∞}, f_][tr_] := 
   FinSumMap[1,
-    HyperbolicBimap[#&, 
+    SierpinskiBimap[#&, 
       CantorBimap[f[{b, sortTreeElem[{b, ∞}, tr]}, #]&,
                   f[{sortTreeElem[{b, ∞}, tr], ∞}, #]&
   ]]][tr]
