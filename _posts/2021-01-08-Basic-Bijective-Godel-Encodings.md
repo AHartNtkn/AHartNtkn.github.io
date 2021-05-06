@@ -120,6 +120,26 @@ Out[1] := {{0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1},
 Out[2] := {0, 1, 2, 3, 4, 5, 6, 7}
 ```
 
+We can write this encoding more compactly using transpose and a big-endian representation instead
+
+```mathematica
+NatTuplesToNat[t_] :=
+  FromDigits[Reverse@Flatten@Transpose@PadRight[Reverse@IntegerDigits[#,2]&/@t],2]
+NatToNatTuples[l_][n_] :=
+  FromDigits[#,2]&@*Reverse/@Transpose@Partition[Reverse@IntegerDigits[n,2],l,l,1,0]
+```
+
+or a little less compactly sticking to a little-endian representation.
+
+```mathematica
+NatTuplesToNat[t_] :=
+  FromDigits[Flatten@Transpose@PadLeft[IntegerDigits[#,2]&/@t],2]
+NatToNatTuples[l_][n_] :=
+  FromDigits[#,2]& /@ 
+    Transpose[Partition[#,l,l,-If[Mod[Length@#,l]==0,l,Mod[Length@#,l]],0]&@
+      IntegerDigits[n,2]]
+```
+
 This construction can be viewed as encoding functions out of finite sets and into the natural numbers.
 
 As part of composing isomorphisms to get larger and larger polynomial functors, we need a function that can thread isomorphisms between pairs so we can get one between `X × Y` and `A × B` whenever we have an isomorphism between `X` and `A` and between `Y` and `B`.
