@@ -14,7 +14,7 @@
 
 ## Introduction
 
-I've been a bit obsessed with continuous computation. Both in the sense of analog computing and the sense of coinduction. I want to write a post about the latter eventually, but this post will be focused on analog computation. Specifically, how one might compute digital functions inside a continuous domain. To be more specific, by the end of this post I want to have a function S : ℝ → ℝ whose action is, in some sense, equivalent to that of Quicksort, since that seems like a well-known enough discrete algorithm which also requires all the techniques I want to talk about.
+I've been a bit obsessed with continuous computation recently. Both in the sense of analog computing and the sense of coinduction. I want to write a post about the latter eventually, but this post will be focused on analog computation. Specifically, how one might compute digital functions inside a continuous domain. By the end of this post I want to have a function S : ℝ → ℝ whose action is, in some sense, equivalent to that of Quicksort, since that seems like a well-known enough discrete algorithm which also requires all the techniques I want to talk about.
 
 This post is a follow-up to [my last post](http://anthonylorenhart.com/2021-01-08-Basic-Bijective-Godel-Encodings/) on bijective encodings, so you may want to read that first if you haven't.
 
@@ -22,7 +22,7 @@ The ultimate inspiration for this post is this article;
 
 - [Robust Simulations of Turing Machines with Analytic Maps and Flows](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.158.5210&rep=rep1&type=pdf) by Daniel S. Graća, Manuel L. Campagnolo, and Jorge Buescu
 
-The overall concept is to define, given a Turing machine, an ODE whose action corresponds to the evaluation of said machine. Much of the paper pertains to particular, somewhat tedious, numerical functions for various specifics, but the general concept is quite straightforward. They start by encoding the transition of the Turing machine as a function ℕ³ → ℕ³, where the three natural numbers encode, respectively, the state, the tape left of the head, and the tape right of the head. They then construct an analytic function ℝ³ → ℝ³ with an error term which, as the error approaches 0, approaches the discrete function on natural inputs. This is then used to create a function ℝ⁴ → ℝ³, where the extra real is a variable, t, for time, representing the number of times the transition function is iterated. If the function halts, then there exists a well-defined limit as t approaches infinity, defining the output state of the machine on a given input. Ultimately everything is described in terms of solutions to polynomial ODEs, showing that they are Turing complete.
+The overall concept of that paper is to define, given a Turing machine, an ODE whose action corresponds to the evaluation of said machine. Much of the paper pertains to particular, somewhat tedious, numerical functions for various specifics, but the general concept is quite straightforward. They start by encoding the transition of the Turing machine as a function ℕ³ → ℕ³, where the three natural numbers encode, respectively, the state, the tape left of the head, and the tape right of the head. They then construct an analytic function ℝ³ → ℝ³ with an error term which, as the error approaches 0, approaches the discrete function on natural inputs. This is then used to create a function ℝ⁴ → ℝ³, where the extra real is a variable, t, for time, representing the number of times the transition function is iterated. If the function halts, then there exists a well-defined limit as t approaches infinity defining the output state of the machine on a given input. Ultimately everything is described in terms of solutions to polynomial ODEs, showing that they are Turing complete.
 
 I won't go into the specifics of the paper beyond that. In some sense, I could end the post there since we can select a universal Turing machine and implement whatever algorithm we want on that machine, and shove it into the equation described in that paper. But that's not very enlightening, and it's even less useful. Instead, I want to take the encodings of the many discrete types described in my last post and use similar techniques to make them continuous. The exercise was, at least to me, somewhat eye-opening and really puts into focus the relation between analog and digital computation.
 
@@ -31,7 +31,7 @@ I won't go into the specifics of the paper beyond that. In some sense, I could e
 
 Anyone who's done anything with digital circuitry probably won't be too surprised at where we start. I need a library of discrete signals which can be effectively approximated by a continuous analytic function. This means square waves, triangle waves, sawtooth waves, floor functions, absolute value functions, step functions, and probably other things that I won't need but which might be needed for other particular purposes. None of these functions are smooth and most aren't continuous. As a consequence, they can't be derived on the nose by analog methods, but we can define analog functions with an error term that we can control.
 
-These constructions are significant as it pertains to real computability. The original notion of real computability as described by Shannon excludes many basic (`Abs`) and not so basic (`Gamma`) functions from being computed. Essentially, computability in his sense required the existence of an ODE whose solution at t=1 coincides exactly with whatever function we're computing. Contrast this with coinductive/type-2 approaches to real computability where we never have all the data of a function instantaneously and only require the ability to compute more and more exact values with more effort. More recent work changes this definition of computability to allow asymptotically approximating a function using an error term. There are a couple of different variations of "real recursive calculi"; variations of μ-recursive calculi which use real numbers instead of natural numbers. Such systems sometimes allow infinite limits to be taken, acting as the continuous analog of the μ-operator/minimization. Much like the μ-operator, the limit's return value is not, in general, well-defined. With that change, the real functions definable in such terms are exactly the computable functions in the coinductive/type-2 sense.
+These constructions are significant as it pertains to real computability. The original notion of real computability as described by Shannon excludes many basic (`Abs`) and not so basic (`Gamma`) functions from being computed. Essentially, computability in his sense required the existence of an ODE whose solution at t=1 coincides exactly with whatever function we're computing. Contrast this with coinductive/type-2 approaches to real computability where we never have all the data of a function instantaneously and only require the ability to compute more and more exact values with more effort. More recent work changes this definition of computability to allow asymptotically approximating a function using an error term. There are a couple of different variations of "real recursive calculi"; variations of μ-recursive calculi which use real numbers instead of natural numbers. Such systems sometimes allow infinite limits to be taken, acting as the continuous analog of the μ-operator/minimization/while-loop. Much like the μ-operator, the limit's return value is not, in general, well-defined. With that change, the real functions definable in the presence of a noise floor are exactly the computable functions in the coinductive/type-2 sense.
 
 - [A Foundation for Real Recursive Function Theory](https://www.sciencedirect.com/science/article/pii/S0168007209000062) by José Félix Costa, Bruno Loff, and Jerzy Myckac
 
@@ -104,10 +104,10 @@ And shoving this inside of `NDSolve` on a few test inputs gets us the following 
 
 ![Iteration simulations of various functions](../img/discCont/itterPlusOne.png)
 
-While we don't get an expression in terms of elementary functions, this is perfectly well-defined as an analog computation. We can define the function `x` limits to as;
+While we don't get an expression in terms of elementary functions, this is perfectly well-defined as an analog computation. For quicker experimentation, we can define the function `x` limits to as;
 
 ```mathematica
-cIterate[n_, f_][x0_] := Nest[f, x0, Round@n]
+cIterate[f_, x0_][n_] := Nest[f, x0, Round@n]
 ```
 
 <a name="headingConst"></a>
@@ -123,9 +123,7 @@ In my last post, I started with encoding tuples and sums. Sums are the easier ca
 
 There are two classes of functions we need for sums; constructors and destructors.
 
-In the simple case of ℕ + ℕ, the constructors are often denoted `inl` and `inr` or `Left` and `Right`, etc. In general, we can interpret a sum ℕ + ℕ + ℕ + ... + ℕ as n × ℕ, the product of a finite type of size n with ℕ. We can then describe constructors as pairs, (k, m) where k < n and m ∈ ℕ. We also have the case of summing ℕ with a finite set, n + ℕ. Since any repeated finite sums, n + m + ... + ℕ can be rolled into a single finite set (n + m + ...) + ℕ, we only need to address the binary case for full coverage.
-
-The destructors are characterized by fusion functions. These will have a list of functions, one for each possible entry in a sum. The fusion function figures out which entry in the sum we have and applies the appropriate function. If we have an entry (k, m) ∈ n × ℕ and n functions, `fns`, fuse(`fns`, (k, m)) will return `fns[[k]]`(m), the kth function applied to m.
+In the simple case of ℕ + ℕ, the constructors are often denoted `inl` and `inr` or `Left` and `Right`, etc. In general, we can interpret a sum ℕ + ℕ + ℕ + ... + ℕ as n × ℕ, the product of a finite type of size n with ℕ. We can then describe constructors as pairs, (k, m) where k < n and m ∈ ℕ. We also have the case of summing ℕ with a finite set, n + ℕ. Since any repeated finite sets sums, n + m + ... + ℕ can be rolled into a single finite set (n + m + ...) + ℕ, we only need to address the binary case for full coverage.
 
 Starting with the ℕ + ℕ case, the constructors just add a bit to the number, either `0` or `1` depending on the constructor, so that's easy to implement.
 
@@ -159,7 +157,7 @@ We can generalize beyond binary coproducts fairly easily by stripping off the le
 NCodiagonal[n_][x_] := Floor[x/n]
 ```
 
-This is, incidentally, the same thing as the second projection out of the finite product.
+This is, incidentally, the same thing as the second projection out of the finite product; n × ℕ → ℕ.
 
 The actual constructor, the k in (k, m) ∈ n × ℕ, can be recovered using a simple mod.
 
@@ -182,7 +180,9 @@ FinCodiagonal[n_][x_] := x - n UnitStep[x - n]
 
 ![Codiagonal out of 3 + ℕ](../img/discCont/epiFinCodiagonal.png)
 
-Now that we have these functions, we can define fusion. In the ℕ + ℕ case, the `fuse` function will, given two functions `f` and `g`, apply `f` in the `inl` case and `g` in the `inr` case. We need a function for detecting the constructor. This is done through modding. As it turns out, modding is a minor variation of the sawtooth function.
+The destructors for sums are characterized by fusion functions. These will have a list of functions, one for each possible entry in a sum. The fusion function figures out which entry in the sum we have and applies the appropriate function. If we have an entry (k, m) ∈ n × ℕ and a list of n functions, `fns`, fuse(`fns`, (k, m)) will return `fns[[k]]`(m), the kth function applied to m.
+
+In the ℕ + ℕ case, the `fuse` function will, given two functions `f` and `g`, apply `f` in the `inl` case and `g` in the `inr` case. We need a function for detecting the constructor. This is done through modding. As it turns out, modding is a minor variation of the sawtooth function.
 
 ```mathematica
 εMod2[ε_, x_] := 2 εSawtoothWave[ε, x/2]
@@ -248,11 +248,11 @@ FinProdMap[n_, f_][x_] := in[n, NProj[n][x]][f[NCodiagonal[n][x]]]
 <a name="headingProd"></a>
 ## Products
 
-The other part of polynomial endofunctors is the product. In my last post, I defined encodings of products ℕ × ℕ × ... × ℕ for arbitrary many ℕs. This is unnecessary in theory as we can define them as ℕ × (ℕ × (ℕ × ...)). There are lots and lots of encodings for products.
+In my last post, I defined encodings of products ℕ × ℕ × ... × ℕ for arbitrary many ℕs. This is unnecessary in theory as we can define them as ℕ × (ℕ × (ℕ × ...)). There are lots and lots of encodings for products.
 
 - [The Rosenberg-Strong Pairing Function](https://arxiv.org/pdf/1706.04129.pdf) by Matthew P. Szudzik
 
-In my last post, I used one based on bit interlacing, but this is hard to make continuous. I'll use two encodings, the O.G. Cantor pairing, and Sierpinski pairing. The pairing functions themselves are already analytic for both.
+In my last post, I used one based on bit interlacing, but this is hard to make continuous. I'll start with use two encodings, the O.G. Cantor pairing and Sierpinski pairing. The pairing functions themselves are already analytic.
 
 ```mathematica
 CantorPair[x_, y_] := (x^2 + 2 x y + y^2 + 3 x + y)/2
@@ -266,9 +266,9 @@ SierpinskiPair[x_, y_] := 2^x (2 y + 1) - 1
 
 ![Contour Plot of SierpinskiPair](../img/discCont/SierpinskiPairContourPlot.png)
 
-The reason I highlighted these is their packing characteristics. `CantorPair` packs things fairly, so a random number decoded into a Cantor pair will, on average, have both entries be about the same size. `SierpinskiPair`, on the other hand, packs `y` much more tightly than `x` so that a random number will decode to a pair where `x` is exponentially larger than `y`, on average. Depending on the application, I'll use either one of the functions.
+The reason I highlighted these is their packing characteristics. `CantorPair` packs things fairly, so a random number decoded into a Cantor pair will, on average, have both entries be about the same size. `SierpinskiPair`, on the other hand, packs `y` much more tightly than `x` so that a random number will decode to a pair where `y` is exponentially larger than `x`, on average. Depending on the application, both functions may have their uses.
 
-Manipulating products requires constructors and destructors. The destructors are just the projection functions that extract the first and second elements. The universal constructor is a fork map that takes an argument, `x`, and two functions, `f` and `g`, and returns a pair (`f[x]`, `g[x]`).
+The destructors for products are just the projection functions that extract the first and second elements. The universal constructor is a fork map that takes an argument, `x`, and two functions, `f` and `g`, and returns a pair (`f[x]`, `g[x]`).
 
 For cantor pairing, extracting the arguments seems at first to be fairly easy, requiring using the floor function. A standard definition is the following;
 
@@ -298,7 +298,7 @@ There are 7 1s at the end, so that's our first number. The remaining bits (ignor
 
 These algorithms are not hard to implement. In fact, one of the projections is even a built-in function in Mathematica.
 
-```
+```mathematica
 SierpinskiFst[z_] := IntegerExponent[z + 1, 2]
 SierpinskiSnd[z_] := ((z + 1) 2^-SierpinskiFst[z] - 1)/2
 ```
@@ -359,13 +359,13 @@ This topic is explored in detail in the paper;
 
 The paper outlines a procedure for creating Cantor-like pairing functions. This excludes something like the bit-manipulation pairing function I presented in my last post, but it offers a lot of flexibility and conceptual clarity. At its core, Cantor-like pairing functions define a series of shells which in total cover the integer parts of the positive plane. In the case of Cantor pairing itself, the shells are made up of relations of the form x + y = s, where s is the shell that contains the point (x, y). Have a look at the paper for some nice illustrations of these shells.
 
-To pack a point quadratically tighter we can use shells of the form x^2 + y = s. This will create shells of the following shape;
+To pack a point quadratically tighter we can use shells of the form x² + y = s. This will create shells of the following shape;
 
 ![The shells of the quadratic pairing function](../img/discCont/polyShells.png)
 
-Each one of those lines corresponds to the curve s - x^2.
+Each one of those lines corresponds to the curve s - x².
 
-To actually define this pairing function, we need to identify the shell, the number of elements that preceded that shell, and how far along in the shell we are. Our shell is just x^2 + y. We may notice that shell s has `Ceiling[Sqrt[s]]` items in it. So summing that up to our shell and adding x (which tells us how far along the shell we are) gets us our encoding.
+To actually define this pairing function, we need to identify the shell, the number of elements that preceded that shell, and how far along in the shell we are. Our shell is just x² + y. We may notice that shell s has `Ceiling[Sqrt[s]]` items in it. So summing that up to our shell and adding x (which tells us how far along the shell we are) gets us our encoding.
 
 ```mathematica
 QuadPair[x_, y_] := Sum[Ceiling[Sqrt[n]], {n, 0, x^2 + y}] + x
@@ -377,7 +377,7 @@ This is all well and good, but it's horrendously inefficient to actually carry o
 Sum[Ceiling[Sqrt[n]], {n, 0, s}]
 ```
 
-is adding up (1^2 - 0^2) 1s, (2^2 - 1^2) 2s, (3^2 - 2^2) 3s, etc. Based on that, we can get something close via;
+is adding up (1² - 0²) 1s, (2² - 1²) 2s, (3² - 2²) 3s, etc. Based on that, we can get something close via;
 
 ```mathematica
 Sum[n*(n^2 - (n - 1)^2), {n, 1, Ceiling[Sqrt[s]]}]
@@ -396,17 +396,17 @@ Sum[Ceiling[Sqrt[n]], {n, 0, s}]
 allowing us to rewrite the pairing function as
 
 ```mathematica
-CeilingSqrtSum[s_] := ((s - 1/6) # + 1/2 #^2 - 1/3 #^3 &[Ceiling[Sqrt[s]]])
+CeilingSqrtSum[s_] := (s - 1/6) # + 1/2 #^2 - 1/3 #^3 &[Ceiling[Sqrt[s]]]
 QuadPair[x_, y_] := CeilingSqrtSum[x^2 + y] + x
 ```
 
-which is clearly efficient to evaluate. Of course, a pairing function isn't so useful if it can't be unpaired. The pairing functions are conceptually simple. There's a straightforward, if not so efficient, method for finding the shell of an encoded pair by simply finding the largest shell whose `CeilingSqrtSum` is below the input.
+which is clearly efficient to evaluate. Of course, a pairing function isn't so useful if it can't be unpaired. The unpairing functions are conceptually simple. There's a straightforward, if not so efficient, method for finding the shell of an encoded pair by simply finding the largest shell whose `CeilingSqrtSum` is below the input.
 
 ```mathematica
 QuadShell[n_] :=
  Block[{s},
   s = 0;
-  While[n - CeilingSqrtSum[s] ≤ 0, s++];
+  While[n - CeilingSqrtSum[s] ≥ 0, s++];
   s - 1]
 ```
 
@@ -426,10 +426,20 @@ QuadSnd[n_] := QuadUnpair[n][[2]]
 However, that `QuadShell` implementation is clearly too slow for our purposes. There is an easy way to make it faster. We can remove the ceiling function from the `CeilingSqrtSum` function and calculate its inverse as the root of a particular polynomial. Taking the floor of that yields;
 
 ```mathematica
-QuadShell[n_] := Floor@Root[-36 n^2 + (1 + 36 n) #1 - 17 #1^2 + 16 #1^3 &, 1]
+PreQuadShell[n_] := Floor@Root[-36 n^2 + (1 + 36 n) # - 17 #^2 + 16 #^3 &, 1]
 ```
 
-Which is quite nice, I think. We can then get the same structural functions we had for the other pairing functions;
+Which is quite nice, I think, but is subject to periodic off-by-one errors. We can use this as a first pass estimate and adjust accordingly;
+
+```mathematica
+QuadShell[n_] :=
+ Block[{s},
+  s = PreQuadShell[n];
+  If[n - CeilingSqrtSum[s] < 0, s--];
+  s]
+```
+
+We can then get the same structural functions we had for the other pairing functions;
 
 ```mathematica
 QuadFork[f_, g_][x_] := QuadPair[f[x], g[x]]
@@ -437,10 +447,12 @@ QuadBimap[f_, g_] := QuadFork[f@*QuadFst, g@*QuadSnd]
 QuadUncurry[f_][x_] := f[QuadFst@x, QuadSnd@x]
 ```
 
+As it turned out, this pairing function ended up not being useful for this post, but I made it as part of this project and its relevant and interesting, so I decided to keep it in this post anyway, but it won't be appearing beyond this point.
+
 <a name="headingRec"></a>
 ## Recursive Types and Recursion
 
-Our recursive types will simply be iterated polynomial functors. I explained this in detail in my last post, so I'll be brief here. For example, binary trees are just F = X ↦ 1 + X × X iterated over and over. Since F[ℕ] ≅ ℕ, we can collapse an arbitrary number of iterations so long as the base case is itself isomorphic to ℕ. So BinTree = F[BinTree] ≅ ℕ, and an explicit construction of this and related isomorphisms is detailed in my previous post. Here are some basic combinators for manipulating ℕ as a binary tree;
+Our recursive types will simply be iterated polynomial functors. I explained this in detail in my last post, so I'll be brief here. As an example, binary trees are just F = X ↦ 1 + X × X iterated over and over. Since F[ℕ] ≅ ℕ, we can collapse an arbitrary number of iterations so long as the base case is itself isomorphic to ℕ. So BinTree = F[BinTree] ≅ ℕ, and an explicit construction of this and related isomorphisms is detailed in my previous post. Here are some basic combinators for manipulating ℕ as a binary tree;
 
 ```mathematica
 branch[l_, r_] := CantorPair[l, r] + 1
@@ -451,7 +463,7 @@ treeRight[t_] /; l > 0 := CantorSnd[t - 1]
 
 The main combinator for manipulating recursive types is the hylomorphism;
 
-```
+```mathematica
 hylo[fmap_, alg_, coalg_][x_] := alg[fmap[hylo[fmap, alg, coalg]][coalg[x]]]
 ```
 
@@ -463,7 +475,7 @@ BinTreeFMap[f_] := FinSumMap[1, CantorBimap[f, f]]
 
 Note that, since our encodings are all in ℕ, all functorial maps will turn functions ℕ → ℕ into different functions from ℕ → ℕ.
 
-What the hylomorphism does is unfold and then fold an intermediate data structure for computing a value. Since F[ℕ] ≅ ℕ, we can pick literally any function ℕ → ℕ as an algebra or coalgebra and it will produce a coherent (though, not necessarily meaningful) program. For example, the following program
+What the hylomorphism does is unfold and then fold an intermediate data structure for computing a value. Since F[ℕ] ≅ ℕ, we can pick literally any function ℕ → ℕ as an algebra or coalgebra and it will produce a coherent (though, not necessarily useful) program. For example, the following program
 
 ```mathematica
 hylo[BinTreeFMap, #^2 &, Floor[Sqrt[#]] &][2532345]
@@ -511,7 +523,7 @@ Before getting into the details of the algorithm, we need encodings for all the 
 
 Since I want everything to be absolutely perfect, I want to bijectively encode all these types, which requires a bit more care.
 
-Lists are the easiest. This will be the initial algebra over X ↦ 1 + ℕ × X. This is a key application for Sierpinski pairing. With Cantor pairing, a random list would tend to have larger elements toward the beginning of the list while Sierpinski pairing will generate random lists with elements roughly the same size. This also means that permutations of the same list will be of roughly the same size, which won't hold at all if we used Cantor pairing. I'll need four combinators to start;
+Lists are the easiest. This will be the initial algebra over X ↦ 1 + ℕ × X. This is a key application for Sierpinski pairing. With Cantor pairing, a random list would tend to have larger elements toward the beginning of the list while Sierpinski pairing will generate random lists with elements closer to the same size. This also means that permutations of the same list will be of more similar size, which won't hold at all if we used Cantor pairing. I'll need four combinators to start;
 
 ```mathematica
 cons[n_, l_] := SierpinskiPair[n, l]+1
@@ -773,7 +785,7 @@ Out := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
         11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
 ```
 
-With that setup, we can actually implement the algorithm. There are two recursive algorithms we need. Firstly, we need a program that takes an element `e` and a list `l` with min element `b` and max element `t` and returns a pair of lists, the first with min element `b` and max element `e` and the second with min element `e` and max element `t`. This will be applied each time we want to construct a single layer of our sorted tree.
+With that setup, we can actually start implementing quicksort. There are two recursive algorithms we need beforehand. Firstly, we need a program that takes an element `e` and a list `l` with min element `b` and max element `t` and returns a pair of lists, the first with min element `b` and max element `e` and the second with min element `e` and max element `t`. This will be applied each time we want to construct a single layer of our sorted tree.
 
 This algorithm can be implemented as a simple fold. We just recurse over the list, shoving an element into either of the two lists based on its comparison to `e` (starting with two empty lists) until we run out of elements.
 
@@ -931,7 +943,7 @@ treeCataStep[
 
 We can repeatedly iterate these functions to manipulate the stack. It may be helpful to see an example evaluated over time. I'll calculate the number of leaves in an input tree. Since the input is being interpreted as a tree, we can use the identity function as our coalgebra so it doesn't affect its structure. The algebra will simply return 1 on a leaf and add the two branches together on anything else.
 
-```matheamtica
+```mathematica
 In  := NestList[treeAnaStep[# &, #] &, {{5}, {}}, 7]
 Out := {
   {{5}, {}},
@@ -960,7 +972,7 @@ Out := {
 }
 ```
 
-So our final answer is 4. We have successfully described a recursive algorithm in purely iterative terms. But we need to convert this into a format that only uses ℕ. This means writing `treeAnaStep` and `treeCataStep` as functions which manipulates encodings of List[ℕ] × List[2]. We need a few combinators for manipulating lists from a finite set, `n`, encoded as ℕs.
+So our final answer is 4. We have successfully described a recursive algorithm in purely iterative terms. But we need to convert this into a format that only uses ℕ. This means writing `treeAnaStep` and `treeCataStep` as functions which manipulate encodings of List[ℕ] × List[2]. We need a few combinators for manipulating lists from a finite set, `n`, encoded as ℕs.
 
 ```mathematica
 finCons[n_, e_, l_] /; n > e := in[n, e][l] + 1
@@ -1117,7 +1129,7 @@ In  := bifilterN[{1, 10}, 5, %]
 Out := 24322964
 ```
 
-Our second recursive function is the sorted list concatenation function. The fiber is a bit more complex to deal with, but we can simply look ahead in the (now reversed) list to figure out what the correct fiber should be at any given step. The only exception is the empty list, for which we need to issue an additional argument which I'll call `zk`. Similar to the last function, since the first stack will only ever have one thing in it, we can simply use a natural number instead.
+Our second recursive function is the sorted list concatenation function. The fiber is a bit more complex to deal with, but we can simply look ahead in the (now reversed) list to figure out what the correct fiber should be at any given step. The only exception is the empty list, for which we need to issue an additional argument which I'll call `zk`. Similar to the last function, since the first stack will only ever have one thing in it, we can simply use a 1 + ℕ instead.
 
 ```mathematica
 sortAnaStep[zk_, coalg_, {L, {s___}}] := {L, {s}}
@@ -1333,7 +1345,7 @@ sortTreeHyloN[k_, alg_, coalg_, l_] :=
 quicksortN[l_] := sortTreeHyloN[0, quickSortAlgN, quickSortCoalgN, l]
 ```
 
-However, all the concepts are there. I tried Varying the particular pair encodings, swapping our different pair encodings, but nothing worked. Similar to the previous tree algorithm, we can make the representation of the second stack more efficient by formalizing the reverse polish notation representation of sorted lists, trees, and bounded lists as dependent types.
+However, all the concepts are there. I tried Varying the particular pair encodings but nothing worked. Similar to the previous tree algorithm, we can make the representation of the second stack more efficient by formalizing the reverse polish notation representation of sorted lists, trees, and bounded lists as dependent types.
 
 ```
 BoundListRPN ((n, m) : ℕ × ℕ∞) : Bool → Type
@@ -1369,26 +1381,26 @@ This would help things, but I think something more custom is necessary to give a
 <a name="headingFinal"></a>
 ## Final Thoughts
 
-Some of the constructs here could certainly be improved. The key adjective in the paper on simulating Turing machines is "Robust". It's extremely important in analog computation to be able to account for and handle error accumulation. A lot of the fiddliness with the constructions in that paper stem from such concerns. As I honestly don't know much about the topic, and I also didn't want to make this topic any more confusing than it already is, I ignored the concern, but such things can't be ignored in any concrete implementation in an actual analog medium.
+Some of the constructs here could certainly be improved. The key adjective in the paper on simulating Turing machines is "Robust". It's extremely important in analog computation to be able to account for and handle error accumulation. A lot of the fiddliness with the constructions in that paper stem from such concerns. As I honestly don't know much about the topic, and I also didn't want to make this post any more confusing than it already is, I ignored the concern, but such things can't be ignored in any concrete implementation in an actual analog medium.
 
 The same line of research as the Turing machine simulating ODE led to this paper on a universal ODE;
 
 - [A Universal Ordinary Differential Equation](https://arxiv.org/pdf/1702.08328.pdf) by Olivier Bournez and Amaury Pouly
 
-The premise of the paper is to present an ODE with about 300 parameters such that the adjustment of said parameters can cause the solution of the ODE to asymptotically approximate the solution of any other ODE. Pretty cool, but the construction is quite involved and there is ongoing research into improving it. I think what I presented here might allow a much simpler presentation of such a thing. Encoding polynomials isn't hard. Given a list [a1, a2, a3...], we can interpret these as the coefficients of x^0, x^1, x^2, or as the coefficients of x^0 y^0, x^1 y^0, x^0, y^1, x^1 y^1, etc. Using this, giving an encoding of a polynomial initial value ODE system is fairly easy. We can define a function f(n, t) where n decodes to a polynomial ODE system and t is fed into the first function in the solution of said system. By creating an analytic approximation for f we could define a universal ODE in a way that is, perhaps, conceptually simpler than what's in that paper. 
+The premise of the paper is to present an ODE with about 300 parameters such that the adjustment of said parameters can cause the solution of the ODE to asymptotically approximate the solution of any other ODE. Pretty cool, but the construction is quite involved and there is ongoing research into improving it. I think what I presented here might allow a much simpler presentation of such a thing. Encoding polynomials isn't hard. Given a list [a1, a2, a3...], we can interpret these as the coefficients of x^0, x^1, x^2, or as the coefficients of x^0 y^0, x^1 y^0, x^0 y^1, x^1 y^1, etc. Using this, giving an encoding of a polynomial initial value ODE system is fairly easy. We can define a function f(n, t) where n decodes to a polynomial ODE system and t is fed into the first function in the solution of said system. By creating an analytic approximation for f we could define a universal ODE in a way that is, perhaps, conceptually simpler than what's in that paper. 
 
-Of course, the analog aspects of this post could be ignored, and one can appreciate the calculations using only ℕ. This whole idea of "everything is everything", as [Paul Tarau put it](https://content.wolfram.com/uploads/sites/13/2019/03/18-4-6.pdf), is quite interesting and I think has much potential. I don't have an analog computer to try implementing this, but I think the perspective offered to hear points to clearer paths for implementing essentially arbitrary computations put in the format of a functional program on potentially very esoteric hardware.
+Of course, the analog aspects of this post could be ignored, and one can appreciate the calculations using only ℕ. This whole idea of "everything is everything", as [Paul Tarau put it](https://content.wolfram.com/uploads/sites/13/2019/03/18-4-6.pdf), is quite interesting and I think has much potential.
 
-I've been obsessed with mechanical and analog computers over the last few weeks. I think some of the algorithms here could be implemented in a way similar to old mechanical calculators such as the [CURTA](https://www.youtube.com/watch?v=loI1Kwed8Pk&list=UUyx5AKwWRJHT6Z-G_JawKGQ&index=9).
+I don't have an analog computer to try implementing this, but I think the perspective offered to hear points to clearer paths for implementing essentially arbitrary computations put in the format of a functional program on potentially very esoteric hardware. I've been obsessed with mechanical and analog computers over the last few weeks. I think some of the algorithms here could be implemented in a way similar to old mechanical calculators such as the [CURTA](https://www.youtube.com/watch?v=loI1Kwed8Pk&list=UUyx5AKwWRJHT6Z-G_JawKGQ&index=9).
 
-Since everything is essentially an incremental manipulation of natural numbers with very few memory requirements, I think this could be turned into an extension of existing [mental arithmetic](https://worldmentalcalculation.com/learning-training/) techniques allowing for an elegant system of arbitrary mental computation. At the very least, these can be modified into operations that one could perform on an abacus; perhaps a large one.
+Since everything is essentially an incremental manipulation of natural numbers with few memory requirements, I think this could be turned into an extension of existing [mental arithmetic](https://worldmentalcalculation.com/learning-training/) techniques allowing for an elegant system of arbitrary mental computation. At the very least, these can be modified into operations that one could perform on an abacus; perhaps a large one.
 
 Also, as a loose thought, since all data can be interpreted as an ordered pair, and all functions ℕ → ℕ can be interpreted as ℕ × ℕ → ℕ, we can treat all functions as an evaluation function, seeing the first number as a program and the second as the argument to that program. This should connect to notions of [higher-order computability](https://www.springer.com/gp/book/9783662479919).
 
-There are also a few loose ends. The treatment of dependent types is no as systematic as I'd hope. In general, a systematic treatment of dependent types can't be given in the first place, but I think much more could be done since we're assuming the fiber is always a countable type. I think the only thing which might be needed in general is some notion of quotienting, which is mostly a bureaucratic mechanism anyway. The problem comes in with quotients by undecidable relations, which works fine but doesn't allow bijective encodings. Even when the relation is decidable, I don't actually know how (or if it's possible in general) to create a bijective encoding. Maybe with some form of Knuth-Bendix completion? It's clear to me that there are so many benefits to using dependent types in this format, but I really won't be satisfied until many of those can be described systematically. Maybe using some form of ornamentation a la. [algebraic ornements](https://www.cs.ox.ac.uk/people/hsiang-shang.ko/algOrn/algOrn.pdf) could work as a systematic account of all the pragmatic cases. This is probably the loosest end which is partially solved.
+There are also a few loose ends. The treatment of dependent types is not as systematic as I'd hope. In general, a systematic treatment of dependent types can't be given in the first place, but I think much more could be done since we're assuming the fiber is always a countable type. I think the only thing which might be needed in general is some notion of quotienting, which is mostly a bureaucratic mechanism anyway. The problem comes in with quotients by undecidable relations, which works fine but doesn't allow bijective encodings. Even when the relation is decidable, I don't actually know how (or if it's possible in general) to create a bijective encoding. Maybe with some form of Knuth-Bendix completion? It's clear to me that there are so many benefits to using dependent types in this format, but I really won't be satisfied until many of those can be described systematically. Maybe using some form of ornamentation a la. [algebraic ornements](https://www.cs.ox.ac.uk/people/hsiang-shang.ko/algOrn/algOrn.pdf) could work as a systematic account of all the pragmatic cases. This is probably the loosest end which is partially solved.
 
 Another loose end I have is graphs with structure. Graphs with little structure (e.g. arbitrary graphs, digraphs, with no structural requirements) can be encoded quite easily, but what about, say, a graph where each node has at most three edges, but no more? Even basic structural requirements like that elude me. There are nice notions of hylomorphisms for graphs via so-called [inductive graphs](https://web.engr.oregonstate.edu/~erwig/papers/InductiveGraphs_JFP01.pdf), but I don't think they give the same guarantees as ordinary cata/ana/hylomorphisms. More importantly, I don't know how such constructs could be placed in a dependently typed setting. I assume someone's already worked on that problem and I just haven't found their papers, but it seems like obvious low-hanging fruit to me, even outside of the nitch of this post.
 
-The fact that I know very little about enumerative combinatorics might be holding me back. I'll look into that next. 
+The fact that I know very little about enumerative combinatorics might be holding me back. I'll look into that soon. 
 
 {% endraw %}
