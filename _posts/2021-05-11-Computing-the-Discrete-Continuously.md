@@ -1,6 +1,4 @@
 {% raw %}
-!!!NOTE: THIS POST IS UNDER CONSTRUCTION. ERRORS ABOUND!!!
-
 - [Approximating Digital Functions](#headingApp)
 - [Iteration](#headingIter)
 - [Sums](#headingConst)
