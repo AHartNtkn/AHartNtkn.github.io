@@ -1,7 +1,20 @@
 {% raw %}
-Part 1: What, exactly, do you mean by "real"?
+- [Defining Reals: Correct but Unworkable](#headingIntro)
+- [Defining Reals: Incorrect but Workable](#headingWorking)
+- [Real Implementation](#headingImpl)
+- [Basic Functions](#headingBasic)
+- [Differential Definitions](#headingDiff)
+- [A Quadratic Product](#headingQProd)
+- [Recursive Types and Recursion](#headingRec)
+- [Quicksort, First Pass](#headingQ1)
+- [Defunctionalization](#headingDefun)
+- [Final Quicksort](#headingQ2)
+- [Final Thoughts](#headingFinal)
 
-A topic I've been thourouly obsessed with over the past few months is the idea of differential programming. There's a lot to say on the subject, but, in my opinion, the topic's in a rather sorry state. Most of what you'd read on the topic is about neural networks and similar black-box techniques. I don't find this very satisfying since I like to understand what I'm doing. My ideal is that I have a specification for what a program is meant to do, and only after the fact do I derive the algorithm from this specification. How are you supposed to do that with a neural network?
+
+## Introduction
+
+A topic I've been thoroughly obsessed with over the past few months is the idea of differential programming. There's a lot to say on the subject, but, in my opinion, the topic's in a rather sorry state. Most of what you'd read on the topic is about neural networks and similar black-box techniques. I don't find this very satisfying since I like to understand what I'm doing. My ideal is that I have a specification for what a program is meant to do, and only after the fact do I derive the algorithm from this specification. How are you supposed to do that with a neural network?
 
 Not every technique from that domain is like that; some things seem closer to comprehensibility; lots of stuff from statistical machine learning, Bayesian methods, and arguably neural differential equations can be given something like a proper specification. There is also a lot of work on logical aspects of differential programming, namely differential linear logic and its associated methods. While a lot of that work seems promising, a lot of it is missing something important. Looking at some of the nicer work in this area like
 
@@ -9,7 +22,10 @@ Not every technique from that domain is like that; some things seem closer to co
 
 they tend to give, at best, a very nice description of the syntactic transformations which one might do during symbolic differentiation. But there's always an assumed background. There's the reals, or a comparable category and an assumed set of functions, like sin, etc. But there's a huge question which such works never answer. What, exactly, is a real number, and what are those functions?
 
-To be clear, I'm not asking what a mathematician thinks they are. I know what a Dedekind cut is, but if an algorithm is going to reference them, then what are they referencing? I understand how to represent natural numbers as an inductive datatype. What, concretely, should a real number be? And what are functions like sin, cos, etc. What specification does sigmoid satisfy? These seem like essential questions, and they never seem to get asked in the context of differential programming. Of course, they have been asked, and answered, but I only recently learned about the answers; and that's what this post is about.
+To be clear, I'm not asking what a mathematician thinks they are. I know what a Dedekind cut is, but if an algorithm is going to reference them, then what are they referencing? I understand how to represent natural numbers as an inductive datatype. What, concretely, should a real number be? And what are functions like sin, cos, etc? What specification does sigmoid satisfy? These seem like essential questions, and they never seem to get asked in the context of differential programming. Of course, they have been asked, and answered, but I only recently learned about the answers; and that's what this post is about.
+
+<a name="headingIntro"></a>
+## Defining Reals: Correct but Unworkable
 
 I guess the first question is how we represent real numbers. I've mentioned in the past that we can represent reals exactly as streams of natural numbers. The basic observation is as follows;
 
@@ -27,7 +43,7 @@ g(x) = -----
 
 - Notice to that every number in `[0, 1)` has a canonical binary representation as a series of finite sequences of 1s and potentially infinite sequences of 0s. 
 
-For example 0 is 0.000..., 1/2 is 0.1000...., etc. 1 isn't representable since 0.111... isn't in the interval. By preventing the representation of infinite sequences on 1s, we can force a unique representation. From here, we can count how many 1s we encounter before encountering a 0 in the binary expansion of a number to get a unique list of natural numbers. For example;
+For example 0 is 0.000..., 1/2 is 0.1000...., etc. 1 isn't representable since 0.111... isn't in the interval. By preventing the representation of infinite sequences on 1s, we can force a unique representation. From here, we can count how many 1s we encounter before encountering a 0 in the binary expansion of a number to get a unique stream of natural numbers. For example;
 ```
 0 = 0.000...
   = [0, 0, 0, ...]
@@ -43,16 +59,37 @@ For example 0 is 0.000..., 1/2 is 0.1000...., etc. 1 isn't representable since 0
       = [0, 1, 0, 1, 0, 0, 0, 6, 2, 1, 1, ... ]
 ```
 
-This is quite an elegant solution. However, it doesn't come without its problems. As far as I can tell, there doesn't seem to be any way to define basic operations. What would addition be, for instance? The big issued come when we try adding numbers like
+This is quite an elegant solution. We're essentially defining the nonegative reals as functions from ℕ to ℕ. However, it doesn't come without its problems. As far as I can tell, there doesn't seem to be any way to define basic operations. What would addition be, for instance? The big issued come when we try adding numbers like
 
 ```
   0.011010100000100111101...
 + 0.000101011111011000010...
 ```
 
-This seems like it will probably be `0.100...`, but, without looking at an infinite number of digits, it's impossible to know. There might be some way to define, not addition, but addition done on numbers interpreted as an element of `[0, ∞)`, but I couldn't find any example of this and I suspect it's not possible. If it isn't, then this approach is doomed despite its simplicity.
+This seems like it will probably be `0.100...`, but, without looking at an infinite number of digits, it's impossible to know. One might suspect a way to define, not addition, but addition done on numbers interpreted as an element of `[0, ∞)`, but I couldn't find any example of this and I believe it's not possible. Consider the number `0.010101...`, exactly 1/3, representing 1/2 after expansion. That number plus itself should be `0.1000...`, exactly 1/2, representing 1 after expansion. Since this addition would require observing an infinite number of digits addition is clearly impossible in general under this definition. 
 
-Another representation using sequences of natural numbers is continued fractions. Given a sequenc of numbers `[a, b, c...]`, we can calculate the number it represents as
+There are other isomorphisms between `[0, ∞)` and `[0, 1)`, for example `Tan[π x/2]` and `2/π ArcTan[x]`, but the same example has the same problem for this mapping. Perhapse there is a mapping which avoids all such problematic cases, but I have no idea how to find such a thing.
+
+In this representation, reciprication can be performed by doing essentially nothing. If we take the stream of bits and interpret 0s as 1s and 1s as 0s then the expanded version of that number will be the reciprical of the expanded version of the original sequence. This means we're swapping from `[0, 1)` to `(0, 1]` during reciprocation, which seems apropriate. But the function itself is just a cast; we don't need to actually modify the data at all, just how we interface with it. I do wonder what the limitations of this thinking is. There's no obvious way to perform addition by simply interpreting the data as being of a different type.
+
+As an aside, Lawrence Moss, who presented a different definition of the closed interval as a final coalgebra, made a point about the full real numbers, negatives included, not being encoded by any simple final coalgebra. I think the previous definition could be made into such a construction. A real number can be an infinite stream of 0s. If not, it has to be positive or negative at some point. By having a stream give its sign only after deviating from 0, it seems like we get exactly the full reals with no redundancies.
+
+```
+codata ℝ
+  = Zero ℝ
+  | Neg ℕ⁺ (Stream ℕ)
+  | Pos ℕ⁺ (Stream ℕ)
+```
+
+Or, alternatively phrased;
+
+```
+ℝ = νX . 𝟚 × ℕ^ℕ + X
+```
+
+This seams somewhat obvious to me, but I haven't seen anything like it in the literature, so there may be some problem with it I'm not seeing. At the very least, it inherits all the conceptual problems with writing algorithms that the previous definition of the nonegative reals has, so a different representation is neccessary.
+
+Another representation using sequences of natural numbers is continued fractions. Given a sequence of numbers `[a, b, c...]`, we can calculate the number it represents as
 
 ```
 1 + a + 1
@@ -64,7 +101,7 @@ Another representation using sequences of natural numbers is continued fractions
                         ...
 ```
 
-This is a bit different from an ordinary continued fraction. We add 1 at each step so that `0`s contribute. We also have to deal with the fact that some numbers can be represented as multiple different fractions. For example, `2` can be represented both as
+This is a bit different from an ordinary continued fraction. We add 1 at each step so that `0`s contribute something and aren't redundant. We also have to deal with the fact that some numbers can be represented as multiple different fractions. For example, `2` can be represented both as
 
 ```
 [2] = 2
@@ -106,7 +143,7 @@ and the would-be redundancy becomes
                  1 + 0 + 1       2
 ```
 
-if I explained this a bit confusedly, here's some code which implements the idea
+If I explained this a bit confusedly, here's some code which implements the idea which should hopefully be clearer.
 
 ```mathematica
 NatListToRatP[{}] := 1
@@ -124,7 +161,7 @@ RatToNatList[0] := {}
 RatToNatList[r_] /; r > 0 := RatToNatListP[r + 1] - 1
 ```
 
-by composing this with the functions in my last post, this gives a nice bijection between rational numbers and natural numbers
+composing this with the functions in my post on bijective godel encodings gives a nice bijection between rational numbers and natural numbers
 
 ```mathematica
 NatToRat := NatListToRat@*NatToNatList
@@ -132,7 +169,7 @@ RatToNat := NatListToNat@*RatToNatList
 ```
 
 ```mathematica
-In[0]  := Array[NatToRat, {10}, 0]
+In[0]  := NatToRat /@ Range[0, 9]
 In[1]  := RatToNat /@ %
 ```
 
@@ -141,16 +178,19 @@ Out[0] := {0, 1, 2, 1/2, 3, 1/3, 3/2, 2/3, 4, 1/4}
 Out[1] := {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 ```
 
-however, if we start trying to seriously use this representation, we run into problems. Sticking to the case of finite lists, basic operations like addition are possible, but quite involved. The algorithms for such were worked out in the by Bill Gosper in
+however, if we start trying to seriously use this representation for real computation, we run into problems. Sticking to the case of finite lists, basic operations like addition are possible, but quite involved. The algorithms for such were worked out by Bill Gosper in
 
 - [Continued Fraction Arithmetic](https://perl.plover.com/classes/cftalk/INFO/gosper.txt)
 
-however, despite what that post says, the algoithms are very complicated. One shouldn't have to calculate a determinant in order to add two numbers. To get a unique representation, we'd then have any irrational number be represented by an infinite continued fraction, and no rational would be represented by such. When we come to this realization, it becomes immediate that basic operations are now impossible. Consider the irrational number √2 which would be represented by an infinite sequence. If we multiplied √2 by itself, it should become 2, represented by a finite list. But it would be impossible to know this without first seeing all infinite entries in √2. Since 2 can't be represented by an infinite fraction, we are, once again, doomed.
+however, despite what that post says, the algoithms are very complicated. One shouldn't have to calculate a determinant in order to add two numbers. To get a unique representation, we'd then have any irrational number be represented by an infinite continued fraction, but no rational would be represented by such. With this realization it becomes immediate that many basic operations are now impossible. Consider the irrational number √2 which would be represented by an infinite sequence. If we multiplied √2 by itself, it should become 2, represented by a finite list. But it would be impossible to know this without first seeing all infinite entries in √2. Since 2 can't be represented by an infinite fraction, we are doomed.
 
 Both of these methods are described in some detail in
 
 - [The continuum as a final coalgebra](http://it.mmcs.sfedu.ru/_files/ct_seminar/articles/The%20continuum%20as%20a%20final%20coalgebra.pdf)
 - [On coalgebra of real numbers](https://pdf.sciencedirectassets.com/272990/1-s2.0-S1571066100X02757/1-s2.0-S1571066105802725/main.pdf?X-Amz-Security-Token=IQoJb3JpZ2luX2VjEA0aCXVzLWVhc3QtMSJHMEUCIQCsO8jPY04ZaVm4nRU8BR%2BwzEf4YwEE98c%2B5GR0YsQoMQIgXNlY9EQ7UXVF6wGrtKTNigqCXB55xdN5pH1PP2Qd%2FZYqvQMI5v%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARADGgwwNTkwMDM1NDY4NjUiDCEhJMV1wQ4D0KppoiqRAxkwzbXvKkY2qrRjLMnVbMSGlds0hNNwr1eUnN76Mdnuq8chB23LH5fAvKBAihPhcgtkt27szVIWRn%2BjpOY5vlNt3wsf0LomXSnaHyEJ1Iqlcio1ucFAkQG%2BNEnVf2bVNgXOOhNa7GKyT9cL0zE%2BLEKuhqtz6MLT3C5smeSxWGA1FY3CRCKqyXOnDreEnKvcunr4vxPS7x2ezJHDYqk7g4cqJ4DNJPMSyaGeraPuqCwXL2gw3dNmBVRsw3mF3BMqsf6ogTR3ti33kqtJ24mQRor2hME6oeT1zpWbxPPmbcXncAjeCShYMSDLLIWShC%2FfuXdyHgW1rVQh%2FmZ3D%2FMZjB9T5hK8x4EpoepUizRRsvFMBdgCEANGjb0%2B8Ic5PGMbYg870MTIDxqlAvNFd%2Fkl0rrCMU6qwKzhvsfF3LPyi4qJ2EHxmZKEL1a%2BUdFupHfPT3sCz7RPTK%2BfDUwmI8rpFT2HNhGDBdz6J2ztnlm8h1IMfQCrjAtFFfWBHBwvpDdAIXh7No7YoflxUR5Gg62ZpTuhMOXts4AGOusBOizUu1Tg9U4q9ub4faeV9O62cIbLR6zffXzK5qAzTytZBNO0bYHjOYryHFrw6zPBd1y%2FBx7C49JHfHvaMynfVu5swyPrlW3iJ77Zre1%2FnlXiFlKGh7acbu2VFTC7NTpaQ2qncUDS7zBizBiXzQTWcobSRTF4kg%2BrXGip2C2P8%2F48FQqm0BR9hF1FVsRmH6Fv3oiUh%2FxblCj61wrJw8nm1VtIvNtOP1URgCfSWZVrEl%2BUZXMGcPgYRJpBG6aKUiuEtyizdqHVm07tv7H9sQqmvINTqD3FQpgOJlSINIpQzJCUtNrXwr6v4I4o1Q%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20210124T055216Z&X-Amz-SignedHeaders=host&X-Amz-Expires=300&X-Amz-Credential=ASIAQ3PHCVTYXWQZWIHU%2F20210124%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=a4c862bdc01087a45b6f8d1c0bcf11cf06da3add289b63c1eb68b0a9b87fbf41&hash=d2792a7b87372717e392ddb8012f912008b007c009bb8a4b3b532c7c24e24ec7&host=68042c943591013ac2b2430a89b270f6af2c76d8dfd086a07176afe7c76c2c61&pii=S1571066105802725&tid=spdf-7992097f-7302-4755-9ca5-f332aa6ab8e7&sid=d06e5c1114dab04a9e4b8212ceab586a6121gxrqa&type=client)
+
+<a name="headingWorking"></a>
+## Defining Reals: Incorrect but Workable
 
 So, where do we go from here? While I hold out hope that a perfect representation of the reals exists, I haven't found one that's usable in the literiture. Instead, we can use notations with redundancy. There are actually a lot of options. The most common is the signed bit representation, described in
 
@@ -181,7 +221,7 @@ a   |-------|   b
   (-----------)
 ```
 
-the parentheses represent the interval we're classifying. At this point, it could be in any one of the three. We can make an observation about the number which will shring the bounds. If the left keeps shrinking on each observation, it will eventually cross the 0 threshold. If it keeps going, it will cross the other, making 1 the only possibility. If th right does this, then -1 will be the only possibility. If both sides shrink, then the number will eventually be between the two thresholds of 0, making that our next digit.
+the parentheses represent the interval we're classifying. At this point, it could be in any one of the three. We can make an observation about the number which will shring the bounds. If the left keeps shrinking on each observation, it will eventually cross the 0 threshold. If it keeps going, it will cross the other, making 1 the only possibility. If the right does this, then -1 will be the only possibility. If both sides shrink, then the number will eventually be between the two thresholds of 0, making that our next digit.
 
 In a perfect representation, if our number was exactly 0 then our number bounds would shrink forever, never crossing into either 1 or -1. By having the overlap, we gaurantee that we will always will eventually be able to output a digit at the cost of numbers having non-unique representations.
 
@@ -244,9 +284,12 @@ f([a, b], 1] := [((2^n + 1) a + (2^n - 1) b)/2^(n+1), b]
 
 The larger we set n, the smaller the overlap. If n is set to 1, the overlap will be between -1/2 and 1/2. If n is set to 2, the overlap will be between -1/4 and 1/4. For general n, the overlap will be between -1/2^n and 1/2^n. This will have the effect of increasing the rate of convergence; the intervals will get smaller, faster the more digits we see. Though, there are diminishing returns and one should be careful not to set n so high that basic operations become extremely inefficient. I'll use n = 1 since I want to keep things simple for this post.
 
-This representation does have the nice property that finding the negative of a number corresponds to swapping the 1s and 0s, but there doesn't seem to be a trivial way to ivert a number, so I'll have to think of something more clever, though it honestly isn't difficult in general.
+This representation does have the nice property that finding the negative of a number corresponds to swapping the 1s and 0s, but there doesn't seem to be a trivial way to invert a number, so I'll have to think of something less clever, though it honestly isn't difficult anyway.
 
-I'll start actually implementing things. Since we're using infinite data structures, I'll use Haskell which is designed for exactly this sort of usage. We'll start by defining real numbers as streams of booleans;
+<a name="headingImpl"></a>
+## Real Implementation
+
+I'll start actually implementing things. Since we're using infinite data structures, I'll use Haskell which is designed for exactly this sort of application. We'll start by defining real numbers as streams of booleans;
 
 ```haskell
 type ℝ = [Bool]
@@ -254,7 +297,7 @@ type ℝ = [Bool]
 
 To reiterate a point from earlier; this isn't theoretically correct. What this actually defines is the Cantor space, but I'll be treating it like the reals.
 
-And yes, in case you were wondering, Haskell doesn't complain about the unicode.
+And, in case you were wondering, Haskell doesn't complain about the unicode.
 
 An important function for manipulating streams will be `ana`, short for "anamorphism". This is just an unfold operation without a base-case since it's going to be used to define infinite data structures.
 
@@ -278,7 +321,7 @@ focus (fl, fr) True =
   (((2^power + 1) * fl + (2^power - 1) * fr) / 2^(power + 1), fr)
 ```
 
-I will also need the expand and contract functions since we'll be going back and forth between `[-1, 1]` and `[-∞, ∞]`. Since Haskell's `Rational` type doesn't have point's at infinity. I'll devise a new type with points at infinity along with the somewhat tedius `Num` and `Fractional` instances so I can use the standard numerical operations. The only thing interesting about is is how the infinities are handled. They are defined to make the most conservative conclusions when combining intervals which might have infinities on either side. 
+I will also need the expand and contract functions since we'll be going back and forth between `[-1, 1]` and `[-∞, ∞]`. Since Haskell's `Rational` type doesn't have point's at infinity. I'll devise a new type with points at infinity along with the somewhat tedious `Num` and `Fractional` instances so I can use the standard numerical operations. The only thing interesting about is is how the infinities are handled. They are defined to make the most conservative conclusions when combining intervals which might have infinities on either side. 
 
 ```haskell
 data RationalInf
@@ -399,7 +442,8 @@ realNegate = map not
 6.0810894e-13
 ```
 
-Part 2: Let's be rational about this
+<a name="headingBasic"></a>
+## Basic Functions
 
 From here we can start generating some basic functions. Where possible, the easiest functions to implement are those which are already defined over the rationals. To accomplish this, we can create an intermediate representation of a real in terms of a sequence of nested intervals. This representation itself could be used as a definition for the reals as detailed in 
 
@@ -428,7 +472,7 @@ addInts :: [Interval] -> [Interval] -> [Interval]
 addInts = zipWith intAdd
 ```
 
-getting from a stream of intervals to a real is a more complicated business. It's another coalgebraic construction, but we need to reason a bit more carefully so as to ensure any focus contains our number up to whatever interval approximation we're looking at. If the largest our number can be, `big`, is smaller than the top of our left subinterval, `topL`, then we can use 0/`False` as our next bit. If the smallest our number can be, `low`, is larger than the bottom of our right subinterval, `botR`, then we can use 1/`True` as our next digit. If either of these conditions is not met, then we look at the next step in our interval stream to see if the next one is more specific.
+getting from a stream of intervals to a real is a more complicated business. It's another coalgebraic construction, but we need to reason a bit more carefully so as to ensure any focus contains our number up to whatever interval approximation we're looking at. If the largest our number can be, `big`, is smaller than the top of our left subinterval, `topL`, then we can use 0/`False` as our next bit. If the smallest our number can be, `low`, is larger than the bottom of our right subinterval, `botR`, then we can use 1/`True` as our next digit. If either of these conditions is not met, then we look at the next step in our interval stream to see if the next one is sufficiently specific.
 
 ```haskell
 intsToRealCoalg :: (Interval, [Interval]) -> (Bool, (Interval, [Interval]))
@@ -494,7 +538,9 @@ realProd r1 r2 =
 14.0
 ```
 
-What about the reciprocal? If we try to reproduce the procedure we just did for addition and multiplication we run into a serious issue. If we just reciprocate both sides of the interval, we get a sequence which begins with `(0, 0)`, since 0 is the reciprocal of infinity. The intervals then grow for a bit before eventually settling down. This means we need to drop an initial segment of our interval. As far as I can tell, dropping the first 3 entries guarantees correctness, but I'm honestly not sure why. Beyond that, the obvious implementation going through expanding and contracting doesn't work for some reason. If we go through the algebra to simplify that triple composition, we find out that it's the same as `1-x` when `x` is positive and `-1-x` when `x` is negative. A similar calculation can be done for addition and multiplication, but the results are much more complicated. In this case, we get a simpler expression, and this does work. Unfortunately, some of this is a bit of a hack job. Hopefully, I'll be able to justify something better in the future.
+What about the reciprocal? If we try to reproduce the procedure we just did for addition and multiplication we run into a serious issue. If we just reciprocate both sides of the interval, we get a sequence which begins with `(0, 0)`, since 0 is the reciprocal of infinity. The intervals then grow for a bit before eventually settling down. This means we need to drop an initial segment of our interval. As far as I can tell, dropping the first 3 entries guarantees correctness, but I'm honestly not sure why. Beyond that, the obvious implementation going through expanding and contracting doesn't work for some reason. 
+
+If we go through the algebra to simplify that triple composition of expansion followed by reciprication followed by contraction, we find out that it's the same as `1-x` when `x` is positive and `-1-x` when `x` is negative. A similar calculation can be done for addition and multiplication, but the results are much more complicated. In this case, we get a simpler expression, and this does work.
 
 ```haskell
 intRecip :: Interval -> Interval
@@ -511,6 +557,8 @@ intsRecip = drop 3 . map intRecip
 realRecip :: ℝ -> ℝ
 realRecip = intsToReal . intsRecip . realToInts
 ```
+
+Unfortunately, some of this is a bit of a hack job. Hopefully I'll be able to justify something better in the future. I will give a more trustworthy, if less efficient, implementation later in this post.
 
 ```haskell
 > realToFloat $ realRecip $ ratToReal 8
@@ -598,8 +646,8 @@ These calculations are now actually using the functions I've implemented to do t
 3.511111
 ```
 
-Part 3: Linear Thinking Can Take You Only So Far
-
+<a name="headingDiff"></a>
+## Differential Definitions
 
 
 {% endraw %}
