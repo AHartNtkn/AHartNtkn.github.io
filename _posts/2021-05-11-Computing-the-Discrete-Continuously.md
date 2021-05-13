@@ -445,7 +445,7 @@ QuadBimap[f_, g_] := QuadFork[f@*QuadFst, g@*QuadSnd]
 QuadUncurry[f_][x_] := f[QuadFst@x, QuadSnd@x]
 ```
 
-As it turned out, this pairing function ended up not being useful for this post, but I made it as part of this project and its relevant and interesting, so I decided to keep it in this post anyway, but it won't be appearing beyond this point.
+This pairing function ended up not being useful for this post, but I made it as part of this project and its relevant and interesting, so I decided to keep it anyway. However, it won't be appearing beyond this point.
 
 <a name="headingRec"></a>
 ## Recursive Types and Recursion
@@ -934,9 +934,8 @@ treeAnaStep[coalg_, {{n_, ns___}, {s___}}] :=
 
 treeCataStep[alg_, {{n___}, {}}] := {{n}, {}}
 treeCataStep[alg_, {{ns___}, {L, s___}}] := {{alg[0], ns}, {s}}
-treeCataStep[
-  alg_, {{l_, r_, ns___}, {B, s___}}] := {{alg[branch[l, r]], 
-   ns}, {s}}
+treeCataStep[alg_, {{l_, r_, ns___}, {B, s___}}] :=
+  {{alg[branch[l, r]], ns}, {s}}
 ```
 
 We can repeatedly iterate these functions to manipulate the stack. It may be helpful to see an example evaluated over time. I'll calculate the number of leaves in an input tree. Since the input is being interpreted as a tree, we can use the identity function as our coalgebra so it doesn't affect its structure. The algebra will simply return 1 on a leaf and add the two branches together on anything else.
@@ -1343,7 +1342,9 @@ sortTreeHyloN[k_, alg_, coalg_, l_] :=
 quicksortN[l_] := sortTreeHyloN[0, quickSortAlgN, quickSortCoalgN, l]
 ```
 
-However, all the concepts are there. I tried Varying the particular pair encodings but nothing worked. Similar to the previous tree algorithm, we can make the representation of the second stack more efficient by formalizing the reverse polish notation representation of sorted lists, trees, and bounded lists as dependent types.
+However, all the concepts are there. I tried Varying the particular pair encodings but nothing worked. The best encoding for lists I know of is to encode them as a Sierpinski pair with the first element decoding to the length and the second decoding to a fair tupiling of that length. Such an encoding doesn't have the immediately nice recursive structure I've emphasized in the past, but I believe it's an optimal way of encoding lists, in some sense. I doubt such a representation would effect this project, but it's worth noting here.
+
+Similar to the previous tree algorithm, we can make the representation of the second stack more efficient by formalizing the reverse polish notation representation of sorted lists, trees, and bounded lists as dependent types.
 
 ```
 BoundListRPN ((n, m) : ℕ × ℕ∞) : Bool → Type
