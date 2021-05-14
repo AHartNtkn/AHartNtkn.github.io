@@ -68,8 +68,8 @@ This is quite an elegant solution. We're essentially defining the nonegative rea
 
 This seems like it will probably be `0.100...`, but, without looking at an infinite number of digits, it's impossible to know. One might suspect a way to define, not addition, but addition done on numbers interpreted as an element of `[0, ∞)`, but I couldn't find any example of this and I believe it's not possible. Consider the number `0.010101...`, exactly 1/3, representing 1/2 after expansion. That number plus itself should be `0.1000...`, exactly 1/2, representing 1 after expansion. Since this addition would require observing an infinite number of digits addition is clearly impossible in general under this definition. 
 
-There are other isomorphisms between `[0, ∞)` and `[0, 1)`, for example `Tan[π x/2]` and `2/π ArcTan[x]`, but the same example has the same problem for this mapping. Perhapse there is a mapping which avoids all such problematic cases, but I have no idea how to find such a thing.
-
+There are other isomorphisms between `[0, ∞)` and `[0, 1)`, for example `Tan[π x/2]` and `2/π ArcTan[x]`, but the same example has the same problem for this mapping. Perhapse there is a mapping which avoids all such problematic cases, but I have no idea how to find such a thing. Perhapse `Γ[1 - x] - 1`?
+az
 In this representation, reciprication can be performed by doing essentially nothing. If we take the stream of bits and interpret 0s as 1s and 1s as 0s then the expanded version of that number will be the reciprical of the expanded version of the original sequence. This means we're swapping from `[0, 1)` to `(0, 1]` during reciprocation, which seems apropriate. But the function itself is just a cast; we don't need to actually modify the data at all, just how we interface with it. I do wonder what the limitations of this thinking is. There's no obvious way to perform addition by simply interpreting the data as being of a different type.
 
 As an aside, Lawrence Moss, who presented a different definition of the closed interval as a final coalgebra, made a point about the full real numbers, negatives included, not being encoded by any simple final coalgebra. I think the previous definition could be made into such a construction. A real number can be an infinite stream of 0s. If not, it has to be positive or negative at some point. By having a stream give its sign only after deviating from 0, it seems like we get exactly the full reals with no redundancies.
@@ -221,7 +221,7 @@ a   |-------|   b
   (-----------)
 ```
 
-the parentheses represent the interval we're classifying. At this point, it could be in any one of the three. We can make an observation about the number which will shring the bounds. If the left keeps shrinking on each observation, it will eventually cross the 0 threshold. If it keeps going, it will cross the other, making 1 the only possibility. If the right does this, then -1 will be the only possibility. If both sides shrink, then the number will eventually be between the two thresholds of 0, making that our next digit.
+the parentheses represent the interval we're classifying. At this point, it could be in any one of the three. We can make an observation about the number which will shrink the bounds. If the left side keeps shrinking on each observation, it will eventually cross the 0 threshold. If it keeps going, it will cross the other, making 1 the only possibility. If the right does this, then -1 will be the only possibility. If both sides shrink, then the number will eventually be between the two thresholds of 0, making that our next digit.
 
 In a perfect representation, if our number was exactly 0 then our number bounds would shrink forever, never crossing into either 1 or -1. By having the overlap, we gaurantee that we will always will eventually be able to output a digit at the cost of numbers having non-unique representations.
 
@@ -259,7 +259,7 @@ contract[-57/14] = -57/71
   = [-1, -1, 0, 0, -1, -1, 0, -1, -1, 0, 0, 0, 0, -1, 0, -1, 0, -1, -1, 0...]
 ```
 
-That's pretty cool! However, this is not the representation I'll be using for the rest of this post. Instead, I want to use something simpler. A modification to the digned bit representation is to just use two overlapping intervals and just use bits. Something like
+That's pretty cool! However, this is not the representation I'll be using for the rest of this post. Instead, I want to use something simpler. A modification to the signed bit representation is to just use two overlapping intervals and just use bits. Something like
 
 ```
         1
@@ -275,7 +275,7 @@ f([a, b], 0) := [a, (a + 3 b)/4]
 f([a, b], 1] := [(3 a + b)/4, b]
 ```
 
-We do have some additional options. As long as there's an overlap at all, we're gauranteed to eventually decide on a bit given enough observations. We could narrow this overlap acording to the formula
+We do have some additional options. As long as there's an overlap at all, we're guaranteed to eventually decide on a bit given enough observations. We could narrow this overlap according to the formula
 
 ```
 f([a, b], 0) := [a, ((2^n + 1) b + (2^n - 1) a)/2^(n+1)]
@@ -621,7 +621,7 @@ instance Fractional ℝ where
   recip = realRecip
 ```
 
-These calculations are now actually using the functions I've implemented to do their calculations.
+These tests are now using the functions I've implemented to do their calculations.
 
 ```haskell
 > realToFloat $ signum $ 22
