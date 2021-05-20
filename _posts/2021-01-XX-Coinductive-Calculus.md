@@ -47,15 +47,15 @@ For example 0 is 0.000..., 1/2 is 0.1000...., etc. 1 isn't representable since 0
 ```
 0 = 0.000...
   = [0, 0, 0, ...]
-0.1 = 0.00011001100110011001101
+0.1 = 0.00011001100110011001101...
     = [0, 0, 2, 0, 2, 0, 2, 0, 2, ...]
-0.2 = 0.0011001100110011001101
+0.2 = 0.0011001100110011001101...
     = [0, 2, 0, 2, 0, 2, 0, 2, 0, ...]
-1/3 = 0.0101010101010101010
+1/3 = 0.0101010101010101010...
     = [1, 1, 1, 1, 1, 1, 1, ...]
-√2 - 1 = 0.011010100000100111101
+√2 - 1 = 0.011010100000100111101...
        = [2, 1, 1, 0, 0, 0, 0, 1, 0, 4, ...]
-π - 3 = 0.0010010000111111011011
+π - 3 = 0.0010010000111111011011...
       = [0, 1, 0, 1, 0, 0, 0, 6, 2, 1, 1, ... ]
 ```
 
@@ -68,11 +68,11 @@ This is quite an elegant solution. We're essentially defining the nonegative rea
 
 This seems like it will probably be `0.100...`, but, without looking at an infinite number of digits, it's impossible to know. One might suspect a way to define, not addition, but addition done on numbers interpreted as an element of `[0, ∞)`, but I couldn't find any example of this and I believe it's not possible. Consider the number `0.010101...`, exactly 1/3, representing 1/2 after expansion. That number plus itself should be `0.1000...`, exactly 1/2, representing 1 after expansion. Since this addition would require observing an infinite number of digits addition is clearly impossible in general under this definition. 
 
-There are other isomorphisms between `[0, ∞)` and `[0, 1)`, for example `Tan[π x/2]` and `2/π ArcTan[x]`, but the same example has the same problem for this mapping. Perhapse there is a mapping which avoids all such problematic cases, but I have no idea how to find such a thing. Perhapse `Γ[1 - x] - 1`?
-az
+There are other isomorphisms between `[0, ∞)` and `[0, 1)`, for example `Tan[π x/2]` and `2/π ArcTan[x]`, but the same example has the same problem for this mapping. Maybe there is a mapping which avoids all such problematic cases, but I have no idea how to find such a thing. Perhapse `Γ[1 - x] - 1`?
+
 In this representation, reciprication can be performed by doing essentially nothing. If we take the stream of bits and interpret 0s as 1s and 1s as 0s then the expanded version of that number will be the reciprical of the expanded version of the original sequence. This means we're swapping from `[0, 1)` to `(0, 1]` during reciprocation, which seems apropriate. But the function itself is just a cast; we don't need to actually modify the data at all, just how we interface with it. I do wonder what the limitations of this thinking is. There's no obvious way to perform addition by simply interpreting the data as being of a different type.
 
-As an aside, Lawrence Moss, who presented a different definition of the closed interval as a final coalgebra, made a point about the full real numbers, negatives included, not being encoded by any simple final coalgebra. I think the previous definition could be made into such a construction. A real number can be an infinite stream of 0s. If not, it has to be positive or negative at some point. By having a stream give its sign only after deviating from 0, it seems like we get exactly the full reals with no redundancies.
+As an aside, Lawrence Moss, who presented a different definition of the closed interval as a final coalgebra in the category of bipointed sets, made a point about the full real numbers, negatives included, not being encoded by any known simple final coalgebra. I think the previous definition could be made into such a construction. A real number can be an infinite stream of 0s. If not, it has to be positive or negative at some point. By having a stream give its sign only after deviating from 0, it seems like we get exactly the full reals with no redundancies.
 
 ```
 codata ℝ
@@ -87,7 +87,7 @@ Or, alternatively phrased;
 ℝ = νX . 𝟚 × ℕ^ℕ + X
 ```
 
-This seams somewhat obvious to me, but I haven't seen anything like it in the literature, so there may be some problem with it I'm not seeing. At the very least, it inherits all the conceptual problems with writing algorithms that the previous definition of the nonegative reals has, so a different representation is neccessary.
+This seams somewhat obvious to me, but I haven't seen anything like it in the literature, so there may be some problem with it I'm not seeing. At the very least, it inherits all the conceptual problems with writing algorithms that the previous definition of the nonegative reals has.
 
 Another representation using sequences of natural numbers is continued fractions. Given a sequence of numbers `[a, b, c...]`, we can calculate the number it represents as
 
@@ -197,6 +197,7 @@ So, where do we go from here? While I hold out hope that a perfect representatio
 - [Coinductive Definitions and Real Numbers](https://www.doc.ic.ac.uk/teaching/distinguished-projects/2009/m.herrmann.pdf)
 
 It represents the closed interval `[-1, 1]` as a list of 1s, 0s, and -1s. If we look at a sequence, we hold in memory an interval with a lower and upper bound. These bounds are always rational numbers. If we see a 0, we focus on the middle half of the interval. If we see a -1, we focus on the left half. If we see a 1 we focus on the right half. For example, if we saw
+
 ```
 [1,1,0,-1,1,0...]
 ```
@@ -294,10 +295,10 @@ I'll start actually implementing things. Since we're using infinite data structu
 ```haskell
 type ℝ = [Bool]
 ```
-
+ 
 To reiterate a point from earlier; this isn't theoretically correct. What this actually defines is the Cantor space, but I'll be treating it like the reals.
 
-And, in case you were wondering, Haskell doesn't complain about the unicode.
+In case you were wondering, Haskell doesn't complain about the unicode.
 
 An important function for manipulating streams will be `ana`, short for "anamorphism". This is just an unfold operation without a base-case since it's going to be used to define infinite data structures.
 
@@ -308,7 +309,7 @@ ana f a =
     (b, a') -> b : ana f a'
 ```
 
-using this, we can define a function which converts a `Rational`, Haskell's built-in representation of fractions, into a `ℝ`. Before that, let's define our focusing function. I've hard-coded a power of 1, but you can feel-free to vary it.
+This function essentially acknoledges the coalgebraic/autonata character of codata. Given a function which takes a state, `a`, and returns a new state along with an observation, `b`, we can repeatedly apply this function to get an infinite stream of observations. All codata can be characterized in this way. Using this, we can define a function which converts a `Rational`, Haskell's built-in representation of fractions, into a `ℝ`. Before that, let's define our focusing function. I've hard-coded a power of 1, but you can feel-free to vary it.
 
 ```haskell
 type Interval = (Rational, Rational)
@@ -538,7 +539,7 @@ realProd r1 r2 =
 14.0
 ```
 
-What about the reciprocal? If we try to reproduce the procedure we just did for addition and multiplication we run into a serious issue. If we just reciprocate both sides of the interval, we get a sequence which begins with `(0, 0)`, since 0 is the reciprocal of infinity. The intervals then grow for a bit before eventually settling down. This means we need to drop an initial segment of our interval. As far as I can tell, dropping the first 3 entries guarantees correctness, but I'm honestly not sure why. Beyond that, the obvious implementation going through expanding and contracting doesn't work for some reason. 
+What about the reciprocal? If we try to reproduce the procedure we just did for addition and multiplication we run into a serious issue. If we just reciprocate both sides of the interval, we get a sequence which begins with `(0, 0)`, since 0 is the reciprocal of infinity. The intervals then grow for a bit before eventually settling down. This means we need to drop an initial segment of our interval. As far as I can tell, dropping the first 3 entries guarantees correctness, but I'm honestly not sure why.
 
 If we go through the algebra to simplify that triple composition of expansion followed by reciprication followed by contraction, we find out that it's the same as `1-x` when `x` is positive and `-1-x` when `x` is negative. A similar calculation can be done for addition and multiplication, but the results are much more complicated. In this case, we get a simpler expression, and this does work.
 
