@@ -95,7 +95,7 @@ Putting all these ideas together, we end up with the following system of first-o
 ```mathematica
 x'[t] == (2 (y[t] - x[t]))/εSawtoothWave[ε, 2 t] * (εSquareWave[ε, t + 1/2] + 1)/2
 y'[t] == 2 (f[x[t]] - x[t]) (εSquareWave[ε, t] + 1)/2
-x[0] == x0, y[0] == x
+x[0] == x0, y[0] == x0
 ```
 
 And shoving this inside of `NDSolve` on a few test inputs gets us the following graphs, where orange is `x`, blue is `y`, and the green dots are the results of actual iteration.
@@ -222,7 +222,8 @@ FinFuse[n_, f_, g_][x_] /; x >= n := g[x - n]
 We need a method to check for the relative size of the input. We can use `UnitStep` to detect the negativity of `n - k` which will indicate if `k` is greater than `n`.
 
 ```mathematica
-FinFuse[n_, f_, g_][x_] :=  UnitStep[x - n + 1/2] g[x-n] + (1 - UnitStep[x - n + 1/2]) f[x]
+FinFuse[n_, f_, g_][x_] :=
+  UnitStep[x - n + 1/2] g[x-n] + (1 - UnitStep[x - n + 1/2]) f[x]
 ```  
 
 We can now perform all standard manipulations on sums. One of the more helpful utility functions is the sum bimap which leaves the leading constructor of the sum intact while applying either `f` or `g`.
@@ -305,7 +306,10 @@ However, these functions are tricky to make continuous. If the first can be made
 
 ```mathematica
 SierpinskiFst[x_] :=
-  Integrate[1 - UnitStep[Mod[x + 1, 2^Floor[n]] - 1/2], {n, 1, Ceiling[Log[2, x + 1]]}]
+  Integrate[
+    1 - UnitStep[Mod[x + 1, 2^Floor[n]] - 1/2],
+    {n, 1, Ceiling[Log[2, x + 1]]}
+  ]
 ```
 
 Note that this implementation doesn't really work. This is more of a design for a hypothetical analog circuit. If you want to play around with a continuous version of this function, use this, which isn't really the same function, but it should work fine;
@@ -319,7 +323,11 @@ SierpinskiFst[z_] := IntegerExponent[Round[z] + 1, 2]
 That basic trick of integrating something sandwiched between a step function and a floor function is a generic method for counting numbers satisfying some property in a continuous way. It's a method for defining discrete sums in terms of continuous ones. Based on that, we can get the following alternative definition;
 
 ```mathematica
-SierpinskiFst[x_] := Sum[1 - UnitStep[Mod[x + 1, 2^n] - 1/2], {n, 1, Ceiling[Log[2, x + 1]]}]
+SierpinskiFst[x_] :=
+  Sum[
+    1 - UnitStep[Mod[x + 1, 2^n] - 1/2],
+    {n, 1, Ceiling[Log[2, x + 1]]}
+  ]
 ```
 
 At this point, we can define the universal properties of the product fairly easily. The fork functions can be defined as;
@@ -594,7 +602,8 @@ BoundListFmap[k_, f_][{1, {n_, m_}}] := {1, {n, f[k, m]}}
 
 BoundListUnfoldCoalg[k_, 0] := {0, 0}
 BoundListUnfoldCoalg[k_, l_] := {1, {boundHead[k, l], boundTail[k, l]}}
-BoundListUnfold[k_, x_] := BoundListFmap[k, BoundListUnfold][BoundListUnfoldCoalg[k, x]]
+BoundListUnfold[k_, x_] :=
+  BoundListFmap[k, BoundListUnfold][BoundListUnfoldCoalg[k, x]]
 NatToBoundList[k_, x_] := ListToMList[BoundListUnfold[k, x]]
 
 BoundListFoldAlg[k_, {0, 0}] := 0
@@ -669,7 +678,8 @@ SortListFmap[k_, f_][{1, {n_, m_}}] := {1, {n, f[n, m]}}
 
 SortListUnfoldCoalg[k_, 0] := {0, 0}
 SortListUnfoldCoalg[k_, l_] := {1, {sortHead[k, l], sortTail[k, l]}}
-SortListUnfold[k_, x_] := SortListFmap[k, SortListUnfold][SortListUnfoldCoalg[k, x]]
+SortListUnfold[k_, x_] :=
+  SortListFmap[k, SortListUnfold][SortListUnfoldCoalg[k, x]]
 NatToSortList[k_, x_] := ListToMList[SortListUnfold[k, x]]
 
 SortListFoldAlg[k_, {0, 0}] := 0
@@ -712,8 +722,10 @@ Note that the decoding of the tail has to acknowledge the fact that 88 came befo
 Sorted trees were already described in detail in my last post, so I don't discuss them at length here; I'll just present my code for them.
 
 ```mathematica
-sortBranch[{b_, ∞}, n_, t1_, t2_] /; n ≥ b := SierpinskiPair[n - b, CantorPair[t1, t2]] + 1
-sortBranch[{b_, t_}, n_, t1_, t2_] /; n ≥ b := in[t - b + 1, n - b][CantorPair[t1, t2]] + 1
+sortBranch[{b_, ∞}, n_, t1_, t2_] /; n ≥ b :=
+  SierpinskiPair[n - b, CantorPair[t1, t2]] + 1
+sortBranch[{b_, t_}, n_, t1_, t2_] /; n ≥ b :=
+  in[t - b + 1, n - b][CantorPair[t1, t2]] + 1
 
 sortTreeElem[{b_, ∞}, l_] := SierpinskiFst[l - 1] + b
 sortTreeElem[{b_, t_}, l_] := NProj[t - b + 1][l - 1] + b
@@ -856,7 +868,12 @@ quickSortCoalg[k_, l_] :=
 
 quickSortAlg[{b_, t_}, l_] :=
   If[l == 0, 0,
-    sortedConcat[b, sortLeft[{b, t}, l], sortTreeElem[{b, t}, l], sortRight[{b, t}, l]]
+    sortedConcat[
+      b,
+      sortLeft[{b, t}, l],
+      sortTreeElem[{b, t}, l],
+      sortRight[{b, t}, l]
+    ]
   ]
 
 quickSort[l_] = fhylo[sortTreeFMap, quickSortAlg, quickSortCoalg][{0, ∞}, l]
@@ -1150,14 +1167,13 @@ sortAnaStep[zk_, coalg_, {R[n_], {}}] :=
     ]]]
 
 sortCataStep[zk_, alg_, {n_, {}}] := {n, {}}
-sortCataStep[zk_, 
-  alg_, {_, {Nil, Cons[k_], s___}}] := {R[alg[k, 0]], {Cons[k], s}}
-sortCataStep[zk_, 
-  alg_, {R[n_], {Cons[a_], Cons[k_], s___}}] := {R[
-   alg[k, sortCons[k, a, n]]], {Cons[k], s}}
+sortCataStep[zk_, alg_, {_, {Nil, Cons[k_], s___}}] :=
+  {R[alg[k, 0]], {Cons[k], s}}
+sortCataStep[zk_, alg_, {R[n_], {Cons[a_], Cons[k_], s___}}] :=
+  {R[alg[k, sortCons[k, a, n]]], {Cons[k], s}}
 sortCataStep[zk_, alg_, {_, {Nil}}] := {R[alg[zk, 0]], {}}
-sortCataStep[zk_, 
-  alg_, {R[n_], {Cons[a_]}}] := {R[alg[zk, sortCons[zk, a, n]]], {}}
+sortCataStep[zk_, alg_, {R[n_], {Cons[a_]}}] :=
+  {R[alg[zk, sortCons[zk, a, n]]], {}}
 ```
 
 ```mathematica
@@ -1245,11 +1261,11 @@ sortTreeAnaStep[coalg_, {{{n_, {b_, t_}}, ns___}, {s___}}] :=
    ]]
 
 sortTreeCataStep[alg_, {{n___}, {}}] := {{n}, {}}
+sortTreeCataStep[alg_, {{ns___}, {L[k_], s___}}] :=
+  {{{alg[k, 0], k}, ns}, {s}}
 sortTreeCataStep[
-  alg_, {{ns___}, {L[k_], s___}}] := {{{alg[k, 0], k}, ns}, {s}}
-sortTreeCataStep[
-  alg_, {{{l_, {bl_, tl_}}, {r_, {br_, tr_}}, ns___}, {B[h_], 
-    s___}}] :=
+  alg_,
+  {{{l_, {bl_, tl_}}, {r_, {br_, tr_}}, ns___}, {B[h_], s___}}] :=
  {{{alg[{bl, tr}, sortBranch[{bl, tr}, h, l, r]], {bl, tr}}, ns}, {s}}
 ```
 
