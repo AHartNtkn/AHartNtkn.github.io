@@ -440,9 +440,10 @@ Which is quite nice, I think, but is subject to periodic overestimations. We can
 ```mathematica
 QuadShell[n_] :=
  Block[{s},
-  s = PreQuadShell[n];
-  While[n - CeilingSqrtSum[s] < 0, s--];
-  s]
+   s = PreQuadShell[n];
+   While[n - CeilingSqrtSum[s] < 0, s--];
+   s
+ ]
 ```
 
 We can then get the same structural functions we had for the other pairing functions;
@@ -486,7 +487,8 @@ CubeShell[n_] :=
  ]
 
 CubeUnpair[n_] :=
-  Block[{s, x, y}, s = CubeShell@n;
+  Block[{s, x, y},
+    s = CubeShell@n;
     x = n - CeilingCbrtSum@s;
     y = s - x^3;
     {x, y}
