@@ -435,13 +435,13 @@ However, that `QuadShell` implementation is clearly too slow for our purposes. T
 PreQuadShell[n_] := Floor@Root[-36 n^2 + (1 + 36 n) # - 17 #^2 + 16 #^3 &, 1]
 ```
 
-Which is quite nice, I think, but is subject to periodic off-by-one errors. We can use this as a first pass estimate and adjust accordingly;
+Which is quite nice, I think, but is subject to periodic overestimations. We can use this as a first pass estimate and adjust accordingly;
 
 ```mathematica
 QuadShell[n_] :=
  Block[{s},
   s = PreQuadShell[n];
-  If[n - CeilingSqrtSum[s] < 0, s--];
+  While[n - CeilingSqrtSum[s] < 0, s--];
   s]
 ```
 
@@ -454,6 +454,46 @@ QuadUncurry[f_][x_] := f[QuadFst@x, QuadSnd@x]
 ```
 
 This pairing function ended up not being useful for this post, but I made it as part of this project and its relevant and interesting, so I decided to keep it anyway. However, it won't be appearing beyond this point.
+
+We can follow the same procedure to get other polynomially packed pairs. We can observe the general equation that, for any integer `k > 0`,
+
+![An equation for simplifying sums involving ceiling roots](../img/discCont/CeilingSum.png)
+
+Specializing to `k = 3`, we can repeat the same procedure to get
+
+```mathematica
+CeilingCbrtSum[s_] := # s - (#^2 (# - 1)^2)/4 &[Ceiling[s^(1/3)]]
+CubePair[x_, y_] := CeilingCbrtSum[x^3 + y] + x
+```
+
+and we can perform the same inversion with
+
+```mathematica
+Solve[# s - (#^2 (# - 1)^2)/4 &[s^(1/3)] == n, s, Integers]
+```
+
+to obtain the efficient inversion functions
+
+```mathematica
+PreCubeShell[n_] := 
+ Floor@Root[-64 n^3 + 96 n^2 # + (-1 - 84 n) #^2 + 26 #^3 + 27 #^4 &, 2]
+
+CubeShell[n_] :=
+ Block[{s},
+   s = PreCubeShell[n];
+   While[n - CeilingCbrtSum[s] < 0, s--];
+   s
+ ]
+
+CubeUnpair[n_] :=
+  Block[{s, x, y}, s = CubeShell@n;
+    x = n - CeilingCbrtSum@s;
+    y = s - x^3;
+    {x, y}
+  ]
+```
+
+and an identical procedure can be followed for other values of `k`.
 
 <a name="headingRec"></a>
 ## Recursive Types and Recursion
