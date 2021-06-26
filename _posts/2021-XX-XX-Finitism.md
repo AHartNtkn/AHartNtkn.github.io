@@ -1,6 +1,7 @@
 {% raw %}
 Note: This post is a bit miandering and stream of thought. I've been thinking a lot about this, but I haven't reached a conclustion. Here are a few things I don't want to forget.
 
+## Everything Inside ℕ
 
 One of my main preoccupations recently has been engaging with a philosophy of finitism. I haven't reached any clear conclusion, but this post gives a few notes on the topic.
 
@@ -76,44 +77,67 @@ which can be encoded internally via the Y combinator. Through it we can enumerat
 
 I would like to have a nice self-contained system with countable types as data, countable data as data, countable functions as data, etc. but perhaps I'm asking too much and flirting with the exact sorts of things that breed inconsistency. Partial answers are certainly possible. The system I described has enumerable types, though they can't be enumerated up to type equivalence. Similar things are true of some predicative systems, such as J2, a countable set universe that supports the standard set-theoretic encodings of things, but has the same limitation of not being able to encode inhabitants up to isomorphism. I think this should be possible.
 
-Consider computable functions. Conventional wisdom says there cannot be a bijective encoding of such things up to extensional equivalence since this would allow one to solve the halting problem. However, an encoding only needs to be computable in one direction, the decoding from a natural number. On the other hand, the ability to solve the halting problem comes from the encoding of equivalence classes into natural numbers. In the case of computable functions, we can encode them, up to extensional equivalence, via the following;
+I find some of these ideas quite nice, but the story isn't complete. I feel like I don't really understand how these ideas integrate with data types themselves. How do we get from this conception of types to the richness of, say, dependent type theory? Implementing a type checker for one isn't hard, but that's not what I'm asking about. What would motivate us, a priory, to care about the particular class of tests defined by, say, the simply-typed lambda calculus or System F? If I were a formalist, perhapse I would be satisfied, but I do believe in semantics, so I want more.
 
-1. Encode (not uniquely) all and exactly the total functions. This can be done by enumerating all the proofs in a simply-typed calculus with intersection types and extracting programs from those proofs. A property of such a system is that the extracted programs are exactly and only the total functions; though different proofs can denote the same program, both judgementally and up to extgensional equivalence.
+I have a dream to see everything, all at once. Perhaps I already have and didn't realized it.
 
-2. Build up two databases. The first is a list of functions (these are the computable functions we're enumerating) and the other is a database of input-ouput pairs for all functions in our total function enumeration. Dovetail the expansion of the second database. Every time the second database gets an entry, compare the input-output pairs of that function to everything which is in our first database. If it differs from all previously enumerated functions on at least one input, it's a new computable function, and should be added to the first database. Otherwise, continue.
+## Very Big Things Inside ℕ
 
-In the long run, this procedure will produce a stream which contains exactly and only the total functions, only once up to extensional equivalence. This, however, doesn't allow solving the halting problem since we can't canonicalize a function into a representative from our enumeration, so the inverse isn't computable.
+Consider computable functions. Conventional wisdom says there cannot be a bijective encoding of such things up to extensional equivalence since this would allow one to solve the halting problem. However, an encoding only needs to be computable in one direction, the decoding from a natural number. On the other hand, the ability to solve the halting problem comes from the encoding of equivalence classes into natural numbers. The reason we cannot encode computable functions is simpler and not neccessarily related to halting.
 
-On second thought, this might not work. Perhaps there's a function who's prefix is always in the list whenever its being considered, so it never gets added. In such a case, prefix-equivalent functions would be enumerated for arbitrarily large prefixes but the function itself would never be added... hmm... Perhaps a setup could be made where the size of the prefix lengths always outpace the number of enumerated elements. But that might only work for specific classes of functions, like polynomial time ones (which can be enumerated non-uniquely via bounded arithmetic).
+Assume we have a computable enumeration of computable functions, `e : ℕ → (ℕ → ℕ)`. Define a new function with the following definition;
 
-Based on this, I believe that it should be possible to have a foundation for mathematics which have unique encodings for unique concepts. Though the question is how efficient such a thing could be. The previous algorithm has unboudned complexity, and I believe that's going to be a property for any similar encoding of computable functions. Does such a thing have to hold for the concepts in a foundation of mathematics as well?
+`f n = 1 + (e n n)`
 
-Ultimately, the question boils down to modeling infitite things using finite things. As a simple example of this, consider the following;
+Since `f` differes from every function within `e` on at least one input, `f` must not be within `e`. This together with our assumptions which make `f` computable shows that `e` must not be complete.
+
+I believe a similar fixed-point argument would occure when considering equivalence classes of concepts within any theory sufficiently expressive theory. Does such a thing have to hold for the concepts in a foundation of mathematics as well?
+
+Ultimately, the question boils down to modeling infinite things using finite things. As a simple example of this, consider the following;
 
 The natural numbers are a model of the ordinal ω under the ordinary ordering relation. If we modify the ordering relation so it's ordinary ordering still applies between numbers of equivalent parity (even/oddness). But when comparing an even number to an odd number, we always return true. Under this ordering, 1 is now an internal model of ω, with the whole of natural numbers being a model for 2ω.
 
-We can separate the natural numbers into an infinite number of infinite families; for example by separating nmbers by the number of 1s at the end of a number's binary expansion. We can keep the ordinary ordering withon these families, but between them, we always order numbers with more 1s above those with less. For each n, nω is now internally represented and the natural numbers as a whole model ω².
+We can separate the natural numbers into an infinite number of infinite families; for example by separating numbers by the number of 1s at the end of a number's binary expansion. We can keep the ordinary ordering within these families, but between them, we always order numbers with more 1s above those with less. For each n, nω is now internally represented and the natural numbers as a whole model ω². We can subdivide a countable set into a countably infinite family of countably infinite families. We may do this subdivision on each of these families. We can do this subdivision an arbitrarily large but finite number of times. We can further define a countably infinite family containing each infinite family divided n times for all n. In this way, there are infinite many layers of infinite subdivisions of the natural numbers. We can define bijections between natural numbers and some ordinal notation. We can then define an ordering for this notation and map it back onto the natural numbers making them a model for any countable ordinal. 
 
-We can go further and define bijections between natural numbers and some ordinal notation. We can then define an ordering for this notation and map it back onto the natural numbers making them a model for any countable ordinal.
-
-The key to these constructions is the ordering relation which is finite so long as its computable. This suggests an inescapable need to interface with some notion of computability. Computation is a method to get countable models of uncountable things. One of the main limitations of conceptualising concepts via computational principals is the infinite nature of non-halting programs. However, we don't actually gain any expressiveness by allowing such things. As pointed out by, for example;
+The key to these constructions is the ordering relation which is finite so long as its computable. This suggests an inescapable need to interface with some notion of computability. Computation is a method to get countable models of uncountable things. One of the main limitations of conceptualizing concepts via computational principals is the infinite nature of non-halting programs. However, we don't actually gain any expressiveness by allowing such things. As pointed out by, for example;
 
 - [Turing-completeness totally free](https://strathprints.strath.ac.uk/60166/1/McBride_LNCS2015_Turing_completeness_totally_free.pdf) by Conor McBride
 
-anything computable by a non-total language can be computed by a total language with a parameter stating how many steps a computation should run. If a program halts, we just set the parameter high enough so that enough iterations pass to reach this halting state. In this way all programs terminate while also removing the need for describing any limiting behaviour. There are a few correlaries; for example that anything which can be computed by a turing machine can be computed by a finite circuit. This is, of course, common wisdom; but it does not seem like the relation between circuits and totality is not offten appreciated. Though note that functions can represent infinite families of circuits, so we lose some schematic convenience in using them exclusively.
+anything computable by a non-total language can be computed by a total language with a parameter stating how many steps a computation should run. If a program halts, we just set the parameter high enough so that enough iterations pass to reach this halting state. In this way all programs terminate while also removing the need for describing any limiting behavior. There are a few corollaries; for example that anything which can be computed by a Turing machine can be computed by a finite circuit. This is, of course, common wisdom; but it does not seem like the relation between circuits and totality is not often appreciated. Though note that functions can represent infinite families of circuits, so we lose some schematic convenience in using them exclusively. And, of course, as mentioned before the functions which are well-typed in a simple theory with intersection types are exactly the total ones.
 
-In this way, we can embed the totality of a computational model into a countable domain. In this way, we can create countable models of uncountable domains. We can characterize the computable reals, complex numbers, etc. We can do this for arbitrary metric spaces, as in some constructive models all metric spaces are seperable;
+In this way, we can embed the totality of a computational model into a countable domain. In this way, we can create countable models of uncountable domains. We can characterize the computable reals, complex numbers, etc. We can do this for arbitrary metric spaces, as in some constructive models all metric spaces are separable;
 
 - [Every metric space is separable in function realizability](https://arxiv.org/abs/1804.00427) by Andrej Bauer and Andrew Swan
 
-But this is, arguably, a classic result. From the 
+But this is, arguably, a classic result. From the Löwenheim–Skolem theorem we learn that all infinite theoryies with countably many sentences and variables have countable models. The way it goes about proving this is honestly rather clumsy; though someone who sees more signifigance to the particular notation of first-order logic might disagree. At the very least, there are nicer countable models of heiarchies of set universes.
 
+## HITs
 
+There is a nice construction of a cumulative heirarchy of sets in homotopy type theory via higher inductive types. It's described in one of the chapters of the HoTT book as a minor modification of the ordinary definition of W-types. I don't have a good understanding for how to formulate such things without an ambient theory like I can with (dependent) inductive types as described in my previous post on bijective encodings. If such a framework could be made then creating intuitive, countable models of such things should be straightforward.
 
+One obvious direction is to piggy-back off CaTT, as I described in some detail in my previous post;
 
+- [Omega Categories Made Easy](http://anthonylorenhart.com/2020-10-09-Omega-Categories-Made-Easy/)
 
-I find this idea quite nice, but the story isn't complete. I feel like I don't really understand how these ideas integrate with data types themselves. How do we get from this conception of types to the richness of, say, dependent type theory? Implementing a type checker for one isn't hard, but that's not what I'm asking about. What would motivate us, a priory, to care about the particular class of tests defined by, say, the simply-typed lambda calculus or System F?
+That construction, though complicated, is essentially combinatorial and can easily create countable models for finitely genertated ω-categories and ω-groupoids.
 
+Through the existing constructions of coinductive types, this would also give countable acounts of all the synthetic topoligical spaces.
+
+- [NON-WELLFOUNDED TREES IN HOMOTOPY TYPE THEORY](https://hott.github.io/M-types/m-types.pdf) by BENEDIKT AHRENS, PAOLO CAPRIOTTI, AND RÉGIS SPADOTTI
+- [Partiality, Revisited: The Partiality Monad as a Quotient Inductive-Inductive Type](https://arxiv.org/abs/1610.09254) by Thorsten Altenkirch, Nils Anders Danielsson, Nicolai Kraus
+- [Various new theorems in constructive univalent mathematics written in Agda](https://github.com/martinescardo/TypeTopology) by Martin Escardo
+
+Though the construction of M-types requires the usage of Pi-types, meaning we need a prestablished notion of function beforehand. 
+
+One direction for this which seems promising is some work coming out of the Wolfram Model program. This is a physics research program funded by Wolfram Research trying to use local graph transformations as models for physics. One aspect of it is various automated theorem proving tequniques for graph equalities. This is described in this paper for proving things about ZX-calculus diagrams.
+
+- [ZX-Calculus and Extended Wolfram Model Systems II: FastDiagrammatic Reasoning with an Application to Quantum Circuit](https://arxiv.org/abs/2103.15820) by Jonathan Gorard, Manojna Namuduri, Xerxes D. Arsiwalla
+
+Near the end a connection with higher-inductive types is mentioned. Essentially, each possible replacement rule acts as a 1-homotopy. Some different applications of rewrite rules converge on the same outcome; such things are said to have 2-homotopies between them. This extends to an (honestly rather trivial) notion of n-homotopy. This is elaborated on in a more recent paper;
+
+- [Homotopies in Multiway (Non-Deterministic) Rewriting Systems as n-Fold Categories](https://arxiv.org/abs/2105.10822) by Xerxes D. Arsiwalla, Jonathan Gorard, Hatem Elshatlawy
+
+Though I found it to be a bit disapointing. A future paper by the same group was teased during on of their presentations (I think it was the one given at GRETA) seems to say something more interesting. Part of the automated theorem proving system they use utilizes a combination of knuth-bendix, superposition, resolution, and paramodulation to elaborate all the different ways various terms within a local region of rewrite space might be related. Each of these tequniques gives a proof-net like graph subject to its own simplification/rewrite rules. This may give insights into the foudnations of logic, and if enough control could be exerted one might be able to give a generic account of higher-inductive types with a particular ease for formalizing logics ameanable to first-order unification based reasoning. But, we'll have to see.
 
 
 
