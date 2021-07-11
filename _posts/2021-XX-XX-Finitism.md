@@ -274,22 +274,22 @@ There are first-order axioms that don't have finite models. The paper
 
 - [On First-Order Sentences without Finite Models](https://www.jstor.org/stable/30041729) by Marko Djordjević
 
-talks about them. Really, he only considers variations of two such axioms. The first is the assertion that there exists a total, irreflexive order, <, such that, for any x, there exists a y s.t. x < y. The other defines a successor function, stating there exists a total, injective function, S : ℕ → ℕ, meeting a few conditions. Both provide obvious methods for iteratively making more and more elements. Without a countable model, we can't satisfy them.
+talks about them. Really, he only considers variations of two such axioms. The first is the assertion that there exists a total, irreflexive order, `<`, such that, for any `x`, there exists a `y` s.t. `x < y`. The other defines a successor function, stating there exists a total, injective function, `S : ℕ → ℕ`, meeting a few conditions. Both provide obvious methods for iteratively making more and more elements. Without a countable model, we can't satisfy them.
 
 To me, the infinite nature comes from a combination of totality + uniqueness + saturation. The saturation states that everything in the theory has to be part of what we're modeling. The uniqueness prevents us from reusing elements during a construction. The totality ensures we can never stop the construction. To get finite variants, we could remove any of these, but I think removing totality will respect the spirit of the original construction more than the alternatives. If we did this for natural numbers, we'd get something like;
 
 Natural numbers
 - exists a non-total, injective function `S : ℕ → ℕ` s.t.
-  - `∀ n : ℕ . n ∉ S+ n`
-    - where `S+` denotes the transitive closure of `S`
+  - `∀ n : ℕ . n ∉ S⁺ n`
+    - where `S⁺` denotes the transitive closure of `S`
   - and the element `n` such that `S n` is undefined is, if it exists, unique.
 
 we could rephrase this in terms of predecessor instead.
 
 - exists at most one distinguished element 0
-- exists a non-total, injective function P : ℕ → ℕ s.t.
-  - `∀ n : ℕ . n = 0 | ∃ y . P x = y
-  - `∀ n : ℕ . n ∉ P+ n`
+- exists a non-total, injective function `P : ℕ → ℕ` s.t.
+  - `∀ n : ℕ . n = 0 | ∃ y . P x = y`
+  - `∀ n : ℕ . n ∉ P⁺ n`
 
 These definitions are essentially duel to each other. In the first, we define a unique total ordering descending from a maximal element; in the second we define the same ascending from a unique minimal element.
 
@@ -298,21 +298,22 @@ In essence, infinite things have a "totality + injectivity + saturation" formula
 
 
 For binary trees
-- exists a distinguished element L
-- exists a non-total, injective function B : Tree → Tree → Tree s.t.
-  - all elements, x, are either L, or there exists a y, z s.t. B y z = x
-
+- exists at most one distinguished element `L`
+- exists a non-total, functions `Left, Right : Tree → Tree` s.t.
+  - `∀ x, y : Tree . Left x = Left y & Right x = Right y ⇒ x = y`
+  - `∀ x : Tree . x = L | (∃ y . Left x = y) & (∃ y . Right x = y)`
+  - `∀ x : Tree . x ∉ (Left ∪ Right)⁺ x`
 
 This works in more esoteric circumstances. Take the model of 2ω from earlier; we could easily make this finite, but it would just produce any mundane total ordering up to isomorphism. The missing piece is the "infinite ascent" aspect of the model. We can ascend from any even number and never reach an odd number, but the orderings still put us above all the evens when we're at an odd. We can formulate a finite version of this like so;
 
-- exists a distinguished element 0
-- exists a distinguished element ω
-- exists a non-total, injective function S : 2ω → 2ω s.t.
-  - all elements, x, are either 0, ω, or there exists a y s.t. S y = x
-- exists a total order on 2ω s.t. 
-  - 0 < ω
-  - x < S x
-  - if x < ω then S x < ω
+- exists a distinguished element `0`
+- exists a distinguished element `ω`
+- exists a non-total, injective function `S : 2ω → 2ω` s.t.
+  - `∀ x . x = 0 | x = ω | ∃ y . S y = x`
+- exists a total order on  `2ω` s.t. 
+  - `0 < ω`
+  - `x < S x`
+  - if `x < ω` then `S x < ω`
 
 In this way, we saturate the finite set with two families; the iterated successors from 0 and the iterated successors from ω. The orderings are appropriate, but the interesting aspect is the non-totality of succession. Starting from either 0 or ω, we must eventually top out; starting from 0 we will do so before reaching ω. Hence, no matter how much we ascend from 0 we can never reach ω while ω is still ordered above 0; just like with the infinite model.
 
