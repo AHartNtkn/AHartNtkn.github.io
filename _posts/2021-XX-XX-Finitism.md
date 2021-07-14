@@ -118,7 +118,13 @@ unquote q := q (λx.x) (λx.x)
 
 Through it, we can enumerate all the programs whose syntax passes some test generated from a datatype. Issuing that to `unquote` will get us the type of those programs verbatim. We can, of course, easily modify this to incorporate a choice operator as well.
 
-This is all nice, but I'm still not satisfied. An improvement to this would be replacing lambda expressions with interaction combinators. Specifically, those of the symmetric interaction combinators extended with a choice operator;
+This does not seem too dissimilar from the calculus of relations described, for example, in
+
+- [The Calculus of Relations as a Foundationfor Mathematics](https://www.semanticscholar.org/paper/The-Calculus-of-Relations-as-a-Foundation-for-Givant/0dc8a12ab0cf62fc43394f35afa64b3e1e016ce4) by Steven Givan
+
+Though, the main problem with that is the lack of computational content. By using a system with binary list hylomorphisms, similar to the previous set-function system, we get a calculus of computable predicates (represetned as lists of booleans). By interpreting indexes via an isomorphism between ℕ and ℕ ⨯ ℕ, we may equivalently interpret it as a theory of computable relations. There may be something to that idea, but I haven't dedicated the time to elaborating it.
+
+This is all nice, but I'm still not satisfied. An improvement to the lambda calculus system would be replacing lambda expressions with interaction combinators. Specifically, those of the symmetric interaction combinators extended with a choice operator;
 
 ```
 | |       |  |
