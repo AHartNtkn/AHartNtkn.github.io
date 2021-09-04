@@ -48,13 +48,13 @@ we can define a simple HOAS encoding of lambda terms into the lambda calculus th
 Typically, an encoding like the one we want would be terms of type
 
 ```
-∀X . (X → X → X) → ((X → X) → X) → X
+∀X. (X → X → X) → ((X → X) → X) → X
 ```
 
 This essentially defines HOAS terms in terms of their folds. This works perfectly well, but it's not too convenient as it has linear-time destructors. Unlike other types, perhaps, we will be frequently interlacing constructors and destructors. As a consequence, it's better to look at our encoding as an iterated polynomial functor;
 
 ```
-μX . (X ✕ X) + (X → X)
+μX. (X ✕ X) + (X → X)
 ```
 
 Application is the first component of the coproduct; a product encoded as;
@@ -66,7 +66,7 @@ app = λx y. λa l. a x y
 Lambda expressions are the second component, encoded as
 
 ```
-lam = λf . λa l. l f
+lam = λf. λa l. l f
 ```
 
 We can implement them as
@@ -97,7 +97,7 @@ We can consolidate the cases by eliminating lambda-encoded lists;
 
 ```
 eval (app x y) l = eval x (y : l)
-eval (lam f) l   = l (lam f) (λx l . eval (f x) l)
+eval (lam f) l   = l (lam f) (λx l. eval (f x) l)
 ```
 
 And we can further consolidate by eliminating on lambda-encoded lambdas.
@@ -105,7 +105,7 @@ And we can further consolidate by eliminating on lambda-encoded lambdas.
 ```
 eval a = 
    a (λx y. λl. eval x (y : l))
-     (λf. λl. l (lam f) (λx l . eval (f x) l))
+     (λf. λl. l (lam f) (λx l. eval (f x) l))
 ```
 
 If we define
@@ -113,7 +113,7 @@ If we define
 ```
 F = λe. λa. 
       a (λx y. λl. e x (y : l))
-        (λf. λl. l (lam f) (λx l . e (f x) l))
+        (λf. λl. l (lam f) (λx l. e (f x) l))
 ```
 
 Then we can define
