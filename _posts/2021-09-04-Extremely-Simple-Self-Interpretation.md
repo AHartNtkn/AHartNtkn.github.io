@@ -178,11 +178,11 @@ Out[2]> λ[λ[0[λ[λ[λ[0[λ[λ[λ[
         ]]]]]]]]]]]]]]]]]
 ```
 
-I believe this is the record for the simplest non-trivial lambda calculus self-interpreter. The simplest I'm aware of prior to this was described by John Tromp
+The simplest self-interpreter I'm aware of prior to this was described here;
 
-- ["John's Lambda Calculus and Combinatory Logic Playground"](https://tromp.github.io/cl/cl.html)
+- ["John's Lambda Calculus and Combinatory Logic Playground"](https://tromp.github.io/cl/cl.html) by John Tromp.
 
-His was 206 bits when encoded using his binary lambda calculus scheme. We can define his scheme as a simple recursive function;
+The one there uses a de Bruijin encoding and is 206 bits when put in binary lambda calculus. We can define that a simple recursive function;
 
 ```mathematica
 blc[λ[M_]]     := "00" <> blc[M]
@@ -190,7 +190,7 @@ blc[M_[N_]]    := "01" <> blc[M] <> blc[N]
 blc[i_Integer] := StringJoin@Table["1", {i}] <> "0"
 ```
 
-Encoding my self interpreter we find that it's only 117 bits, nearly half the size of previous self-interpreters.
+Encoding my self interpreter we find that it's only 117 bits.
 
 ```mathematica
 In[1] > blc@ev
