@@ -84,18 +84,18 @@ eval (app x y) l   = eval x (y : l)
 eval (lam f) (x:l) = eval (f x) l
 eval (lam f) nil   = lam f
 ```   
- 
+
 If you've seen lazy evaluators before (such as the one I gave near the beginning of this post), you'd expect this to be mutually recursive with another function that refolds the spine of the expression, but the reusage of the lambda binder makes that redundant. The only situation which the fold would be called is one where the list of spine elements is empty and hence there's nothing to fold.
-   
+
 We can consolidate the cases by eliminating lambda-encoded lists;
 
 ```haskell
 eval (app x y) l = eval x (y : l)
 eval (lam f) l   = l (lam f) (λx l . eval (f x) l)
-```   
-  
+```
+
 And we can further consolidate by eliminating on lambda-encoded lambdas.
-      
+
 ```haskell
 eval a = 
    a (λx y. λl. eval x (y : l))
@@ -115,7 +115,7 @@ Then we can define
 ```haskell
 eval = F eval
 ```
-      
+
 This makes `eval` a simple instance of the y combinator; specifically, we can define `eval` to be
 
 ```haskell
@@ -197,7 +197,7 @@ In[1] > blc@ev
 In[2] > % // StringLength
 
 Out[1]> 00010101000100011001000001100100000001010000000010111110110
-         0000010101110110000001010000001011100001111100111000000010
+        0000010101110110000001010000001011100001111100111000000010
 Out[2]> 117
 ```
 
