@@ -43,7 +43,7 @@ Encoding lambda expressions within the lambda calculus isn't hard. From;
 - ["A self-interpreter of lambda calculus having a normal form"](http://people.dm.unipi.it/berardu/Art/1992Self-interpreter/efficient.pdf) by Berarducci and Bohm
 - ["Efficient Self—Interpretation in Lambda Calculus"](https://www.researchgate.net/publication/2673832_Efficient_Self-Interpretation_in_Lambda_Calculus) by Torben Mogensen
 
-we can define a simple HOAS encoding of lambda terms into the lambda calculus that I'll implement in a bit. Through this encoding, we can directly access the syntax of a program. We can define an evaluator/unquote function but this function will return a bottom-expression; not another HOAS-encoded expression. This means we lose the ability to reason about the syntax of the expression after unquoting. So we need a self-interpreter that will evaluate the expression without unquoting it.
+we can define a simple HOAS encoding of lambda terms into the lambda calculus that I'll implement in a bit. Through this encoding, we can directly access the syntax of a program. We can also define an evaluator/unquote function but this function will return a bottom-expression; not another HOAS-encoded expression. This means we lose the ability to reason about the syntax of the expression after unquoting. So we need a self-interpreter that will evaluate the expression without unquoting it.
 
 The HOAS encoding will be terms of type
 
