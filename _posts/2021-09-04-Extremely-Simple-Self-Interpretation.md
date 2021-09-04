@@ -45,13 +45,19 @@ Encoding lambda expressions within the lambda calculus isn't hard. From;
 
 we can define a simple HOAS encoding of lambda terms into the lambda calculus that I'll implement in a bit. Through this encoding, we can directly access the syntax of a program. We can also define an evaluator/unquote function but this function will return a bottom-expression; not another HOAS-encoded expression. This means we lose the ability to reason about the syntax of the expression after unquoting. So we need a self-interpreter that will evaluate the expression without unquoting it.
 
-The HOAS encoding will be terms of type
+Typically, an encoding like the one we want would be terms of type
 
 ```
 ∀X . (X → X → X) → ((X → X) → X) → X
 ```
 
-Application is the first component of the product, encoded as;
+This essentially defines HOAS terms in terms of their folds. This works perfectly well, but it's not too convenient as it has linear-time destructors. Unlike other types, perhaps, we will be frequently interlacing constructors and destructors. As a consequence, it's better to look at our encoding as an iterated polynomial functor;
+
+```
+μX . (X ✕ X) + (X → X)
+```
+
+Application is the first component of the coproduct; a product encoded as;
 
 ```
 app = λx y. λa l. a x y
