@@ -53,13 +53,13 @@ The HOAS encoding will be terms of type
 
 Application is the first component of the product, encoded as;
 
-```haskell
+```
 app = λx y. λa l. a x y
 ```
 
 Lambda expressions are the second component, encoded as
 
-```haskell
+```
 lam = λf . λa l. l f
 ```
 
@@ -79,7 +79,7 @@ es = lam[λ[lam[λ[lam[λ[app[app[2][0]][app[1][0]]]]]]]];
 
 We can use this encoding to define a simple lazy interpreter using a typical spine-stack evaluator;
 
-```haskell
+```
 eval (app x y) l   = eval x (y : l)
 eval (lam f) (x:l) = eval (f x) l
 eval (lam f) nil   = lam f
@@ -89,14 +89,14 @@ If you've seen lazy evaluators before (such as the one I gave near the beginning
 
 We can consolidate the cases by eliminating lambda-encoded lists;
 
-```haskell
+```
 eval (app x y) l = eval x (y : l)
 eval (lam f) l   = l (lam f) (λx l . eval (f x) l)
 ```
 
 And we can further consolidate by eliminating on lambda-encoded lambdas.
 
-```haskell
+```
 eval a = 
    a (λx y. λl. eval x (y : l))
      (λf. λl. l (lam f) (λx l . eval (f x) l))
@@ -104,7 +104,7 @@ eval a =
 
 If we define
 
-```haskell
+```
 F = λe. λa. 
       a (λx y. λl. e x (y : l))
         (λf. λl. l (lam f) (λx l . e (f x) l))
@@ -112,13 +112,13 @@ F = λe. λa.
 
 Then we can define
 
-```haskell
+```
 eval = F eval
 ```
 
 This makes `eval` a simple instance of the y combinator; specifically, we can define `eval` to be
 
-```haskell
+```
 eval = Y F
 ```
 
