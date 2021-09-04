@@ -33,9 +33,9 @@ s = λ[λ[λ[2[0][1[0]]]]];
 ```
 
 ```mathematica
-In = eval[s[k][k][x]]
+In > eval[s[k][k][x]]
 
-Out= x
+Out> x
 ```
 
 Encoding lambda expressions within the lambda calculus isn't hard. From;
@@ -172,23 +172,23 @@ ev = λ[Y[λ[λ[
 We can test this on a few simple examples. Here, we encode k and s combinators in our HOAS encoding and evaluate `s k k k` to get `k`.
 
 ```mathematica
-In[1] = ev[app[app[app[es][ek]][ek]][ek]] // eval
-In[2] = ek // eval
+In[1] > ev[app[app[app[es][ek]][ek]][ek]] // eval
+In[2] > ek // eval
 
-Out[1]= λ[λ[0[λ[λ[λ[0[λ[3]]]]]]]]
-Out[2]= λ[λ[0[λ[λ[λ[0[λ[3]]]]]]]]
+Out[1]> λ[λ[0[λ[λ[λ[0[λ[3]]]]]]]]
+Out[2]> λ[λ[0[λ[λ[λ[0[λ[3]]]]]]]]
 ```
 
 Here, we encode k and s combinators in our HOAS encoding and evaluate `s k k s` to get `s`.
 
 ```mathematica
-In[1] = ev[app[app[app[es][ek]][ek]][es]] // eval
-In[2] = es // eval
+In[1] > ev[app[app[app[es][ek]][ek]][es]] // eval
+In[2] > es // eval
 
-Out[1]= λ[λ[0[λ[λ[λ[0[λ[λ[λ[
+Out[1]> λ[λ[0[λ[λ[λ[0[λ[λ[λ[
           0[λ[λ[λ[1[λ[λ[1[10][4]]]][λ[λ[1[7][4]
         ]]]]]]]]]]]]]]]]]
-Out[2]= λ[λ[0[λ[λ[λ[0[λ[λ[λ[
+Out[2]> λ[λ[0[λ[λ[λ[0[λ[λ[λ[
           0[λ[λ[λ[1[λ[λ[1[10][4]]]][λ[λ[1[7][4]
         ]]]]]]]]]]]]]]]]]
 ```
@@ -208,12 +208,12 @@ blc[i_Integer] := StringJoin@Table["1", {i}] <> "0"
 Encoding my self interpreter we find that it's only 117 bits, nearly half the size of previous self-interpreters.
 
 ```mathematica
-In[1] = blc@ev
-In[2] = % // StringLength
+In[1] > blc@ev
+In[2] > % // StringLength
 
-Out[1] = 00010101000100011001000001100100000001010000000010111110110
+Out[1]> 00010101000100011001000001100100000001010000000010111110110
          0000010101110110000001010000001011100001111100111000000010
-Out[2] = 117
+Out[2]> 117
 ```
 
 The reason I wanted to write a self interpreter was to write programs that can reason effectively about the syntax of lambda expressions. This is essential for type-checking and program synthesis. As part of the project I mentioned at the beginning of this post would be a section on implementing proof and program search a la MiniKanren but in the pure lambda calculus. I'm not sure if it's possible using this encoding since equality between HOAS expressions isn't decidable, but there may be a trick around that.
