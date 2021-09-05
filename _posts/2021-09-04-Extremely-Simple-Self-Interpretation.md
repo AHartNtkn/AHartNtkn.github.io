@@ -54,7 +54,7 @@ Typically, an encoding like the one we want would be terms of type
 This essentially defines HOAS terms in terms of their folds. This works perfectly well, but it's not too convenient as it has linear-time destructors. Unlike other types, perhaps, we will be frequently interlacing constructors and destructors. As a consequence, it's better to look at our encoding as an iterated polynomial functor;
 
 ```
-μX. (X ✕ X) + (X → X)
+μX. (X × X) + (X → X)
 ```
 
 Application is the first component of the coproduct; a product encoded as;
