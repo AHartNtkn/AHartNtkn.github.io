@@ -114,7 +114,7 @@ And that's everything we need to calculate differential forms of lambda expressi
 
 ```
 𝕕(λx. λy. x) = λx. λ𝕕x. 𝕕(λy. x) 
-             = λx. λ𝕕x. λ𝕕y. 𝕕x
+             = λx. λ𝕕x. λy. λ𝕕y. 𝕕x
 ```
 
 ```
