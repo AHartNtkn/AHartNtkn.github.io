@@ -37,7 +37,7 @@ Assume we have an expression, `e`, which is made up solely of additions, multipl
 1. If `e` is a variable `xn` then `𝕕e` will be `𝕕xn`, which, taken as a function of `𝕕xn` is a linear approximation of `xn` with coefficient/derivative 1.
 2. If `e` is a constant then `𝕕e` will be 0; a linear approximation of a constant.
 3. If `e` is of the form `e1 + e2` then `𝕕e` will be `𝕕e1 + 𝕕e2`. `𝕕e1` and `𝕕e2` will be a linear combination of `𝕕xn`s by the inductive hypothesis and this will remain true when both are added together.
-4. If `e` is of the form `e1 e2` then `𝕕e` will be `𝕕e1 e2 + e1 𝕕e2`. `𝕕e1` and `𝕕e2` will be a linear combination of `𝕕xn`s by the inductive hypothesis and this will remain true when both are added together. We also assumed that `e2` and `e1` don't contain any `𝕕xn`s, so `𝕕e1 e2` and `e1 𝕕e2` are also linear combinations of `𝕕xn`s, as is their sum.
+4. If `e` is of the form `e1 e2` then `𝕕e` will be `𝕕e1 e2 + e1 𝕕e2`. `𝕕e1` and `𝕕e2` will be a linear combination of `𝕕xn`s by the inductive hypothesis. We also assumed that `e2` and `e1` don't contain any `𝕕xn`s, so `𝕕e1 e2` and `e1 𝕕e2` are also linear combinations of `𝕕xn`s, as is their sum.
 
 The coefficient of `𝕕xn` within `𝕕e` is the partial derivative with respect to `xn` of `e`.
 
