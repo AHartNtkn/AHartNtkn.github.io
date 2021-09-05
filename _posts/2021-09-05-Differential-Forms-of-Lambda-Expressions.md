@@ -139,7 +139,7 @@ which is the same derivative as `λx. x`. Appropriate, since they are eta-equiva
 = λf. λ𝕕f. λg. λ𝕕g. λx. λ𝕕x. 𝕕f(x, 𝕕x, g(x), 𝕕g(x, 𝕕x))
 ```
 
-Neat. But, it's worth noting that we don't really get a derivative out of this. Remember, the derivative is a coefficient of a differential form as part of a linear combination. We don't get linear combinations here since we don't even have addition. Well, that's not entirely true. In the `𝕕(λx. λy. x)` case, for example, we can interpret `𝕕x` as `1 𝕕x + 0 𝕕y`, and read, entirely correct, derivatives from that. But that's pretty loosey-goosey and we definitely can't do that in more realistic scenarios.
+Neat! But, it's worth noting that we don't really get a derivative out of this. Remember, the derivative is a coefficient of a differential form as part of a linear combination. We don't get linear combinations here since we don't even have addition. Well, that's not entirely true. In the `𝕕(λx. λy. x)` case, for example, we can interpret `𝕕x` as `1 𝕕x + 0 𝕕y`, and read, entirely correct, derivatives from that. But that's pretty loosey-goosey and we definitely can't do that in more realistic scenarios.
 
 The main utility of differential programming is the ability to use gradient descent to do a form of program synthesis. This gives us a differential form in computationally generic domains and a derivative in some discrete domains. However, this doesn't give any obvious discrete form of gradient descent. I suspect such a thing does exist, but this doesn't make such a thing clear. I may be wrong though and we might need to seek out a special case of what I've presented here where continuity persists. Something like quasi-Borel spaces which have already been used for higher-order probabilistic programming.
 
