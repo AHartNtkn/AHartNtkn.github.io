@@ -91,7 +91,7 @@ eval (lam f) (x:l) = eval (f x) l
 eval (lam f) nil   = lam f
 ```   
 
-If you've seen lazy evaluators before (such as the one I gave near the beginning of this post), you'd expect this to be mutually recursive with another function that refolds the spine of the expression, but the reusage of the lambda binder makes that redundant. The only situation which the fold would be called is one where the list of spine elements is empty and hence there's nothing to fold.
+If you've seen lazy evaluators before (such as the one I gave near the beginning of this post), you'd expect this to be mutually recursive with another function that refolds the spine of the expression, but the reuse of the lambda binder makes that redundant. The only situation in which the fold would be called is one where the list of spine elements is empty and hence there's nothing to fold.
 
 We can consolidate the cases by eliminating lambda-encoded lists;
 
@@ -103,17 +103,17 @@ eval (lam f) l   = l (lam f) (λx l. eval (f x) l)
 And we can further consolidate by eliminating on lambda-encoded lambdas.
 
 ```
-eval a = 
-   a (λx y. λl. eval x (y : l))
-     (λf. λl. l (lam f) (λx l. eval (f x) l))
+eval a l =  
+   a (λx y. eval x (y : l))
+     (λf. l (lam f) (λx l. eval (f x) l))
 ```
 
 If we define
 
 ```
-F = λe. λa. 
-      a (λx y. λl. e x (y : l))
-        (λf. λl. l (lam f) (λx l. e (f x) l))
+F = λe. λa. λl. 
+      a (λx y. e x (y : l))
+        (λf. l (lam f) (λx l. e (f x) l))
 ```
 
 Then we can define
@@ -144,20 +144,19 @@ cons = λ[λ[λ[λ[0[3][2]]]]];
 We can then, with some care, define F from earlier
 
 ```mathematica
-F = λ[λ[
-     0[λ[λ[λ[4[2][cons[1][0]]]]]]
-      [λ[λ[0[lam[1]][λ[λ[5[3[1]][0]]]]]]]
-    ]]
+F = λ[λ[λ[
+      1[λ[λ[4[1][cons[0][2]]]]]
+       [λ[1[lam[0]][λ[4[1[0]]]]]]
+    ]]]
 ```
 
 We can clean up F a bit using some beta and eta-equivalences. We also need to feed it into a Y and feed that an empty list, finally getting our evaluator as;
 
 ```mathematica
-ev = λ[Y[λ[λ[
-            0[λ[λ[λ[4[2][λ[λ[0[3][2]]]]]]]]
-             [λ[λ[0[λ[λ[0[3]]]][λ[4[2[0]]]]]]]
-         ]]
-        ][0][nil]]
+ev = λ[Y[λ[λ[λ[
+       1[λ[λ[4[1][λ[λ[0[2][4]]]]]]]
+        [λ[1[λ[λ[0[2]]]][λ[4[1[0]]]]]]]
+     ]]][0][nil]]
 ```
 
 We can test this on a few simple examples. Here, we encode k and s combinators in our HOAS encoding and evaluate `s k k k` to get `k`.
@@ -184,11 +183,11 @@ Out[2]> λ[λ[0[λ[λ[λ[0[λ[λ[λ[
         ]]]]]]]]]]]]]]]]]
 ```
 
-The simplest self-interpreter I'm aware of prior to this was described here;
+The simplest self-interpreter I'm aware of before this was described here;
 
 - ["John's Lambda Calculus and Combinatory Logic Playground"](https://tromp.github.io/cl/cl.html) by John Tromp.
 
-The one there uses a de Bruijin encoding and is 206 bits when put in binary lambda calculus. We can define that a simple recursive function;
+The one there uses a de Bruijn encoding and is 206 bits when put in binary lambda calculus. We can define that a simple recursive function;
 
 ```mathematica
 blc[λ[M_]]     := "00" <> blc[M]
@@ -196,17 +195,83 @@ blc[M_[N_]]    := "01" <> blc[M] <> blc[N]
 blc[i_Integer] := StringJoin@Table["1", {i}] <> "0"
 ```
 
-Encoding my self interpreter we find that it's only 117 bits.
+Encoding my self interpreter we find that it's only 115 bits.
 
 ```mathematica
 In[1] > blc@ev
 In[2] > % // StringLength
 
-Out[1]> 00010101000100011001000001100100000001010000000010111110110
-        0000010101110110000001010000001011100001111100111000000010
-Out[2]> 117
+Out[1]> 0001010100010001100100000110010000000001011000000101111101
+        000000101011011110000101100000010110000111110011000000010
+Out[2]> 115
 ```
 
-The reason I wanted to write a self interpreter was to write programs that can reason effectively about the syntax of lambda expressions. This is essential for type-checking and program synthesis. As part of the project I mentioned at the beginning of this post would be a section on implementing proof and program search a la MiniKanren but in the pure lambda calculus. I'm not sure if it's possible using this encoding since equality between HOAS expressions isn't decidable, but there may be a trick around that.
+Of course, there's a problem with the interpreter I just gave. It only evaluates things into weak head normal form. To get a full normal form, we need to have a marker for variable positions to act as a base case. Something like
+
+```haskell 
+spine (app a b) l   = spine a (b:l)
+spine (lam f) (a:l) = spine (f a) l
+spine (lam f) []    = lam (λ x . spine (f (var x)) [])
+spine (var x) l     = folda x l
+
+folda x (b:l) = folda (app x (spine b [])) l
+folda x [] = x
+```
+
+Note that the encodings for particular programs aren't really changing. `var` should ONLY be added by the evaluator; the programmer should never place them deliberately within an expression. The evaluator artificially adds `var`s as tags when recursing on an abstraction so it knows where to stop. The nature of bound variables is their black-box nature, meaning a program can't tell if it's looking at a variable if it isn't tagged as such. Since we now have three cases, the constructor encodings must change accordingly;
+
+```mathematica
+app = λ[λ[λ[λ[λ[2[4][3]]]]]];
+lam = λ[λ[λ[λ[1[3]]]]];
+var = λ[λ[λ[λ[0[3]]]]];
+```
+
+The evaluator can be turned from a mutually recursive function to an ordinary recursive one by noting that `folda` is only ever called on `var`.
+
+```haskell
+spine (app a b) l   = spine a (b:l)
+spine (lam f) (a:l) = spine (f a) l
+spine (lam f) []    = lam (λ x . spine (f (var x)) [])
+spine (var x) (a:l) = spine (var (app x (spine a []))) l
+spine (var x) []    = x
+```
+
+By performing similar transformations as before, we can redefine `spine` as
+
+```haskell
+spine = (λs e l.
+            e (λa b. s a (b:l)) 
+              (λf. l (lam (λx. s (f (var x)) [])) 
+                     (λa l. s (f a) l)) 
+              (λx. l x (λa l. s (var (app x (s a []))) l))
+        ) spine
+```
+
+by shoving this into a y combinator and making similar modifications as before, we get a full normal form evaluator.
+
+```mathematica
+evn = 
+ λ[Y[λ[λ[λ[
+       1[λ[λ[4[1][λ[λ[0[2][4]]]]]]]
+        [λ[1[λ[λ[λ[1[λ[7[4[λ[λ[λ[0[3]]]]]][λ[λ[1]]]]]]]]]
+            [λ[4[1[0]]]]]]
+        [λ[1[0][λ[4[λ[λ[λ[0[λ[λ[λ[2[7][10[6][λ[λ[1]]]]]]]]]]]]]]]]
+       ]
+  ]]][0][nil]]
+```
+
+```mathematica
+In[1] > evn[lam[λ[app[app[app[es][ek]][ek]][ek]]]] // eval
+In[2] > lam[λ[ek]] // eval
+
+Out[1]> λ[λ[λ[1[λ[λ[λ[λ[1[λ[λ[λ[λ[1[λ[4]]]]]]]]]]]]]]]
+Out[2]> λ[λ[λ[1[λ[λ[λ[λ[1[λ[λ[λ[λ[1[λ[4]]]]]]]]]]]]]]]
+```
+
+Note that `es` and `ek` are different from before since `app`, etc. have different definitions; though both have the same definition otherwise.
+
+This new evaluator isn't quite as terse being 233 bits in BLC, but it's still pretty small. More importantly, unlike most other interpreters, this should work quite well in languages like interaction combinators where the method of binding is completely different from any standard lambda calculus.
+
+The reason I wanted to write a self interpreter was to write programs that can reason effectively about the syntax of lambda expressions. This is essential for type-checking and program synthesis. As part of the project I mentioned at the beginning of this post would be a section on implementing proof and program search a la MiniKanren but in the pure lambda calculus.
 
 {% endraw %}
