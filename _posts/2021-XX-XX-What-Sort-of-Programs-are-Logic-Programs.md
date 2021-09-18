@@ -83,9 +83,9 @@ this is doing true pattern matching; it cannot compile it away the way Haskell c
 leafCount[tranch[x_, y_, z_]] := leafCount[x] + leafCount[y] + leafCount[z]
 ```
 
-and it will not interfere with anything else. In Haskell, this can't be done since the original type has no `Tranch` constructor. We'd have to make a new function which takes this new type. And, of course, the lambda encoded version would have to be modified in detail to compensate. Ultimately, though, I much prefer the lambda calculus where one must encode the intention into the design of data itself rather than giveing informative names to symbols which are nothing but vacious tokens.
+and it will not interfere with anything else. In Haskell, this can't be done since the original type has no `Tranch` constructor. We'd have to make a new function which takes this new type. And, of course, the lambda encoded version would have to be modified in detail to compensate. Specifically, we'd have to modify the way we encode the tree data from the very start. Ultimately, though, I much prefer the lambda calculus where one must encode the intention into the design of data itself rather than giving informative names to symbols which are nothing but vacuous tokens.
 
-Back to logic programming, I have to ask, why is unification used at all? Should there not exist similar methods which avoid it alltogether? I think so. It seems to me that unification plays the same role in relational programming that pattern matching does in functional programming. It exists principally as a way to compensate for the expectation that any symbol at all might appear anywhere. But, of course, in practice we do know what might apear where. Take this commonplace example of a relational addtion function;
+Back to logic programming, I have to ask, why is unification used at all? Should there not exist similar methods which avoid it altogether? I think so. It seems to me that unification plays the same role in relational programming that pattern matching does in functional programming. It exists principally as a way to compensate for the expectation that any symbol at all might appear anywhere. But, of course, in practice we do know what might appear where. Take this commonplace example of a relational addtion function;
 
 ```prolog
 add(z, X, X).
@@ -94,17 +94,147 @@ add(s(X), Y, s(Z)) :- add(X, Y, Z).
 
 Why would we need unification for this? We know what might appear in all three slots. There are only two options, a zero case and a successor case. We should be able to use a lambda encoding and route around the data appropriately. We should be able to do this in general and not require unification ever to execute logic programs. A true lambda calculus for relational programming, whatever that might look like, would certainly never do unification; it would be branchless by nature just like the functional lambda calculus.
 
-The point of this post is not to describe a relational lamdba calculus. I'm not convinced that such a thing is desirable in the first place. Instead, I want to understand how to implement logic programs in a functional setting without relying on a DSL. As part of that, I want to understand how to implement the dynamics of logic programs without recapitulating their conventional forms.
+The point of this post is not to describe a relational lambda calculus. I'm not convinced that such a thing is desirable in the first place. Instead, I want to understand how to implement logic programs in a functional setting without relying on a DSL. I want to understand how to implement the dynamics of logic programs without recapitulating their conventional forms which are rife with inefficiencies.
 
+A good place to start is the logic monad, originally described in
 
+- [Backtracking, Interleaving, and Terminating, Monad Transformers](http://okmij.org/ftp/papers/LogicT.pdf) by Kiselyov et al.
 
+Unfortunately, this doesn't implement logic programming at all. If we look at the type of the `LogicT` monad transformer, we see it's;
 
+```haskell
+logic :: (forall r. (a -> r -> r) -> r -> r) -> Logic a 
+```
 
+This is just a wrapper over the church-encoded list type. All it is, under the hood, are lists which look like
 
+```haskell
+\c n -> c 1 (c 2 (c 3 n))
+```
 
+etc. If that's all it is, then what does it even do for us? As a first attempt at capturing logic programming, we could try taking seriously the formalization of relations as functions into `Bool`. We could define the addition relation as;
 
+```haskell
+data Nat = Z | S Nat deriving (Show, Eq)
 
+add Z y z = y == z
+add (S x) y (S z) = add x y z 
+add _ _ _ = False
+```
 
+To actually run this relation, we can use it as a filter for a procedure which enumerates all `Nat`s. For example, we can define subtration in terms of this addition as;
+
+```haskell
+nats = Z:map S nats
+
+sub z x = filter (\y -> add x y z) nats
+```
+
+Of course, when we run this, we get an output which runs forever;
+
+```haskell
+> sub (S (S (S Z))) (S Z)
+
+[(S (S Z))
+```
+
+The list of answers is returned, but since there are no additional outputs, it stalls forever. A proper logic program would halt at this point, but I'll address that descrpency in a bit.
+
+The utility of the logic monad becomes clear if we write a query with multiple variables.
+
+```haskell
+sumTo z = 
+  filter (\(x, y) -> add x y z) $
+  nats >>= \n ->
+  nats >>= \m ->
+  return (n, m)
+```
+
+When we run it, we get a similar result;
+
+```haskell
+> sumTo (S(S(S(S Z))))
+
+[(Z,S (S (S (S Z))))
+```
+
+however, the stalling occures prior to echausting all possible answers. The reason is that the list monad binder is attempting to append the infinite list consisting of pairs of the form `(Z, x)` to the infinite lists of pairs of the form `(S Z, x)`, etc. for each natural number. Since the first appending never ends, we only ever consider pairs of that first form and never get to the others. The logic monad has a different binder which riffles lists together, allowing for a complete search. Using the logic monad binder instead, we'd have
+
+```haskell
+sumTo z = 
+  filter (\(x, y) -> add x y z) $
+  nats >>- \n ->
+  nats >>- \m ->
+  return (n, m)
+```
+
+```haskell
+> sumTo (S(S(S(S Z))))
+
+[(Z,S (S (S (S Z))))
+,(S Z,S (S (S Z)))
+,(S (S (S (S Z))),Z)
+,(S (S Z),S (S Z))
+,(S (S (S Z)),S Z)
+```
+
+Now we see all the answers before the program stalls, but we can certainly do better. What are logic programms doing which allows them to halt despite an infinite number of possibilities remaining? Consider a hypothetical predicate which returns all numbers less than 3.
+
+```prolog
+ltt(Z).
+ltt(S(Z)).
+ltt(S(S(Z))).
+```
+
+Instead of enumerating all the numbers as a list, instead we could posit a non-deterministic superposition combinator, which I'll call `+`, that chooses between two options. We can then define all the natural nubmers as
+
+```
+nats = Z + S(nats)
+```
+
+Evaluating this will nondeterministically return all natural numbers. Running `ltt` on this we have
+
+```
+ltt(nats)
+= ltt(Z + S(nats))
+= ltt(Z) + ltt(S(nats))
+= Z + ltt(S(Z + S(nats)))
+= Z + ltt(S(Z)) + ltt(S(S(nats)))
+= Z + S(Z) + ltt(S(S(Z + S(nats))))
+= Z + S(Z) + ltt(S(S(Z))) + ltt(S(S(S(nats))))
+= Z + S(Z) + S(S(Z))
+```
+
+This hypothetical computation fails on `S(S(S(nats)))` since its pattern doesn't match anything its defined over. The previous programs have to wait for things to be fully generated before they can be evaluated, but logic programs may only look at a few layers before halting. In order to mimick this kind of computation, we need to modify our `Nat` type to include the superposition operator, failure, and recursion. Something like;
+
+```haskell
+data NatS = ZS | SS NatS | Fail | Choice NatS NatS | Rec (NatS -> NatS)
+```
+
+We can define a function which converts a superposition of natural numbers into the stream it represents;
+
+```haskell
+natL :: NatS -> [Nat]
+natL ZS = [Z]
+natL (SS x) = map S (natL x)
+natL Fail = []
+natL (Choice a b) = concat [natL a, natL b]
+natL (Rec f) = natL (f (Rec f))
+```
+
+and the original stream of all natural numbers can be represented syntactically as;
+
+```haskell
+natsS = Rec (\x -> Choice Z (S x))
+```
+
+Note that this is basically defining the natural numbers as `y (λx. z + s x)`, where `y` is the y combinator.
+
+After coming up with this, I found a paper which developes a very similar idea;
+
+- [Fixing Non-determinism](https://people.cs.kuleuven.be/~tom.schrijvers/Research/papers/ifl2015_post.pdf) by Alexander Vandenbroucke, Tom Schrijvers, and Frank Piessens
+
+But it's not quite complete. They describe this recursive search type, but it doesn't allow data anywhere but the leaves. This means we're still in a situation where data must be fully evaluated before it's examined by our functions. Instead, a more general construction must pass back and forth between data constructors and search constructors.
 
 
 {% endraw %}
