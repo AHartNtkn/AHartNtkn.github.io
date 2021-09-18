@@ -751,6 +751,70 @@ Out> c[3, c[4, c[5, c[6, c[7, n]]]]]
 
 These functions are essentially the same. The main difference is how information is passed down the tree of the expression. In the first case, an actual value is propagated up the tree, and this value gets modified as you go. In the second, a request for a value is propagated up the tree, and this request is modified as you go. Both are sort of different ways of viewing the same functionality. I'm not sure there is a genuine difference between these two; they may simply be different formats for the same idea.
 
+This also provides a format for multi-argument recursive functions. Take the following simple example;
+
+```haskell
+natEq 0 0 = True
+natEq n m = natEq (n-1) (m-1)
+natEq 0 m = False
+natEq n 0 = False
+```
+
+This kind of function is very common, and it seems naively incompatible with ordinary recursion schemes since it seems to be simultaniously folding on two different datatypes. The traditional way of handling it is by defining a coalgebra which explicates the recursive call structure into a singular datatype which can be folded on, like so;
+
+```haskell
+natEqCoalg[{0, 0}] := t
+natEqCoalg[{x_, y_}] /; x > 0 && y > 0 := s[{x-1, y-1}]
+natEqCoalg[{x_, 0}] /; x > 0 := f
+natEqCoalg[{0, x_}] /; x > 0 := f
+
+natEqAlg[t] := True
+natEqAlg[f] := False
+natEqAlg[s[x_]] := x
+
+natEqFMap[_][t] := t
+natEqFMap[_][f] := f
+natEqFMap[f_][s[x_]] := s[f[x]]
+
+natEq = hylo[natEqFMap, natEqAlg, natEqCoalg];
+```
+
+However, we can use this acumulator hylomorphism to define this in a slightly different but equivalent manner. With it, we fold on the first argument and use the second argument as part of the natural transformation.
+
+```mathematica
+natEqCoalg[0] := z
+natEqCoalg[n_] /; n > 0 := s[n - 1]
+
+natEqAlg[f] := False
+natEqAlg[t] := True
+natEqAlg[s[x_]] := x
+
+natEqSig[z][n_] := If[n == 0, t, f]
+natEqSig[s[g_]][n_] := If[n == 0, f, s[g[n - 1]]]
+
+natEqFmap[f_][z] := z
+natEqFmap[f_][s[x_]] := s[f[x]]
+
+natEq = cHyloR[{type, natEqFmap, timesHom, natEqSig},
+  natEqAlg, natEqCoalg];
+```
+
+```mathematica
+In[0] > natEq[0][0]
+Out[0]> True
+
+In[1] > natEq[0][1]
+Out[1]> False
+
+In[2] > natEq[5][5]
+Out[2]> True
+
+In[3] > natEq[10][5]
+Out[3]> False
+```
+
+This allows the recursion to happen on the natural number in the first argument instead of on a more custom datatype, but fundamentally this isn't doing anything different from the other implementation.
+
 <a name="dp"></a>
 ## Dynamic Programming
 
