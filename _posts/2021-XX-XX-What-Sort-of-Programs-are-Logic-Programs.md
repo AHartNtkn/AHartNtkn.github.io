@@ -186,7 +186,7 @@ ltt(S(Z)).
 ltt(S(S(Z))).
 ```
 
-Instead of enumerating all the numbers as a list, instead we could posit a non-deterministic superposition combinator, which I'll call `+`, that chooses between two options. We can then define all the natural nubmers as
+Instead of enumerating all the numbers as a list, we could posit a non-deterministic superposition combinator, which I'll call `+`, that chooses between two options. We can then define all the natural nubmers as
 
 ```
 nats = Z + S(nats)
@@ -205,10 +205,10 @@ ltt(nats)
 = Z + S(Z) + S(S(Z))
 ```
 
-This hypothetical computation fails on `S(S(S(nats)))` since its pattern doesn't match anything its defined over. The previous programs have to wait for things to be fully generated before they can be evaluated, but logic programs may only look at a few layers before halting. In order to mimick this kind of computation, we need to modify our `Nat` type to include the superposition operator, failure, and recursion. Something like;
+This hypothetical computation fails on `S(S(S(nats)))` since its pattern doesn't match anything its defined over. The previous programs have to wait for things to be fully generated before they can be evaluated, but logic programs may only look at a few layers before halting. In order to mimick this kind of computation, we need to modify our `Nat` type to include the superposition operator and syntactic recursion. Something like;
 
 ```haskell
-data NatS = ZS | SS NatS | Fail | Choice NatS NatS | Rec (NatS -> NatS)
+data NatS = ZS | SS NatS | Choice NatS NatS | Rec (NatS -> NatS)
 ```
 
 We can define a function which converts a superposition of natural numbers into the stream it represents;
@@ -217,7 +217,6 @@ We can define a function which converts a superposition of natural numbers into 
 natL :: NatS -> [Nat]
 natL ZS = [Z]
 natL (SS x) = map S (natL x)
-natL Fail = []
 natL (Choice a b) = concat [natL a, natL b]
 natL (Rec f) = natL (f (Rec f))
 ```
@@ -230,9 +229,109 @@ natsS = Rec (\x -> Choice Z (S x))
 
 Note that this is basically defining the natural numbers as `y (λx. z + s x)`, where `y` is the y combinator.
 
-After coming up with this, I found a paper which developes a very similar idea;
+We can then define equality between natural numbers relationally as;
+
+```haskell
+natEq :: (NatS, NatS) -> [(Nat, Nat)]
+natEq (ZS, ZS) = [(Z, Z)]
+natEq (SS x, SS y) = fmap (\(x, y) -> (S x, S y)) $ natEq (x, y)
+
+natEq (Rec f, b) = natEq (f (Rec f), b)
+natEq (a, Rec f) = natEq (a, f (Rec f))
+
+natEq (Choice a b, x) =
+  interleave (natEq (a, x)) (natEq (b, x))
+natEq (x, Choice a b) =
+  interleave (natEq (x, a)) (natEq (x, b))
+
+natEq _ = []
+```
+
+Notive the `SS` case where we post-compose with an approrpiate injection to preserve information during recursion.
+
+A simple example is `natEq (natsS, natsS)`, which essentailly executes the query
+
+```prolog
+?- natEq(X, Y)
+```
+
+By pre- or post- composing with appropriate injections, we can specialize to other queries. For example, 
+
+```haskell
+map (\(x, S y) -> (x, y)) $ natEq (natsS, SS natsS)
+```
+
+essentially executes 
+
+```prolog
+?- natEq(X, s(Y))
+```
+
+and 
+
+```haskell
+map (\(S(S(S Z)), y) -> y) $ natEq (SS (SS (SS ZS)), natsS)
+```
+
+essentailly executes
+
+```prolog
+?- natEq(s(s(s(z))), X)
+```
+
+```haskell
+> map (\(S(S(S Z)), y) -> y) $ natEq (SS (SS (SS ZS)), natsS)
+
+[S (S (S Z))]
+```
+
+Notice that it halts without having to consider all infinite possibilities.
+
+By repeating this scheme, we can get a relational implementation of addition;
+
+```haskell
+add (ZS, x, y) = fmap (\(x, y) -> (Z, x, y)) $ natEq (x, y)
+add (SS x, y, SS z) = fmap (\(x, y, z) -> (S x, y, S z)) $ add (x, y, z)
+
+add (Rec f, b, c) = add (f (Rec f), b, c)
+add (a, Rec f, c) = add (a, f (Rec f), c)
+add (a, b, Rec f) = add (a, b, f (Rec f))
+
+add (Choice a b, x, y) =
+  interleave (add (a, x, y)) (add (b, x, y))
+add (x, Choice a b, y) =
+  interleave (add (x, a, y)) (add (x, b, y))
+add (x, y, Choice a b) =
+  interleave (add (x, y, a)) (add (x, y, b))
+
+add _ = []
+```
+
+Take special note of those first two cases. Both take care to post-compose with approrpiate injections so we don't lose information. The `ZS` case, in particular, knows what the results of `natEq` will look like and adjusts them appropriately to match what `add` needs to return.
+
+With it, we can define the standard example of subtraction as a query into addition;
+
+```haskell
+sub z x = map (\(x, y, z) -> y) $ add (x, natsS, z)
+```
+
+```haskell
+> sub (SS (SS (SS (SS ZS)))) (SS (SS (SS ZS)))
+
+[S Z]
+
+> sub (SS ZS) (SS (SS ZS))
+
+[]
+```
+
+There are, clearly, many redundancies here. We should be able to automate much of this.
+
+After coming up with this, I found a paper which develops a very similar idea in more general form;
 
 - [Fixing Non-determinism](https://people.cs.kuleuven.be/~tom.schrijvers/Research/papers/ifl2015_post.pdf) by Alexander Vandenbroucke, Tom Schrijvers, and Frank Piessens
+
+
 
 But it's not quite complete. They describe this recursive search type, but it doesn't allow data anywhere but the leaves. This means we're still in a situation where data must be fully evaluated before it's examined by our functions. Instead, a more general construction must pass back and forth between data constructors and search constructors.
 
