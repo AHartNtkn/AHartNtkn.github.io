@@ -59,7 +59,7 @@ This will simultaneously give both results, but one will be deleted while the ot
 t a b
 ```
 
-where `t` is a church encoded lambda expression with
+where `t` is a church encoded boolean expression with
 
 ```
 true  = λa b. a
