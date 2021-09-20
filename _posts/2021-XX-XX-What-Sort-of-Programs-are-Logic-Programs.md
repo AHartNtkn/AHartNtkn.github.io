@@ -325,15 +325,92 @@ sub z x = map (\(x, y, z) -> y) $ add (x, natsS, z)
 []
 ```
 
+And we can do similar with the previous `sumTo` function;
+
+```haskell
+sumTo z  = map (\(x, y, z) -> (x, y)) $ add (natsS, natsS, z)
+```
+
+```haskell
+> sumTo (SS(SS(SS(SS ZS))))
+
+[(Z,S (S (S (S Z))))
+,(S Z,S (S (S Z)))
+,(S (S Z),S (S Z))
+,(S (S (S Z)),S Z)
+,(S (S (S (S Z))),Z)
+]
+```
+
 There are, clearly, many redundancies here. We should be able to automate much of this.
 
 After coming up with this, I found a paper which develops a very similar idea in more general form;
 
 - [Fixing Non-determinism](https://people.cs.kuleuven.be/~tom.schrijvers/Research/papers/ifl2015_post.pdf) by Alexander Vandenbroucke, Tom Schrijvers, and Frank Piessens
 
+But it's not quite complete. They describe this recursive search type, but it doesn't allow data anywhere but the leaves. This means we're still in a situation where data must be fully evaluated before it's examined by our functions. Instead, a more general construction must pass back and forth between data constructors and search constructors. Trying to do this with the type in that paper will generate a recursive type. However, what I've made in this post is not too elegant, and I feel there's a way to make it quite simple, and something like what's in that paper may be closer than what I've made so far.
 
+We can at least generalize the previous constructor to be a variation of the fixed-point type.
 
-But it's not quite complete. They describe this recursive search type, but it doesn't allow data anywhere but the leaves. This means we're still in a situation where data must be fully evaluated before it's examined by our functions. Instead, a more general construction must pass back and forth between data constructors and search constructors.
+```haskell
+data FixS f = FixS (f (FixS f)) | Choice [FixS f] | Rec (FixS f -> FixS f)
+```
 
+We can define the previous `NatS` type using the standard functor for natural numbers.
+
+```haskell
+data NatF r = Z | S r
+
+type NatS = FixS NatF
+```
+
+We can define a generic method for getting the next layer of our endofunctor;
+
+```haskell
+getF :: FixS f -> [f (FixS f)]
+getF (FixS a) = [a]
+getF (Choice xs) = xs >>- \x -> getF x
+getF (Rec f) = getF (f (Rec f)
+```
+
+We can define `nats` in a largely similar way to before;
+
+```haskell
+nats = Rec (\x -> Choice $ map FixS [Z, S x])
+```
+
+Utilizing these, we can implement the previous functions in a way which is debatably simpler than before;
+
+```haskell
+natEq (x, y) = do
+  xp <- getF x
+  yp <- getF y
+  case (xp, yp) of
+    (Z, Z) -> [(Fix Z, Fix Z)]
+    (S xpp, S ypp) ->
+      map (\(x, y) -> (Fix $ S x, Fix $ S y)) $ natEq (xpp, ypp)
+    _ -> []
+
+add :: (NatS, NatS, NatS) -> [(Nat, Nat, Nat)]
+add (x, y, z) = do
+  xp <- getF x
+  case xp of
+    Z -> map (\(x, y) -> (Fix Z, x, y)) $ natEq (y, z)
+    (S xpp) -> do
+      zp <- getF z
+      case zp of
+        (S zpp) ->
+          map (\(x, y, z) -> (Fix $ S x, y, Fix $ S z)) $ add (xpp, y, zpp)
+        _ -> []
+```
+
+```haskell
+> sub (FixS $ S (FixS $ S (FixS $ S (FixS $ S (FixS Z)))))
+      (FixS $ S (FixS $ S (FixS $ S (FixS Z))))
+
+[Fix (S (Fix Z))]
+```
+
+This will be part of a larger project where I want to create an extremely efficient relational interpreter for the purpose of program synthesis. Hopefully I'll be able to think of a better way to think of this sort of approach. It reaks of inellegance, but it's a good start.
 
 {% endraw %}
