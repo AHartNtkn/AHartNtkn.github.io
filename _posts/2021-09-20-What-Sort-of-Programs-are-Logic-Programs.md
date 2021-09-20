@@ -232,7 +232,6 @@ Note that this is basically defining the natural numbers as `y (λx. z + s x)`, 
 We can then define equality between natural numbers relationally as;
 
 ```haskell
-natEq :: (NatS, NatS) -> [(Nat, Nat)]
 natEq (ZS, ZS) = [(Z, Z)]
 natEq (SS x, SS y) = fmap (\(x, y) -> (S x, S y)) $ natEq (x, y)
 
