@@ -379,7 +379,7 @@ We can define `nats` in a largely similar way to before;
 nats = Rec (\x -> Choice $ map FixS [Z, S x])
 ```
 
-Utilizing these, we can implement the previous functions in a way that is debatably simpler than before;
+Utilizing these, we can implement the previous functions in a way that is debatably simpler;
 
 ```haskell
 natEq (x, y) = do
@@ -391,7 +391,6 @@ natEq (x, y) = do
       map (\(x, y) -> (Fix $ S x, Fix $ S y)) $ natEq (xpp, ypp)
     _ -> []
 
-add :: (NatS, NatS, NatS) -> [(Nat, Nat, Nat)]
 add (x, y, z) = do
   xp <- getF x
   case xp of
