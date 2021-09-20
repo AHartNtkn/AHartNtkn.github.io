@@ -214,7 +214,6 @@ data NatS = ZS | SS NatS | Choice NatS NatS | Rec (NatS -> NatS)
 We can define a function that converts a superposition of natural numbers into the stream it represents;
 
 ```haskell
-natL :: NatS -> [Nat]
 natL ZS = [Z]
 natL (SS x) = map S (natL x)
 natL (Choice a b) = concat [natL a, natL b]
