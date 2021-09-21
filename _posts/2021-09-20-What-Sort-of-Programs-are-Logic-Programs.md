@@ -365,7 +365,8 @@ type NatS = FixS NatF
 We can define `nats` in a largely similar way to before;
 
 ```haskell
-nats = Rec (\x -> [Z, S x])
+nats :: (Monad m, Alternative m) => FixS m NatF
+nats = Rec (\x -> return Z <|> return (S x))
 ```
 
 As a further examples, we can define zero and the successor function as;
@@ -393,7 +394,7 @@ natEq (Rec x, Rec y) = do
 add (Rec x, y, Rec z) = do
   xp <- x (Rec x)
   case xp of
-    Z -> map (\(x, y) -> (Fix Z, x, y)) $ natEq (y, Rec z)
+    Z -> fmap (\(x, y) -> (Fix Z, x, y)) $ natEq (y, Rec z)
     (S xpp) -> do
       zp <- z (Rec z)
       case zp of
