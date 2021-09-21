@@ -368,7 +368,7 @@ We can define a generic method for getting the next layer of our endofunctor;
 getF :: FixS f -> [f (FixS f)]
 getF (FixS a) = [a]
 getF (Choice xs) = xs >>= getF
-getF (Rec f) = getF (f (Rec f)
+getF (Rec f) = getF (f (Rec f))
 ```
 
 We can define `nats` in a largely similar way to before;
