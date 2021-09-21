@@ -381,7 +381,6 @@ one = rc $ S $ rc Z
 We can implement the previous functions in a way that is debatably simpler;
 
 ```haskell
-natEq :: (NatS, NatS) -> [(Nat, Nat)]
 natEq (Rec x, Rec y) = do
   xp <- x (Rec x)
   yp <- y (Rec y)
@@ -391,7 +390,6 @@ natEq (Rec x, Rec y) = do
       map (\(x, y) -> (Fix $ S x, Fix $ S y)) $ natEq (xpp, ypp)
     _ -> []
 
-add :: (NatS, NatS, NatS) -> [(Nat, Nat, Nat)]
 add (Rec x, y, Rec z) = do
   xp <- x (Rec x)
   case xp of
