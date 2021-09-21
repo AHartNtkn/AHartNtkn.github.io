@@ -359,7 +359,7 @@ We can define the previous `NatS` type using the standard functor for natural nu
 ```haskell
 data NatF r = Z | S r
 
-type NatS = FixS NatF
+type NatS = FixS [] NatF
 ```
 
 We can define `nats` in a largely similar way to before;
