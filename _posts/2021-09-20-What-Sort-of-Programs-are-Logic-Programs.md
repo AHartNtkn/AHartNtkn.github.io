@@ -351,7 +351,7 @@ But it's not quite complete. They describe a recursive search type, but it doesn
 We can at least generalize the previous construction to be a variation of the fixed-point type.
 
 ```haskell
-data FixS f = Or [f (FixS f)] | Rec (FixS f -> FixS f)
+data FixS f = Rec (FixS f -> [f (FixS f)])
 ```
 
 We can define the previous `NatS` type using the standard functor for natural numbers.
@@ -362,38 +362,42 @@ data NatF r = Z | S r
 type NatS = FixS NatF
 ```
 
-We can define a generic method for getting the next layer of our endofunctor;
-
-```haskell
-getF :: FixS f -> [f (FixS f)]
-getF (Or xs) = xs
-getF (Rec f) = getF (f (Rec f))
-```
-
 We can define `nats` in a largely similar way to before;
 
 ```haskell
-nats = Rec (\x -> Or [Z, S x])
+nats = Rec (\x -> [Z, S x])
+```
+
+As a further examples, we can define zero and one in this representation as;
+
+```haskell
+rc = Rec . const . pure
+
+zero = rc Z
+
+one = rc $ S $ rc Z
 ```
 
 Utilizing these, we can implement the previous functions in a way that is debatably simpler;
 
 ```haskell
-natEq (x, y) = do
-  xp <- getF x
-  yp <- getF y
+natEq :: (NatS, NatS) -> [(Nat, Nat)]
+natEq (Rec x, Rec y) = do
+  xp <- x (Rec x)
+  yp <- y (Rec y)
   case (xp, yp) of
     (Z, Z) -> [(Fix Z, Fix Z)]
     (S xpp, S ypp) ->
       map (\(x, y) -> (Fix $ S x, Fix $ S y)) $ natEq (xpp, ypp)
     _ -> []
 
-add (x, y, z) = do
-  xp <- getF x
+add :: (NatS, NatS, NatS) -> [(Nat, Nat, Nat)]
+add (Rec x, y, Rec z) = do
+  xp <- x (Rec x)
   case xp of
-    Z -> map (\(x, y) -> (Fix Z, x, y)) $ natEq (y, z)
+    Z -> map (\(x, y) -> (Fix Z, x, y)) $ natEq (y, Rec z)
     (S xpp) -> do
-      zp <- getF z
+      zp <- z (Rec z)
       case zp of
         (S zpp) ->
           map (\(x, y, z) -> (Fix $ S x, y, Fix $ S z)) $ add (xpp, y, zpp)
@@ -401,8 +405,8 @@ add (x, y, z) = do
 ```
 
 ```haskell
-> sub (Or [S (Or [S (Or [S (Or [S (Or [Z])])])])])
-      (Or [S (Or [S (Or [S (Or [Z])])])])
+> sub (rc $ S $ rc $ S $ rc $ S $ rc $ S $ rc Z)
+      (rc $ S $ rc $ S $ rc $ S $ rc Z)
 
 [Fix (S (Fix Z))]
 ```
@@ -416,7 +420,7 @@ This will be part of a larger project where I want to create an extremely effici
 There's a simple but wrong way that will inefficiently get the right answer, but what should really happen is the usage of a syntactic form like
 
 ```haskell 
-Rec (\(x, y) -> Or [(Z, Z), (S x, S y)])
+Rec (\(x, y) -> [(Z, Z), (S x, S y)])
 ```
 
 though this is ill-typed in the version I've made so far. Even if I did make it well-typed, it's not clear how this could interface elegantly with any of my implementations.
