@@ -351,7 +351,7 @@ But it's not quite complete. They describe a recursive search type, but it doesn
 We can at least generalize the previous construction to be a variation of the fixed-point type.
 
 ```haskell
-data FixS f = FixS (f (FixS f)) | Choice [FixS f] | Rec (FixS f -> FixS f)
+data FixS f = Choice [f (FixS f)] | Rec (FixS f -> FixS f)
 ```
 
 We can define the previous `NatS` type using the standard functor for natural numbers.
@@ -366,15 +366,14 @@ We can define a generic method for getting the next layer of our endofunctor;
 
 ```haskell
 getF :: FixS f -> [f (FixS f)]
-getF (FixS a) = [a]
-getF (Choice xs) = xs >>= getF
+getF (Choice xs) = xs
 getF (Rec f) = getF (f (Rec f))
 ```
 
 We can define `nats` in a largely similar way to before;
 
 ```haskell
-nats = Rec (\x -> Choice $ map FixS [Z, S x])
+nats = Rec (\x -> Choice [Z, S x])
 ```
 
 Utilizing these, we can implement the previous functions in a way that is debatably simpler;
