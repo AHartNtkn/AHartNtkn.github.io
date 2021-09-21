@@ -378,7 +378,7 @@ zero = rc Z
 one = rc $ S $ rc Z
 ```
 
-Utilizing these, we can implement the previous functions in a way that is debatably simpler;
+We can implement the previous functions in a way that is debatably simpler;
 
 ```haskell
 natEq :: (NatS, NatS) -> [(Nat, Nat)]
