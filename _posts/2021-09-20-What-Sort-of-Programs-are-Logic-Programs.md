@@ -351,7 +351,7 @@ But it's not quite complete. They describe a recursive search type, but it doesn
 We can at least generalize the previous construction to be a variation of the fixed-point type.
 
 ```haskell
-data FixS f = Rec (FixS f -> [f (FixS f)])
+data FixS m f = Rec (FixS m f -> m (f (FixS m f)))
 ```
 
 We can define the previous `NatS` type using the standard functor for natural numbers.
@@ -368,14 +368,14 @@ We can define `nats` in a largely similar way to before;
 nats = Rec (\x -> [Z, S x])
 ```
 
-As a further examples, we can define zero and one in this representation as;
+As a further examples, we can define zero and the successor function as;
 
 ```haskell
-rc = Rec . const . pure
+rc = Rec . const . return
 
 zero = rc Z
 
-one = rc $ S $ rc Z
+suc = rc . S
 ```
 
 We can implement the previous functions in a way that is debatably simpler;
@@ -385,10 +385,10 @@ natEq (Rec x, Rec y) = do
   xp <- x (Rec x)
   yp <- y (Rec y)
   case (xp, yp) of
-    (Z, Z) -> [(Fix Z, Fix Z)]
+    (Z, Z) -> return (Fix Z, Fix Z)
     (S xpp, S ypp) ->
-      map (\(x, y) -> (Fix $ S x, Fix $ S y)) $ natEq (xpp, ypp)
-    _ -> []
+      fmap (\(x, y) -> (Fix $ S x, Fix $ S y)) $ natEq (xpp, ypp)
+    _ -> empty
 
 add (Rec x, y, Rec z) = do
   xp <- x (Rec x)
@@ -398,13 +398,12 @@ add (Rec x, y, Rec z) = do
       zp <- z (Rec z)
       case zp of
         (S zpp) ->
-          map (\(x, y, z) -> (Fix $ S x, y, Fix $ S z)) $ add (xpp, y, zpp)
-        _ -> []
+          fmap (\(x, y, z) -> (Fix $ S x, y, Fix $ S z)) $ add (xpp, y, zpp)
+        _ -> empty
 ```
 
 ```haskell
-> sub (rc $ S $ rc $ S $ rc $ S $ rc $ S $ rc Z)
-      (rc $ S $ rc $ S $ rc $ S $ rc Z)
+> sub (suc $ suc $ suc $ suc zero) (suc $ suc $ suc zero)
 
 [Fix (S (Fix Z))]
 ```
