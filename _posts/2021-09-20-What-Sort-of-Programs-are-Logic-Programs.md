@@ -208,7 +208,7 @@ ltt(nats)
 This hypothetical computation fails on `S(S(S(nats)))` since its pattern doesn't match anything it's defined over. The previous programs have to wait for things to be fully generated before they can be evaluated, but logic programs may only look at a few layers before halting. To mimic this kind of computation, we need to modify our `Nat` type to include the superposition operator and syntactic recursion. Something like;
 
 ```haskell
-data NatS = ZS | SS NatS | Choice NatS NatS | Rec (NatS -> NatS)
+data NatS = ZS | SS NatS | Or NatS NatS | Rec (NatS -> NatS)
 ```
 
 We can define a function that converts a superposition of natural numbers into the stream it represents;
@@ -216,14 +216,14 @@ We can define a function that converts a superposition of natural numbers into t
 ```haskell
 natL ZS = [Z]
 natL (SS x) = map S (natL x)
-natL (Choice a b) = concat [natL a, natL b]
+natL (Or a b) = concat [natL a, natL b]
 natL (Rec f) = natL (f (Rec f))
 ```
 
 and the original stream of all natural numbers can be represented syntactically as;
 
 ```haskell
-nats = Rec (\x -> Choice Z (S x))
+nats = Rec (\x -> Or Z (S x))
 ```
 
 Note that this is basically defining the natural numbers as `y (λx. z + s x)`, where `y` is the y combinator.
@@ -237,9 +237,9 @@ natEq (SS x, SS y) = fmap (\(x, y) -> (S x, S y)) $ natEq (x, y)
 natEq (Rec f, b) = natEq (f (Rec f), b)
 natEq (a, Rec f) = natEq (a, f (Rec f))
 
-natEq (Choice a b, x) =
+natEq (Or a b, x) =
   interleave (natEq (a, x)) (natEq (b, x))
-natEq (x, Choice a b) =
+natEq (x, Or a b) =
   interleave (natEq (x, a)) (natEq (x, b))
 
 natEq _ = []
@@ -295,11 +295,11 @@ add (Rec f, b, c) = add (f (Rec f), b, c)
 add (a, Rec f, c) = add (a, f (Rec f), c)
 add (a, b, Rec f) = add (a, b, f (Rec f))
 
-add (Choice a b, x, y) =
+add (Or a b, x, y) =
   interleave (add (a, x, y)) (add (b, x, y))
-add (x, Choice a b, y) =
+add (x, Or a b, y) =
   interleave (add (x, a, y)) (add (x, b, y))
-add (x, y, Choice a b) =
+add (x, y, Or a b) =
   interleave (add (x, y, a)) (add (x, y, b))
 
 add _ = []
@@ -351,7 +351,7 @@ But it's not quite complete. They describe a recursive search type, but it doesn
 We can at least generalize the previous construction to be a variation of the fixed-point type.
 
 ```haskell
-data FixS f = Choice [f (FixS f)] | Rec (FixS f -> FixS f)
+data FixS f = Or [f (FixS f)] | Rec (FixS f -> FixS f)
 ```
 
 We can define the previous `NatS` type using the standard functor for natural numbers.
@@ -366,14 +366,14 @@ We can define a generic method for getting the next layer of our endofunctor;
 
 ```haskell
 getF :: FixS f -> [f (FixS f)]
-getF (Choice xs) = xs
+getF (Or xs) = xs
 getF (Rec f) = getF (f (Rec f))
 ```
 
 We can define `nats` in a largely similar way to before;
 
 ```haskell
-nats = Rec (\x -> Choice [Z, S x])
+nats = Rec (\x -> Or [Z, S x])
 ```
 
 Utilizing these, we can implement the previous functions in a way that is debatably simpler;
@@ -401,8 +401,8 @@ add (x, y, z) = do
 ```
 
 ```haskell
-> sub (FixS $ S (FixS $ S (FixS $ S (FixS $ S (FixS Z)))))
-      (FixS $ S (FixS $ S (FixS $ S (FixS Z))))
+> sub (Or [S (Or [S (Or [S (Or [S (Or [Z])])])])])
+      (Or [S (Or [S (Or [S (Or [Z])])])])
 
 [Fix (S (Fix Z))]
 ```
@@ -416,7 +416,7 @@ This will be part of a larger project where I want to create an extremely effici
 There's a simple but wrong way that will inefficiently get the right answer, but what should really happen is the usage of a syntactic form like
 
 ```haskell 
-Rec (\(x, y) -> Choice (Z, Z) (S x, S y))
+Rec (\(x, y) -> Or [(Z, Z), (S x, S y)])
 ```
 
 though this is ill-typed in the version I've made so far. Even if I did make it well-typed, it's not clear how this could interface elegantly with any of my implementations.
