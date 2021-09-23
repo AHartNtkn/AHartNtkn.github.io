@@ -436,8 +436,7 @@ add _ = empty
 Of course, the data inputted to these functions are no longer a superposition making our interfaces a bit different. `sub` would now be defined as;
 
 ```haskell
-sub z x = 
-  nats >>= \n -> fmap (\(x, y, z) -> y) $ add (x, n, z)
+sub z x = nats >>= \n -> fmap (\(x, y, z) -> y) $ add (x, n, z)
 ```
 
 For a usage example, we'd have
