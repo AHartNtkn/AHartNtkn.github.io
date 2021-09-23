@@ -419,9 +419,6 @@ nats = return (Fix $ Compose Z) <|> return (Fix $ Compose $ S nats)
 This is literally what we get if the definition in terms of the y combinator mentioned before is used verbatim. This gives us far more elegant implementations than before;
 
 ```haskell
-natEq :: (Monad m, Alternative m) => 
-  (Fix (Compose NatF m), Fix (Compose NatF m)) ->
-  m (Fix NatF, Fix NatF)
 natEq (Fix (Compose Z), Fix (Compose Z)) =
   return (Fix Z, Fix Z)
 natEq (Fix (Compose (S x)), Fix (Compose (S y))) = 
