@@ -409,7 +409,57 @@ add (Rec x, y, Rec z) = do
 [Fix (S (Fix Z))]
 ```
 
-This will be part of a larger project where I want to create an extremely efficient relational interpreter for the purpose of program synthesis. Hopefully, I'll be able to think of a better way to think of this sort of approach. It reaks of inelegance, but it's a good start. A loose end that is left is that of variable duplication. How would one, for instance, represent the query
+`Rec` is essentially acting as a syntactic thunk. But by taking for granted laziness, thunks become redundant. We can, instead, treat superpositions as codata; that is, infinite data structures that we may freely recurse on. We could define `nats` instead as;
+
+```haskell
+nats :: (Monad m, Alternative m) => m (Fix (Compose NatF m))
+nats = return (Fix $ Compose Z) <|> return (Fix $ Compose $ S nats)
+```
+
+This is literally what we get if the definition in terms of the y combinator mentioned before is used verbatim. This gives us far more elegant implementations than before;
+
+```haskell
+natEq :: (Monad m, Alternative m) => 
+  (Fix (Compose NatF m), Fix (Compose NatF m)) ->
+  m (Fix NatF, Fix NatF)
+natEq (Fix (Compose Z), Fix (Compose Z)) =
+  return (Fix Z, Fix Z)
+natEq (Fix (Compose (S x)), Fix (Compose (S y))) = 
+  x >>= \xp -> y >>= \yp ->
+  fmap (\(x, y) -> (Fix $ S x, Fix $ S y)) $ natEq (xp, yp)
+natEq _ = empty
+
+add (Fix (Compose Z), y, z) =
+  fmap (\(y, z) -> (Fix Z, y, z)) $ natEq (y, z)
+add (Fix (Compose (S x)), y, Fix (Compose (S z))) =
+  x >>= \xp -> z >>= \zp ->
+  fmap (\(x, y, z) -> (Fix $ S x, y, Fix $ S z)) $ add (xp, y, zp)
+add _ = empty
+```
+
+Of course, the data inputted to these functions are no longer a superposition making our interfaces a bit different. `sub` would now be defined as;
+
+```haskell
+sub z x = 
+  nats >>= \n -> fmap (\(x, y, z) -> y) $ add (x, n, z)
+```
+
+For a usage example, we'd have
+
+```haskell
+zero = Fix $ Compose Z
+
+suc = Fix . Compose . S . return
+```
+
+```haskell
+> sub (suc (suc (suc (suc zero)))) (suc (suc (suc zero))) :: [Fix NatF]
+[Fix (S (Fix Z))]
+```
+
+...
+
+This will be part of a larger project where I want to create an extremely efficient relational interpreter for the purpose of program synthesis. A loose end that is left is that of variable duplication. How would one, for instance, represent the query
 
 ```prolog
 ?- add(X, X, Y)
