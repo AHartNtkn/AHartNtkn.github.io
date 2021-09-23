@@ -419,8 +419,7 @@ nats = return (Fix $ Compose Z) <|> return (Fix $ Compose $ S nats)
 This is literally what we get if the definition in terms of the y combinator mentioned before is used verbatim. This gives us far more elegant implementations than before;
 
 ```haskell
-natEq (Fix (Compose Z), Fix (Compose Z)) =
-  return (Fix Z, Fix Z)
+natEq (Fix (Compose Z), Fix (Compose Z)) = return (Fix Z, Fix Z)
 natEq (Fix (Compose (S x)), Fix (Compose (S y))) = 
   x >>= \xp -> y >>= \yp ->
   fmap (\(x, y) -> (Fix $ S x, Fix $ S y)) $ natEq (xp, yp)
