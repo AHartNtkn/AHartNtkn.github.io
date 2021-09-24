@@ -16,7 +16,7 @@ leafCount Leaf = 1
 leafCount (Branch l r) = leafCount l + leafCount r
 ```
 
-Note how this program uses pattern matching. If we took a naive approach to compile this program, we might use a bunch of equational checks on an input to ensure it matched one of the two patterns. In Scheme, one would certainly use `conde`; implementing pattern matching manually. But that's not what we would do in the lambda calculus. There are a few options for implementing these binary trees, but any will do to demonstrate my point. The most common is probably the Church encoding which defines trees as terms of type
+Note how this program uses pattern matching. If we took a naive approach to compile this program, we might use a bunch of equational checks on an input to ensure it matched one of the two patterns. In Scheme, one would certainly use `cond`; implementing pattern matching manually. But that's not what we would do in the lambda calculus. There are a few options for implementing these binary trees, but any will do to demonstrate my point. The most common is probably the Church encoding which defines trees as terms of type
 
 ```
 ∀ X . X → (X → X → X) → X
