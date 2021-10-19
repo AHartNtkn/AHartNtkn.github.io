@@ -452,20 +452,102 @@ suc = Fix . Compose . S . return
 [Fix (S (Fix Z))]
 ```
 
+We can reformulate these programs as a recursion scheme which may make future developements simpler. If we think of the recursive call structure of `natEq`, we realize there are two salient cases captured by the type;
+
+```haskell
+data NatEqF r 
+  = NatEqZero 
+  | NatEqSucc r
+  deriving Functor
+```
+
+The algebra is verbatim over this type, while the coalgebra is actually over `Compose m NatEqF`, for some logic monad `m`.
+
+```haskell
+natEqAlg NatEqZero = return (Fix Z, Fix Z)
+natEqAlg (NatEqSucc r) = fmap (bimap (Fix . S) (Fix . S)) r
+
+natEqCoalg (Fix (Compose Z), Fix (Compose Z)) = return NatEqZero
+natEqCoalg (Fix (Compose (S x)), Fix (Compose (S y))) = 
+  liftM2 (\x y -> NatEqSucc (x, y)) x y
+natEqCoalg _ = empty
+```
+
+From here, we can combine these simply using a special case of a hylomorphism.
+
+```haskell
+logHylo :: (MonadLogic m, Functor f)
+     => (f (m b) -> m b) 
+     -> (a -> m (f a))
+     -> a 
+     -> m b
+logHylo a c =
+  join . fmap a . getCompose . 
+  fmap (logHylo a c) .
+  Compose . c
+
+natEq :: MonadLogic m
+  => (Fix (Compose NatF m), Fix (Compose NatF m))
+  -> m (Fix NatF, Fix NatF)
+natEq = logHylo natEqAlg natEqCoalg
+```
+
+and we can implement `add` using the same scheme.
+
+```haskell
+data AddF o m r 
+  = AddZero o
+  | AddSucc r
+  deriving Functor
+
+addAlg (AddZero o) = 
+  fmap (\(y, z) -> (Fix Z, y, z)) $ natEq o
+addAlg (AddSucc r) = 
+  fmap (\(x, y, z) -> (Fix $ S x, y, Fix $ S z)) r
+
+addCoalg (Fix (Compose Z), x, y) = Compose $ return $ AddZero (x, y)
+addCoalg (Fix (Compose (S x)), y, Fix (Compose (S z))) =
+  Compose $ liftM2 (\x z -> AddSucc (x, y, z)) x z
+addCoalg _ = Compose empty
+
+add :: MonadLogic m
+  => (Fix (Compose NatF m), Fix (Compose NatF m), Fix (Compose NatF m))
+  -> m (Fix NatF, Fix NatF, Fix NatF)
+add = logHylo addAlg addCoalg
+```
+
 ...
 
-This will be part of a larger project where I want to create an extremely efficient relational interpreter for the purpose of program synthesis. A loose end that is left is that of variable duplication. How would one, for instance, represent the query
+A loose end that is left is that of variable duplication. How would one, for instance, represent the query
 
 ```prolog
 ?- add(X, X, Y)
 ```
 
-There's a simple but wrong way that will inefficiently get the right answer, but what should really happen is the usage of a syntactic form like
+There's a simple but wrong way that will inefficiently get the right answer, but what should really happen is the usage of something like
 
 ```haskell 
-Rec (\(x, y) -> [(Z, Z), (S x, S y)])
+\(x, y) -> return (Z, Z) <|> return (S x, S y)
 ```
 
-though this is ill-typed in the version I've made so far. Even if I did make it well-typed, it's not clear how this could interface elegantly with any of my implementations.
+though this is ill-typed in the version I've made so far. Even if I did make it well-typed, it's not clear how this could interface elegantly with any of my implementations. This is closely related to proper conjunction. While something like conjunction can be implemented with a simple bind, if we have a more sophistocated set of conditions which are not entirely conditional then one needs a simultanious match on multiple datatypes. The above would be equivalent to something like;
+
+```prolog
+(X = z,  Y = z); (X = s(X'), Y = s(Y'))
+```
+
+repeated. This isn't the same thing as `natEq` from earlier; that function returns a list of pairs of equal numbers, but we need something that only does the work of `eqNat` for only a single layer before recursing. This suggests we need a more fundamental modification of `add` to get the duplicating query. We can implement `add(X, X, Y)` as
+
+```prolog
+addC(X, Y) :- natEq(X, Z), add(X, Z, Y).
+```
+
+
+
+So we don't need a copy construct per say; we can do with something like a simultanious matching.
+
+...
+
+This will be part of a larger project where I want to create an extremely efficient relational interpreter for the purpose of program synthesis. 
 
 {% endraw %}
