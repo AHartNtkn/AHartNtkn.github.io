@@ -495,7 +495,7 @@ natEq = logHylo natEqAlg natEqCoalg
 and we can implement `add` using the same scheme.
 
 ```haskell
-data AddF o m r 
+data AddF o r 
   = AddZero o
   | AddSucc r
   deriving Functor
