@@ -25,7 +25,7 @@ length@x + length@y == s
 
 for some shell `s`. We can plot these shells using a contour plot;
 
-![Shell Contour Plot](../img/optpairing/optpairing1.png)
+![Shell Contour Plot](../img/optpairing/optpairing.png)
 
 While these shells may seem a bit intimidating at first, they are actually quite tame. The `s`th shell has `2^(s - 2) (3 + s)` members. This immediately gives us part of the necessary puzzle for our implementation. Given two numbers, `x` and `y`, their shell will be
 
@@ -74,7 +74,7 @@ the `decodeShell` function will decode a shell given some canonical position wit
 
 The shells themselves are where things get complicated, though thankfully not too complicated. If we look at an example shell (s = 7), we can note a few things;
 
-![Plot of the points in shell 7](../img/optpairing/optpairing2.png)
+![Plot of the points in shell 7](../img/optpairing/optpairing1.png)
 
 Firstly, we can see two outlying groups of points which have twice as many points as any other group. All other groups have the same number of points. These facts can be expressed by noting the shell size can be reexpressed as;
 
