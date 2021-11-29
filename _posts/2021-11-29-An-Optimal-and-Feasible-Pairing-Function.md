@@ -1,5 +1,5 @@
 {% raw %}
-I've talked a lot about pairing functions on this blog. I've tried using them in a bunch of different projects, but I've frequently made the observation that they are often unexpectedly inefficient. As an example, the simplest paring function is just the bit-interleaving function which pairs two numbers by interleaving their bits. Algorithmically, you can't get much simpler, and the pairing also seems fair in that it packs both numbers equally tightly. For a long time, I thought that was enough, but I've come to realize it isn't. Consider the case of paring a large number with a small one, say 234 with 1. The binary for both is 11101010 and 1, respectively. The paired number will be 101010001000110, or 21574 in decimal. Notice what happened to the size; it's nearly double that of 234 despite 1 not having nearly that much information.
+I've talked a lot about pairing functions on this blog. I've tried using them in a bunch of different projects, but I've frequently made the observation that they are often unexpectedly inefficient. As an example, the simplest paring function is just the bit-interleaving function which pairs two numbers by interleaving their bits. Algorithmically, you can't get much simpler, and the pairing also seems fair in that it packs both numbers equally tightly. For a long time, I thought that was enough, but I've come to realize it isn't. Consider the case of paring a large number with a small one, say 1000000 with 1. The binary for both is 11110100001001000000 and 1, respectively. The paired number will be 101010100010000000001000001000000000010, or 365340921858 in decimal. Notice what happened to the size; it's nearly double that of 1000000 despite 1 not having nearly that much information.
 
 This becomes a big problem with iterated products. In recursive data types, it's often the case that pairings are made between very lop-sided numbers. In such a case, these inefficiencies compound creating encodings for recursive data types which are often much, much larger than expected.
 
@@ -163,5 +163,7 @@ Out> True
 ```
 
 This specific implementation isn't actually that efficient, mainly due to how I used `ProductLog`. Mathematica evaluates it purely symbolically, but I only need its ceiling, which I suspect is theoretically efficient to calculate, though I haven't researched that yet. Beyond that, I'm pretty satisfied with this and will take it into future projects with confidence.
+
+To wrap back to the example at the begining of this post, pairing 1000000 and 1 now produces 24068672, which is much more reasonable.
 
 {% endraw %}
