@@ -4,6 +4,8 @@
 - [Real Implementation](#headingImpl)
 - [Basic Functions](#headingBasic)
 - [Differential Definitions](#headingDiff)
+
+
 - [A Quadratic Product](#headingQProd)
 - [Recursive Types and Recursion](#headingRec)
 - [Quicksort, First Pass](#headingQ1)
@@ -279,13 +281,23 @@ f([a, b], 1] := [(3 a + b)/4, b]
 We do have some additional options. As long as there's an overlap at all, we're guaranteed to eventually decide on a bit given enough observations. We could narrow this overlap according to the formula
 
 ```
-f([a, b], 0) := [a, ((2^n + 1) b + (2^n - 1) a)/2^(n+1)]
-f([a, b], 1] := [((2^n + 1) a + (2^n - 1) b)/2^(n+1), b]
+f([a, b], 0) := [a, ((2^p - 1) a + (2^p + 1) b)/2^(p+1)]
+f([a, b], 1] := [((2^p + 1) a + (2^p - 1) b)/2^(p+1), b]
 ```
 
-The larger we set n, the smaller the overlap. If n is set to 1, the overlap will be between -1/2 and 1/2. If n is set to 2, the overlap will be between -1/4 and 1/4. For general n, the overlap will be between -1/2^n and 1/2^n. This will have the effect of increasing the rate of convergence; the intervals will get smaller, faster the more digits we see. Though, there are diminishing returns and one should be careful not to set n so high that basic operations become extremely inefficient. I'll use n = 1 since I want to keep things simple for this post.
+The larger we set   `p`, the smaller the overlap. If p is set to 1, the overlap will be between -1/2 and 1/2. If p is set to 2, the overlap will be between -1/4 and 1/4. For general p, the overlap will be between -1/2^p and 1/2^p. This will have the effect of increasing the rate of convergence; the intervals will get smaller, faster the more digits we see. Though, there are diminishing returns and one should be careful not to set p so high that basic operations become extremely inefficient. I'll use p = 1 since I want to keep things simple for this post.
 
 This representation does have the nice property that finding the negative of a number corresponds to swapping the 1s and 0s, but there doesn't seem to be a trivial way to invert a number, so I'll have to think of something less clever, though it honestly isn't difficult anyway.
+
+We can work out that, assuming `bₙ` is the nth bit (starting at 1) of the positive number `k`, we'll have that
+
+```
+           1
+k = ---------------- - 1
+          ∞     3ⁿ⁻¹
+    2 -   Σ bₙ -----
+        n = 1  2²ⁿ⁻¹
+```
 
 <a name="headingImpl"></a>
 ## Real Implementation
@@ -309,7 +321,7 @@ ana f a =
     (b, a') -> b : ana f a'
 ```
 
-This function essentially acknoledges the coalgebraic/autonata character of codata. Given a function which takes a state, `a`, and returns a new state along with an observation, `b`, we can repeatedly apply this function to get an infinite stream of observations. All codata can be characterized in this way. Using this, we can define a function which converts a `Rational`, Haskell's built-in representation of fractions, into a `ℝ`. Before that, let's define our focusing function. I've hard-coded a power of 1, but you can feel-free to vary it.
+This function essentially acknoledges the coalgebraic/autmata character of codata. Given a function which takes a state, `a`, and returns a new state along with an observation, `b`, we can repeatedly apply this function to get an infinite stream of observations. All codata can be characterized in this way. Using this, we can define a function which converts a `Rational`, Haskell's built-in representation of fractions, into a `ℝ`. Before that, let's define our focusing function. I've hard-coded a power of 1, but you can feel-free to vary it.
 
 ```haskell
 type Interval = (Rational, Rational)
