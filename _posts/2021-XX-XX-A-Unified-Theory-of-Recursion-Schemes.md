@@ -5,7 +5,6 @@
 - [Mutual Recursion](#mr)
 - [Accumulators](#a)
 - [Dynamic Programming](#dp)
-- [Forgetful Functors](#ff)
 - [Composing Adjunctions](#ca)
 - [Further Generalization](#fg)
 - [Final Thoughts](#ft)
@@ -544,7 +543,7 @@ In > fib[9]
 Out> {34, 55}
 ```
 
-Of course, not all examples of mutual recursion are parellel like those examples. Consider the problem of counting the leaves of the following type;
+This is the so-called "accumulator-passing style" implementation, and this paradigm of recursion always gives such a thing. Of course, not all examples of mutual recursion are parellel like those examples. Consider the problem of counting the leaves of the following type;
 
 ```haskell
 data Rose = Leaf | Branch (NonEmpty Rose)
@@ -598,7 +597,7 @@ cHyloL : {* : Category} (F : Functor * *) (G : Functor (* × *) (* × *))
          (B1 + B2) → A
 ```
 
-To a large extent, the work of the hylomorphism will be to fuse the layers of different type into a single uniform type. In our example we have layers of type `X = 1 + Y`, reflecting the branch layers, and layers of type `Y = X + X × Y`, reflecting the lists making up each branch. We can define a new type whose layers are of type `X = 1 + X + X + X × X`. The rose tree can be converted into this form so we nolonger have a situation where we need to swap out functions. This will be the intermediate hylomorphism type, and the algebra over that type will perform the actual counting.
+To a large extent, the work of the hylomorphism will be to fuse the layers of different type into a single uniform type. In our example we have layers of type `X = 1 + Y`, reflecting the branch layers, and layers of type `Y = X + X × Y`, reflecting the nonempty lists making up each branch. We can define a new type whose layers are of type `X = 1 + X + X + X × X`. The rose tree can be converted into this form so we nolonger have a situation where we need to swap out functions. This will be the intermediate hylomorphism type, and the algebra over that type will perform the actual counting.
 
 If we work out the type of our natural transformation, we find it must be
 
@@ -779,7 +778,7 @@ natEqFMap[f_][s[x_]] := s[f[x]]
 natEq = hylo[natEqFMap, natEqAlg, natEqCoalg];
 ```
 
-However, we can use this acumulator hylomorphism to define this in a slightly different but equivalent manner. With it, we fold on the first argument and use the second argument as part of the natural transformation.
+However, we can use this acumulator hylomorphism to define this in a slightly different manner. With it, we unfold on the first argument and use the second argument as part of the natural transformation.
 
 ```mathematica
 natEqCoalg[0] := z
@@ -820,25 +819,6 @@ This allows the recursion to happen on the natural number in the first argument 
 
 A more substantial example of a recursion scheme arises out of the cofree comonad which is right adjoint to a forgetful functor.
 
-
-...
-
-
-<a name="ff"></a>
-## Forgetful Functors
-
-The histomorphism is a special case of a more generic scenario. If an algebra has a free functor, then it will be, by definition, right adjoint to the forgetful functor. This means, for any algebra with a free functor, we have the recursion scheme;
-
-```agda
-cHyloL : (F : Functor * *) (G : Functor Alg Alg)
-         (σ : {y : Alg} → U (G y) → F (U y))
-         {B : Alg} {A : *}
-         (a : F A → A)
-         (c : B → G B) →
-         U B → A
-```
-
-As an example, if we take our algebra to be a monoid then...
 
 ...
 
@@ -893,7 +873,7 @@ Notice that it simultaneously makes use of a cache in the style of dynamic progr
 <a name="fg"></a>
 ## Further Generalization
 
-It's worth wondering if this whole construction could be generalized even further. One which isn't covered is Mendler-style recursion schemes. These were invented for scenarios where the type families aren't functors. The hylomorphism construction requires the existence of a functional map. What would we do if we had no such thing? It's not uncommon to find type families which aren't functional, for example `X ↦ (X → X)`. We must instead formulate an algebra or a coalgebra which modifies the hylomorphism along with its usual argument. In this way, the action of the fmap is absorbed into one of them.
+It's worth wondering if this whole construction could be generalized even further. Mendler-style recursion schemes aren't covered by what we currently have. These were invented for scenarios where the type families aren't functors. The hylomorphism construction requires the existence of a functional map. What would we do if we had no such thing? It's not uncommon to find type families which aren't functional, for example `X ↦ (X → X)`. We must instead formulate an algebra or a coalgebra which modifies the hylomorphism along with its usual argument. In this way, the action of the fmap is absorbed into one of them.
 
 ```agda
 cmHyloL : {X Y : Category} (F : X .C → X .C) (G : Y .C → Y .C)
@@ -926,6 +906,6 @@ Look closely at the type of the algebra, `a`, in `cmHyloL` and the coalgebra, `c
 <a name="ft"></a>
 ## Final Thoughts
 
-There are many, many adjunctions hanging around in mathematics. Most of them have not been considered in this context. What sort of paradigms might arise from axiomatic cohesion? Or ...? Or ...? I think there's a lot of low-hanging fruit here.
+There are many, many adjunctions hanging around in mathematics. Most of them have not been considered in this context. What sort of paradigms might arise from axiomatic cohesion? Or adunctions between free algebras and forgetful functors in general? Or those between more generic kinds of diagrams over our category of types? Or quantifiers/substitutional adjuncitions? I think there's a lot of low-hanging fruit here.
 
 {% endraw %}
