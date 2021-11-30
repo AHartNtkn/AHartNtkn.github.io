@@ -168,30 +168,22 @@ To wrap back to the example at the begining of this post, pairing 1,000,000 and 
 
 ...
 
-There is a further simplification we could make. Noting that the outer families only exist because we're directly considering 0, we could remove them from the encoding by only considering numbers greater than 0. This means we only need the code for the inner families. Doing this yields;
+There is a further simplification we could make. Noting that the outer families only exist because we're directly considering 0, we could remove them from the encoding by only considering numbers greater than 0. This means we only need the code for the inner families. We can then get coverage of 0 by simply adding one to the input coordinates during encoding and subtracting one during decoding. Doing this yields;
 
 ```mathematica
 encodeOpt[{x_, y_}] :=
  Block[{s, g},
-  g = Ceiling@Log[2, x + 1] - 1;
-  s = g + Ceiling@Log[2, y + 1];
-  (g + s - 3) 2^(s - 1) + (y - 1) 2^g + x + 1
+  g = Ceiling@Log[2, x + 2] - 1;
+  s = g + Ceiling@Log[2, y + 2] - 1;
+  (g + s - 2) 2^s + y 2^g + x + 2
   ]
 decodeOpt[x_] :=
- Block[{s, t, g, pp},
-  s = Ceiling[FullSimplify[ProductLog[Log[2]x/2]/Log[2]]] + 1;
-  t = x - (s - 2) 2^(s - 1) - 1;
-  g = Floor[t/2^(s - 1)];
-  pp = Mod[t, 2^(s - 1)];
-  {2^g + Mod[pp, 2^g], 2^(s - 1 - g) + Floor[pp/2^g]}
+ Block[{s, p, g},
+  s = Ceiling[FullSimplify[ProductLog[x Log[2]/2]/Log[2]]];
+  p = x - (s - 1) 2^s - 1;
+  g = Floor[p/2^s];
+  {2^g + Mod[p, 2^g], Floor[(2^s + Mod[p, 2^s])/2^g]} - 1
   ]
-```
-
-we can then get codings that cover 0 by pre and post composing with successor and predecessor functions;
-
-```mathematica
-encodeOpt0[p_] := encodeOpt[p + 1]
-decodeOpt0[x_] := decodeOpt[x] - 1
 ```
 
 {% endraw %}
