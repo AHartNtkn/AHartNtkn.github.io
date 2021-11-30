@@ -50,7 +50,7 @@ encodeOpt[{x_, y_}] :=
   ]
 ```
 
-Note that the `s`s are adjusted by one to make room for the `0` shell.
+Note that the `s`s are adjusted to refer to all the previous shells rather than the current one.
 
 In the other direction, if we have a number, `n`, which we want to decode as a pair, we can figure out which shell it's in by repeatedly subtracting shell sizes from `n` until `n` is smaller than a given shell. To compute this more efficiently, we can note that the inverse of the above sum function is
 
