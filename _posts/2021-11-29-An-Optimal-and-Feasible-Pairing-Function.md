@@ -175,7 +175,8 @@ encodeOpt[{x_, y_}] :=
  Block[{s, g},
   g = Ceiling@Log[2, x + 1] - 1;
   s = g + Ceiling@Log[2, y + 1];
-  2^(s - 1) (g + s - 3) + 2^g (y - 1) + x + 1]
+  2^(s - 1) (g + s - 3) + 2^g (y - 1) + x + 1
+  ]
 decodeOpt[x_] :=
  Block[{s, t, g, pp},
   s = Ceiling[FullSimplify[ProductLog[Log[2]x/2]/Log[2]]] + 1;
