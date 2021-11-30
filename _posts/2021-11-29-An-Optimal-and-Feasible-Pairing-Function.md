@@ -55,7 +55,7 @@ Note that the `s`s are adjusted by one to make room for the `0` shell.
 In the other direction, if we have a number, `n`, which we want to decode as a pair, we can figure out which shell it's in by repeatedly subtracting shell sizes from `n` until `n` is smaller than a given shell. To compute this more efficiently, we can note that the inverse of the above sum function is
 
 ```
-W(8 (1 + x) ln[2])/ln[2]
+W(8 (1 + x) ln(2))/ln(2) - 2
 ```
 
 where `W` is the [Lambert W function](https://en.wikipedia.org/wiki/Lambert_W_function), called `ProductLog` in Mathematica. Using the ceiling of this, we can immediately figure out the shell any given input is in.
@@ -64,7 +64,7 @@ where `W` is the [Lambert W function](https://en.wikipedia.org/wiki/Lambert_W_fu
 decodeOpt[0] := {0, 0}
 decodeOpt[x_] :=
  Block[{s, xp},
-  s = Ceiling[FullSimplify[ProductLog[8 (1 + x) Log[2]]/Log[2]] - 2];
+  s = Ceiling[FullSimplify[ProductLog[8 (1 + x) Log[2]]/Log[2]]] - 2;
   xp = x - 2^(s - 2) (1 + s);
   decodeShell[s, xp]
   ]
