@@ -172,13 +172,10 @@ There is a further simplification we could make. Noting that the outer families 
 
 ```mathematica
 encodeOpt[{x_, y_}] :=
- Block[{s, g, xp, yp, p},
+ Block[{s, g},
   g = Ceiling@Log[2, x + 1] - 1;
   s = g + Ceiling@Log[2, y + 1];
-  xp = x - 2^g;
-  yp = y - 2^(s - 1 - g);
-  p = 2^g yp + xp;
-  g 2^(s - 1) + p + 2^(s - 1) (s - 2) + 1]
+  2^(s - 1) (g + s - 3) + 2^g (y - 1) + x + 1]
 decodeOpt[x_] :=
  Block[{s, t, g, pp},
   s = Ceiling[FullSimplify[ProductLog[Log[2]x/2]/Log[2]]] + 1;
