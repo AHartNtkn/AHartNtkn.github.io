@@ -186,7 +186,25 @@ decodeOpt[x_] :=
   ]
 ```
 
-The main inefficiencies are the ceiling-log and ceiling-product log usage. The ceiling-log is easy enough to replace using a function that calculates the bit-length of a number, but the product log is a more complicated story. `ProductLog[z Log[2]/2]/Log[2]` is the solution to the equation;
+The main inefficiencies are the ceiling-log and ceiling-product log usage. The ceiling-log is easy enough to replace using a function that calculates the bit-length of a number. This can be done by repeatedly doing integer-division by 2 until the number reaches 0.
+
+```mathematica
+len[x_] := NestWhile[ {#[[1]] + 1, Floor[#[[2]]/2]} &
+                    , {0, x}
+                    , #[[2]] != 0 &][[1]];
+```
+
+we can drop this into our `encodeOpt` function to get
+
+```mathematica
+encodeOpt[{x_, y_}] :=
+ Block[{s, g},
+  g = len[x + 1] - 1;
+  s = g + len[y + 1] - 1;
+  (g + s - 2) 2^s + y 2^g + x + 2
+  ]
+```
+However, the product log is a more complicated story. `ProductLog[z Log[2]/2]/Log[2]` is the solution to the equation;
 
 ```
 z = w 2^(w+1)
@@ -232,27 +250,16 @@ is
 (Log[E + 1/Log[2]]-1)/Log[2] ≈ 0.614227
 ```
 
-reached when `x = E`. Based on that, we can use `|n|` as an initial estimate and adjust one unit if it's wrong.
+reached when `x = E`. Based on that, we can use `|n|` as an initial estimate and adjust one unit if it's wrong. This gives us an efficient approximate inverse immediately, however, the naive solution from this isn't the same as our desired `cl`. This is more like a rounding function rather than a ceiling function. To turn it into a ceiling function we simply see if the inverse is too small and adjust accordingly.
 
 ```mathematica
-lenFactor[n_] :=
- Block[{w},
-  w = n - Ceiling@Log[2, n + 1];
-  If[Ceiling@Log[2, w + 1] + w != n,
-   w++
-   ];
-  w
-  ]
-```
-
-This gives us an efficient approximate inverse immediately, however, the naive solution from this isn't the same as our desired `cl`. This is more like a rounding function rather than a ceiling function. To turn it into a ceiling function we simply see if the inverse is too small and adjust accordingly.
-
-```mathematica
-inv[n_] :=
- Block[{w},
-  w = lenFactor[Max[Ceiling@Log[2, n + 1] - 1, 0]];
-  If[w 2^(w + 1) < n, w++];
-  w
+inv[n_] := 
+  Block[{w, r},
+    r = Max[len[n] - 1, 0];
+    w = r - len[r];
+    If[len[w] + w != r, w++];
+    If[w 2^(w + 1) < n, w++];
+    w
   ]
 ```
 
