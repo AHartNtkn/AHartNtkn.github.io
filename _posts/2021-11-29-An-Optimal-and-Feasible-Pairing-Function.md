@@ -245,13 +245,13 @@ lenFactor[n_] :=
   ]
 ```
 
-This gives us an efficient approximate inverse immediately, however, the naive solution from this isn't the same as our desired `cl`. This is more like a rounding function rather than a ceiling function. To turn it into a ceiling function we simply see if the inverse is too big and adjust accordingly.
+This gives us an efficient approximate inverse immediately, however, the naive solution from this isn't the same as our desired `cl`. This is more like a rounding function rather than a ceiling function. To turn it into a ceiling function we simply see if the inverse is too small and adjust accordingly.
 
 ```mathematica
 inv[n_] :=
  Block[{w},
-  w = lenFactor[Max[Ceiling@Log[2, n + 1] - 1, 0]] + 1;
-  If[(w - 1) 2^w >= n, w--];
+  w = lenFactor[Max[Ceiling@Log[2, n + 1] - 1, 0]];
+  If[w 2^(w + 1) < n, w++];
   w
   ]
 ```
