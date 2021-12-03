@@ -204,16 +204,16 @@ encodeOpt[{x_, y_}] :=
   (g + s - 2) 2^s + y 2^g + x + 2
   ]
 ```
-However, the product log is a more complicated story. `ProductLog[z Log[2]/2]/Log[2]` is the solution to the equation;
+However, the product log is a more complicated story. `W(z ln(2)/2)/ln(2)` is the solution to the equation;
 
 ```
 z = w 2^(w+1)
 ``` 
 
-The ceiling makes it an approximation to this solution from above. We can characterize our function, which I'll call `cl`, via the Galois connection;
+The ceiling makes it an approximation to this solution from above. We can characterize our function, which I'll call `clw`, via the Galois connection;
 
 ```
-w 2^(w+1) < z   iff   w < cl(z)
+w 2^(w+1) < z   iff   w < clw(z)
 ```
 
 We can turn this into a theorem;
@@ -222,7 +222,7 @@ We can turn this into a theorem;
 ∀z . ∃ y . ∀w . (w 2^(w+1) < z) iff (w < y)
 ```
 
-here `cl` will be the skolemization of the existential quantifier in the theorem. If one made a proof of that theorem, the Skolem function could be extracted.
+here `clw` will be the skolemization of the existential quantifier in the theorem. If one made a proof of that theorem, the Skolem function could be extracted.
 
 ...
 
@@ -250,10 +250,10 @@ is
 (Log[E + 1/Log[2]]-1)/Log[2] ≈ 0.614227
 ```
 
-reached when `x = E`. Based on that, we can use `|n|` as an initial estimate and adjust one unit if it's wrong. This gives us an efficient approximate inverse immediately, however, the naive solution from this isn't the same as our desired `cl`. This is more like a rounding function rather than a ceiling function. To turn it into a ceiling function we simply see if the inverse is too small and adjust accordingly.
+reached when `x = E`. Based on that, we can use `|n|` as an initial estimate and adjust one unit if it's wrong. This gives us an efficient approximate inverse immediately, however, the naive solution from this isn't the same as our desired `clw`. This is more like a rounding function rather than a ceiling function. To turn it into a ceiling function we simply see if the inverse is too small and adjust accordingly.
 
 ```mathematica
-inv[n_] := 
+clw[n_] := 
   Block[{w, r},
     r = Max[len[n] - 1, 0];
     w = r - len[r];
@@ -268,7 +268,7 @@ We can simply drop that in place in `decodeOpt` to get;
 ```mathematica
 decodeOpt[x_] :=
  Block[{s, p, g},
-  s = inv[x];
+  s = clw[x];
   p = x - (s - 1) 2^s - 1;
   g = Floor[p/2^s];
   {2^g + Mod[p, 2^g], Floor[(2^s + Mod[p, 2^s])/2^g]} - 1
