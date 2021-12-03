@@ -186,4 +186,88 @@ decodeOpt[x_] :=
   ]
 ```
 
+The main inefficiencies are the ceiling-log and ceiling-product log usage. The ceiling-log is easy enough to replace using a function that calculates the bit-length of a number, but the product log is a more complicated story. `ProductLog[z Log[2]/2]/Log[2]` is the solution to the equation;
+
+```
+z = w 2^(w+1)
+``` 
+
+The ceiling makes it an approximation to this solution from above. We can characterize our function, which I'll call `cl`, via the Galois connection;
+
+```
+w 2^(w+1) < z   iff   w < cl(z)
+```
+
+We can turn this into a theorem;
+
+```
+∀z . ∃ y . ∀w . (w 2^(w+1) < z) iff (w < y)
+```
+
+here `cl` will be the skolemization of the existential quantifier in the theorem. If one made a proof of that theorem, the Skolem function could be extracted.
+
+...
+
+There's a more simple solution based on some bit-analysis. Note that
+
+```
+| w 2^(w+1) | = |w| + w + 1
+```
+
+This means we can invert this function by looking only at the length. I suspect that, for any number of the form
+
+```
+n = |w| + w
+```
+
+we'll have that `|n|` is, at most, 1 larger than `|w|`. This is based on the fact that the maximal value of
+
+```mathematica
+Log[2, Log[2, x] + x] - Log[2, x]
+```
+
+is
+
+```mathematica
+(Log[E + 1/Log[2]]-1)/Log[2] ≈ 0.614227
+```
+
+reached when `x = E`. Based on that, we can use `|n|` as an initial estimate and adjust one unit if it's wrong.
+
+```mathematica
+lenFactor[n_] :=
+ Block[{w},
+  w = n - Ceiling@Log[2, n + 1];
+  If[Ceiling@Log[2, w + 1] + w != n,
+   w++
+   ];
+  w
+  ]
+```
+
+This gives us an efficient approximate inverse immediately, however, the naive solution from this isn't the same as our desired `cl`. This is more like a rounding function rather than a ceiling function. To turn it into a ceiling function we simply see if the inverse is too big and adjust accordingly.
+
+```mathematica
+inv[n_] :=
+ Block[{w},
+  w = lenFactor[Max[Ceiling@Log[2, n + 1] - 1, 0]] + 1;
+  If[(w - 1) 2^w >= n, w--];
+  w
+  ]
+```
+
+We can simply drop that in place in `decodeOpt` to get;
+
+```mathematica
+decodeOpt[x_] :=
+ Block[{s, p, g},
+  s = inv[x];
+  p = x - (s - 1) 2^s - 1;
+  g = Floor[p/2^s];
+  {2^g + Mod[p, 2^g], Floor[(2^s + Mod[p, 2^s])/2^g]} - 1
+  ]
+```
+
+which does the same as before, but without using any symbol manipulation, so it's now much easier to port and also much faster.
+
 {% endraw %}
