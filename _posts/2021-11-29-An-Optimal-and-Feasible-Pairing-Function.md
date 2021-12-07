@@ -45,9 +45,9 @@ so we can implement our encoder as
 encodeOpt[{0, 0}] := 0
 encodeOpt[{x_, y_}] :=
  Block[{s},
-  s = Ceiling@Log[2, x + 1] + Ceiling@Log[2, y + 1];
-  encodeShell[s, {x, y}] + 2^(s - 2) (1 + s)
-  ]
+   s = Ceiling@Log[2, x + 1] + Ceiling@Log[2, y + 1];
+   encodeShell[s, {x, y}] + 2^(s - 2) (1 + s)
+ ]
 ```
 
 Note that the `s`s are adjusted to refer to all the previous shells rather than the current one.
@@ -64,10 +64,10 @@ where `W` is the [Lambert W function](https://en.wikipedia.org/wiki/Lambert_W_fu
 decodeOpt[0] := {0, 0}
 decodeOpt[x_] :=
  Block[{s, xp},
-  s = Ceiling[FullSimplify[ProductLog[8 (1 + x) Log[2]]/Log[2]]] - 2;
-  xp = x - 2^(s - 2) (1 + s);
-  decodeShell[s, xp]
-  ]
+   s = Ceiling[FullSimplify[ProductLog[8 (1 + x) Log[2]]/Log[2]]] - 2;
+   xp = x - 2^(s - 2) (1 + s);
+   decodeShell[s, xp]
+ ]
 ```
 
 the `decodeShell` function will decode a shell given some canonical position within that shell.
@@ -99,17 +99,18 @@ Despite all this explanation, the actual implementation is quite simple;
 ```mathematica
 encodeShell[s_, {x_, y_}] :=
  Block[{g, p, xp, yp},
-  Which[
-   x == 0, y - 2^(s - 1),
-   y == 0, x,
+   Which[
+     x == 0, y - 2^(s - 1),
+     y == 0, x,
    
-   True,
-   g = Ceiling@Log[2, x + 1] - 1;
-   xp = x - 2^g;
-   yp = y - 2^(s - 2 - g);
-   p = 2^g yp + xp;
-   g 2^(s - 2) + p + 2^s
-   ]]
+     True,
+     g = Ceiling@Log[2, x + 1] - 1;
+     xp = x - 2^g;
+     yp = y - 2^(s - 2 - g);
+     p = 2^g yp + xp;
+     g 2^(s - 2) + p + 2^s
+   ]
+ ]
 ```
 
 Going the other direction is fairly straightforward;
@@ -117,15 +118,16 @@ Going the other direction is fairly straightforward;
 ```mathematica
 decodeShell[s_, p_] :=
  Block[{t, g, pp},
-  If[p < 2^s,
-   t = 2^(s - 1) + Mod[p, 2^(s - 1)];
-   If[p >= 2^(s - 1), {t, 0}, {0, t}],
+   If[p < 2^s,
+     t = 2^(s - 1) + Mod[p, 2^(s - 1)];
+     If[p >= 2^(s - 1), {t, 0}, {0, t}],
    
-   t = p - 2^s;
-   g = Floor[t/2^(s - 2)];
-   pp = Mod[t, 2^(s - 2)];
-   {2^g + Mod[pp, 2^g], 2^(s - 2 - g) + Floor[pp/2^g]}
-   ]]
+     t = p - 2^s;
+     g = Floor[t/2^(s - 2)];
+     pp = Mod[t, 2^(s - 2)];
+     {2^g + Mod[pp, 2^g], 2^(s - 2 - g) + Floor[pp/2^g]}
+   ]
+ ]
 ```
 
 we can test these functions with a battery of inputs. For example;
@@ -173,17 +175,17 @@ There is a further simplification we could make. Noting that the outer families 
 ```mathematica
 encodeOpt[{x_, y_}] :=
  Block[{s, g},
-  g = Ceiling@Log[2, x + 2] - 1;
-  s = g + Ceiling@Log[2, y + 2] - 1;
-  (g + s - 2) 2^s + y 2^g + x + 2
-  ]
+   g = Ceiling@Log[2, x + 2] - 1;
+   s = g + Ceiling@Log[2, y + 2] - 1;
+   (g + s - 2) 2^s + y 2^g + x + 2
+ ]
 decodeOpt[x_] :=
  Block[{s, p, g},
-  s = Ceiling[FullSimplify[ProductLog[x Log[2]/2]/Log[2]]];
-  p = x - (s - 1) 2^s - 1;
-  g = Floor[p/2^s];
-  {2^g + Mod[p, 2^g], Floor[(2^s + Mod[p, 2^s])/2^g]} - 1
-  ]
+   s = Ceiling[FullSimplify[ProductLog[x Log[2]/2]/Log[2]]];
+   p = x - (s - 1) 2^s - 1;
+   g = Floor[p/2^s];
+   {2^g + Mod[p, 2^g], Floor[(2^s + Mod[p, 2^s])/2^g]} - 1
+ ]
 ```
 
 The main inefficiencies are the ceiling-log and ceiling-product log usage. The ceiling-log is easy enough to replace using a function that calculates the bit-length of a number. This can be done by repeatedly doing integer-division by 2 until the number reaches 0.
@@ -191,7 +193,8 @@ The main inefficiencies are the ceiling-log and ceiling-product log usage. The c
 ```mathematica
 len[x_] := NestWhile[ {#[[1]] + 1, Floor[#[[2]]/2]} &
                     , {0, x}
-                    , #[[2]] != 0 &][[1]];
+                    , #[[2]] != 0 &
+                    ][[1]];
 ```
 
 we can drop this into our `encodeOpt` function to get
@@ -199,10 +202,10 @@ we can drop this into our `encodeOpt` function to get
 ```mathematica
 encodeOpt[{x_, y_}] :=
  Block[{s, g},
-  g = len[x + 1] - 1;
-  s = g + len[y + 1] - 1;
-  (g + s - 2) 2^s + y 2^g + x + 2
-  ]
+   g = len[x + 1] - 1;
+   s = g + len[y + 1] - 1;
+   (g + s - 2) 2^s + y 2^g + x + 2
+ ]
 ```
 However, the product log is a more complicated story. `W(z ln(2)/2)/ln(2)` is the solution to the equation;
 
@@ -268,13 +271,47 @@ We can simply drop that in place in `decodeOpt` to get;
 ```mathematica
 decodeOpt[x_] :=
  Block[{s, p, g},
-  s = clw[x];
-  p = x - (s - 1) 2^s - 1;
-  g = Floor[p/2^s];
-  {2^g + Mod[p, 2^g], Floor[(2^s + Mod[p, 2^s])/2^g]} - 1
-  ]
+   s = clw[x];
+   p = x - (s - 1) 2^s - 1;
+   g = Floor[p/2^s];
+   {2^g + Mod[p, 2^g], Floor[(2^s + Mod[p, 2^s])/2^g]} - 1
+ ]
 ```
 
 which does the same as before, but without using any symbol manipulation, so it's now much easier to port and also much faster.
+
+...
+
+Both of the encoding functions have the same asymptotic limit. The pair of `x` and `y` is approximate;
+
+```
+x y |x| / 2
+```
+
+in the limit using either scheme. This suggests that
+
+```
+|(x, y)| ≈ |x| + |y| + ||x|| - 1
+```
+
+though this is an underestimate. For the first pairing function, I've found that 
+
+```
+|(x, y)| ≤ |x| + |y| + ||x|| + ||y||
+```
+
+Giving a hard bound for something like bounded arithmetic reasoning. I'm not sure if there's a way to rephrase the bound to be tighter, but this is pretty tight as is. The second pairing function has a slightly looser bound of
+
+```
+|(x, y)| ≤ |x| + |y| + ||x|| + ||y|| + 1
+```
+
+Though I'm not sure how to prove these in the discrete domain. They come from taking the limit of
+
+```
+|(x, y)| - (|x| + |y| + ||x|| + ||y||)
+```
+
+as `x` and `y` approach infinity, ignoring the ceiling functions, getting minus infinity. That confirms the second summand grows faster. Spot testing is what gets the "+1", so I'm less sure of it.
 
 {% endraw %}
