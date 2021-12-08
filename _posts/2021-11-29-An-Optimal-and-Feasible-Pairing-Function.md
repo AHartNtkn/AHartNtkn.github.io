@@ -282,6 +282,37 @@ which does the same as before, but without using any symbol manipulation, so it'
 
 ...
 
+We can observe that the `ProductLog` portion of the first encoding in this post is the solution to the equation;
+
+```mathematica
+x + 1 = w 2^(w-3)
+```
+
+We can modify our `clw` function based on this to
+
+```mathematica
+clw[n_] := Block[{w, r},
+    r = Max[len[n] + 3, 0];
+    w = r - len[r];
+    If[len[w] + w != r, w++];
+    If[w 2^(w - 3) - 1 < n, w++];
+    w
+  ]
+```
+
+And drop it in place of the `Ceiling`ed function to get an efficient implementation.
+
+```mathematica
+decodeOpt[x_] :=
+ Block[{s, xp},
+   s = clw[x] - 2;
+   xp = x - 2^(s - 2) (1 + s);
+   decodeShell[s, xp]
+ ]
+```
+
+...
+
 Both of the encoding functions have the same asymptotic limit. The pair of `x` and `y` is approximately;
 
 ```
