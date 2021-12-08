@@ -282,7 +282,7 @@ which does the same as before, but without using any symbol manipulation, so it'
 
 ...
 
-Both of the encoding functions have the same asymptotic limit. The pair of `x` and `y` is approximate;
+Both of the encoding functions have the same asymptotic limit. The pair of `x` and `y` is approximately;
 
 ```
 x y |x| / 2
