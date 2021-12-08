@@ -306,7 +306,7 @@ And drop it in place of the `Ceiling`ed function to get an efficient implementat
 decodeOpt[x_] :=
  Block[{s, xp},
    s = clw[x] - 2;
-   xp = x - 2^(s - 2) (1 + s);
+   xp = x - (1 + s) 2^(s - 2);
    decodeShell[s, xp]
  ]
 ```
