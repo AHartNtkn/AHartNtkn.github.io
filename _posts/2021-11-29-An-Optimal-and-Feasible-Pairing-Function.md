@@ -328,19 +328,19 @@ in the limit using either scheme. This suggests that
 though this is an underestimate. For the first pairing function, I've found that 
 
 ```
-|(x, y)| ≤ |x| + |y| + ||x|| + ||y||
+|(x, y)| ≤ |x| + |y| + |(|x|+|y|)|
 ```
 
 Giving a hard bound for something like bounded arithmetic reasoning. The second pairing function has a slightly looser bound of
 
 ```
-|(x, y)| ≤ |x| + |y| + ||x|| + ||y|| + 1
+|(x, y)| ≤ |x| + |y| + |(|x|+|y|)| + 1
 ```
 
 Though I'm not sure how to prove these in the discrete domain. They come from taking the limit of
 
 ```
-|(x, y)| - (|x| + |y| + ||x|| + ||y||)
+|(x, y)| - (|x| + |y| + |(|x|+|y|)|)
 ```
 
 as `x` and `y` approach infinity, ignoring the ceiling functions, getting minus infinity. That confirms the second summand grows faster. This also shows the bound to be as tight as it can possibly be as the cases where either entry is 0 will limit to `-2` for the first encoding, showing the lack of headroom for any alternative bound. Spot testing is what gets the `+1` for the second encoding, so I'm less sure of it.
