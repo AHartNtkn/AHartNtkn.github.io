@@ -170,7 +170,13 @@ To wrap back to the example at the begining of this post, pairing 1,000,000 and 
 
 ...
 
-There is a further simplification we could make. Noting that the outer families only exist because we're directly considering 0, we could remove them from the encoding by only considering numbers greater than 0. This means we only need the code for the inner families. We can then get coverage of 0 by simply adding one to the input coordinates during encoding and subtracting one during decoding. Doing this yields;
+There is a further simplification we could make. If we assume the data is actually a binary string, then 0 is the empty string with 0 bits, 1 is '0', 2 is '1', 3 is '00', etc. We can measure the length of this representation using;
+
+```mathematica
+len[x_] := Ceiling@Log[2, x + 2] - 1
+```
+
+If we draw families of pairs with the same sum of lengths using this definition, we get the same families as before but without the extra long outer families with zeros. We could remove them from the encoding by only considering numbers greater than 0. This means we only need the code for the inner families. We can then get coverage of 0 by simply adding one to the input coordinates during encoding and subtracting one during decoding. Doing this yields;
 
 ```mathematica
 encodeOpt[{x_, y_}] :=
@@ -187,6 +193,8 @@ decodeOpt[x_] :=
    {2^g + Mod[p, 2^g], Floor[(2^s + Mod[p, 2^s])/2^g]} - 1
  ]
 ```
+
+...
 
 The main inefficiencies are the ceiling-log and ceiling-product log usage. The ceiling-log is easy enough to replace using a function that calculates the bit-length of a number. This can be done by repeatedly doing integer-division by 2 until the number reaches 0.
 
