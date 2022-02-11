@@ -62,7 +62,6 @@ c(x), ∀y z. (y + (z + x)) = ((y + z) + x) ⊢ (y + (z + x)) = ((y + z) + x)
 a(x) ⊢ (y + (z + x)) = ((y + z) + x)
 ---------------------------------------
 ⊢ a(x) → (y + (z + x)) = ((y + z) + x)
----------------------------------------
 ```
 
 Yes, we can! And we can go further! Ultimately, Nelson ends up proving that all algebraic properties of addition and multiplication are provable via relativized predicates in Robinson's Q. Further, he proves something like that any inductively provable sentence which makes use of arbitrary usage of addition and finitary usage of multiplication relativizes. He goes a bit further using an additional operation which he denotes `#`, but that's a sideshow to the real moral of the book.
