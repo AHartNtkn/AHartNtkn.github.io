@@ -1,5 +1,4 @@
 {% raw %}
-
 Over the past few months I've been obsessively reading about various topics related to finitism. I may or may not write a post in the future covering the topic more broadly; this post is intended to focus on one particular technique I learned about from the book;
 
 - [Predicative Arithmetic](https://web.math.princeton.edu/~nelson/books/pa.pdf) by Edward Nelson
