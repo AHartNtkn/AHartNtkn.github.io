@@ -185,13 +185,7 @@ From `a4` we need to prove
 g2. ϵ(q, x)
 ```
 
-By specializing `p` in `a2` to `q`, we have the new assumption;
-
-```
-a5. ϵ(q, 0) → (∀n. ϵ(q, n) → ϵ(q, n+1)) → ϵ(q, x)
-```
-
-Applying `a5` to `g2` we get the two goals;
+Applying `a2` to `g2` we get the two goals;
 
 ```
 g3. ϵ(q, 0)
