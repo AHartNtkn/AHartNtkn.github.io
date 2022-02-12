@@ -215,13 +215,7 @@ and the goal
 g1. ϵ(p, n)
 ```
 
-By specializing q in 4 to p we obtain
-
-```
-a5. ϵ(p, 0) → (∀n. ϵ(p, n) → ϵ(p, n+1)) → ϵ(p, n)
-```
-
-by applying this to our goal we obtain
+by applying `a4` to our goal we obtain
 
 ```
 g2. ϵ(p, 0)
