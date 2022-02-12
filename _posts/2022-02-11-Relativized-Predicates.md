@@ -73,7 +73,7 @@ a^0 = 1
 a^(b+1) = a * (a^b)
 ```
 
-He proves that it's not possible to define any predicate, `e` in Robinson's Q such that;
+He proves that it's not possible to define any predicate, `e`, in Robinson's Q which relitivizes `c`, such that;
 
 ```
 ∀x y z. e(x) ∧ e(y) ∧ x^y = z → e(z)
