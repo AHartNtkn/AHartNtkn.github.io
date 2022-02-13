@@ -73,7 +73,7 @@ a^0 = 1
 a^(b+1) = a * (a^b)
 ```
 
-He proves that it's not possible to define any predicate, `e`, in Robinson's Q which relitivizes `c`, such that;
+He proves that it's not possible to define any predicate, `e`, in Robinson's Q which relativizes `c`, such that;
 
 ```
 ∀x y z. e(x) ∧ e(y) ∧ x^y = z → e(z)
@@ -139,7 +139,7 @@ Moving on, we can push this even further. As far as I'm concerned, induction is 
 
 Fix a binary predicate which I'll suggestively call `ϵ`. I will not make any additional assumptions about `ϵ`. 
 
-Next, consider the following two predicate;
+Next, consider the following predicate;
 
 ```
 i(x) := c(x) ∧ ∀p. ϵ(p, 0) → (∀n. ϵ(p, n) → ϵ(p, n+1)) → ϵ(p, x)
