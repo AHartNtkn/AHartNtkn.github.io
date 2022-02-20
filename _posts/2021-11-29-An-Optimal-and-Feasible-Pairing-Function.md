@@ -164,7 +164,7 @@ In > % == %%%
 Out> True
 ```
 
-This specific implementation isn't actually that efficient, mainly due to how I used `ProductLog`. Mathematica evaluates it purely symbolically, but I only need its ceiling, which I suspect is theoretically efficient to calculate, though I haven't researched that yet. Beyond that, I'm pretty satisfied with this and will take it into future projects with confidence.
+This specific implementation isn't actually that efficient, mainly due to how I used `ProductLog`. Mathematica evaluates it purely symbolically, but I only need its ceiling, which is efficient to calculate (see below). Beyond that, I'm pretty satisfied with this and will take it into future projects with confidence.
 
 To wrap back to the example at the begining of this post, pairing 1,000,000 and 1 now produces 24,068,672, which is much more reasonable.
 
