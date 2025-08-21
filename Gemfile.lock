@@ -39,7 +39,6 @@ GEM
     ethon (0.17.0)
       ffi (>= 1.15.0)
     eventmachine (1.2.7)
-    eventmachine (1.2.7-x64-mingw32)
     execjs (2.10.0)
     faraday (2.13.4)
       faraday-net_http (>= 2.0, < 3.5)
@@ -238,10 +237,10 @@ GEM
     mutex_m (0.3.0)
     net-http (0.6.0)
       uri
-    nokogiri (1.17.2)
+    nokogiri (1.18.9)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
-    nokogiri (1.17.2-x64-mingw32)
+    nokogiri (1.18.9-x64-mingw-ucrt)
       racc (~> 1.4)
     octokit (4.25.1)
       faraday (>= 1, < 3)
@@ -279,11 +278,12 @@ GEM
 
 PLATFORMS
   ruby
-  x64-mingw32
+  x64-mingw-ucrt
 
 DEPENDENCIES
   github-pages
   jekyll-paginate
+  nokogiri (>= 1.18.9)
 
 BUNDLED WITH
-   2.5.23
+   2.7.1
