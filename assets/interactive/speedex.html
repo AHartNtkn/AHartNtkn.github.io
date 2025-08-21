@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Triangle‑Edge Market — SPEEDEX Intuition (v2)</title>
+<style>
+  html,body{margin:0;height:100%;background:#0b0e14;color:#e8ecf1;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial}
+  canvas{display:block;width:100vw;height:100vh;touch-action:none;cursor:default}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<script>
+(function(){
+  // ---------- Canvas ----------
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  
+  // ---------- Global Variables ----------
+  let DPR, tri, edgeAB, edgeBC, edgeCA, edges;
+  let bead, p, stepIdx, playing, focusedEdge, last, hover;
+  let selectedBar = null; // Track the currently selected bar
+  const STEP_LEVELS = [0.6, 1.0, 1.6];
+  let nextBarId = 1;
+  
+  function resize(){
+    if (!tri) return; // Skip if not initialized yet
+    DPR = Math.max(1, window.devicePixelRatio || 1);
+    canvas.width  = Math.floor(window.innerWidth  * DPR);
+    canvas.height = Math.floor(window.innerHeight * DPR);
+    tri = layoutTriangle();
+    
+    // Preserve existing bars before recreating edges
+    const oldBars = edges ? {
+      AB: [edges[0].lanes[0].bars.slice(), edges[0].lanes[1].bars.slice()],
+      BC: [edges[1].lanes[0].bars.slice(), edges[1].lanes[1].bars.slice()],
+      CA: [edges[2].lanes[0].bars.slice(), edges[2].lanes[1].bars.slice()]
+    } : null;
+    
+    // Recreate edges with new triangle
+    edgeAB = makeEdge('AB', tri.A, tri.B, tri.C);
+    edgeBC = makeEdge('BC', tri.B, tri.C, tri.A);
+    edgeCA = makeEdge('CA', tri.C, tri.A, tri.B);
+    edges = [edgeAB, edgeBC, edgeCA];
+    
+    // Restore preserved bars
+    if (oldBars) {
+      edgeAB.lanes[0].bars = oldBars.AB[0];
+      edgeAB.lanes[1].bars = oldBars.AB[1];
+      edgeBC.lanes[0].bars = oldBars.BC[0];
+      edgeBC.lanes[1].bars = oldBars.BC[1];
+      edgeCA.lanes[0].bars = oldBars.CA[0];
+      edgeCA.lanes[1].bars = oldBars.CA[1];
+    }
+    
+    // Rebuild lane->edge lookup
+    laneToEdgeMap = new WeakMap();
+    edges.forEach(e => e.lanes.forEach(l => laneToEdgeMap.set(l, e)));
+    
+    // Update bead position
+    bead = baryPoint(p, tri.A, tri.B, tri.C);
+    draw();
+  }
+
+  // ---------- Vec ----------
+  const V = {
+    add:(a,b)=>({x:a.x+b.x,y:a.y+b.y}),
+    sub:(a,b)=>({x:a.x-b.x,y:a.y-b.y}),
+    mul:(a,s)=>({x:a.x*s,y:a.y*s}),
+    dot:(a,b)=>a.x*b.x + a.y*b.y,
+    len:(a)=>Math.hypot(a.x,a.y),
+    norm:(a)=>{const L=Math.hypot(a.x,a.y)||1;return{x:a.x/L,y:a.y/L};},
+    perp:(a)=>({x:-a.y,y:a.x}),
+    mix:(a,b,t)=>({x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t})
+  };
+  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+  const px=(n)=>n*DPR; // DPR scaling helper
+
+  // ---------- Colors ----------
+  const COL = {
+    bg:'#0b0e14',
+    tri:'#1b2230',
+    triEdge:'#334054',
+    laneTrack:'#111827',
+    laneAxis:'#415572',
+    barQueued:'#7aa0ff',
+    barExec:'#88f0b9',
+    barHover:'#ffe28a',
+    gate:'#bcd2ff',
+    gateGuide:'rgba(188,210,255,0.45)',
+    flowIn:'#40dba1',
+    flowOut:'#ff8e8e',
+    resChamber:'#172030',
+    resIn:'#3fdc9c',
+    resOut:'#ff6f6f',
+    bead:'#e7f1ff',
+    beadHalo:'rgba(135,180,255,0.15)',
+    beadArrow:'#9ed0ff',
+    label:'#e7f1ff',
+    legendBG:'rgba(15,20,28,0.8)',
+    legendStroke:'#2a3a53',
+    legendText:'#cfe7ff',
+    uiBG:'rgba(15,20,28,0.8)',
+    uiStroke:'#2a3a53',
+    uiIcon:'#e7f1ff',
+    uiActive:'#9ed0ff'
+  };
+
+  // ---------- Triangle & barycentric ----------
+  function layoutTriangle(){
+    const W=canvas.width, H=canvas.height;
+    const R=Math.min(W,H)*0.36;
+    const cx=W*0.5, cy=H*0.54;
+    const A={x:cx, y:cy-R};
+    const B={x:cx-R*Math.cos(Math.PI/6), y:cy+R*Math.sin(Math.PI/6)};
+    const C={x:cx+R*Math.cos(Math.PI/6), y:cy+R*Math.sin(Math.PI/6)};
+    return {A,B,C,c:{x:cx,y:cy},R};
+  }
+
+  function bary(P,A,B,C){
+    const v0=V.sub(B,A), v1=V.sub(C,A), v2=V.sub(P,A);
+    const d00=V.dot(v0,v0), d01=V.dot(v0,v1), d11=V.dot(v1,v1);
+    const d20=V.dot(v2,v0), d21=V.dot(v2,v1);
+    const denom=d00*d11 - d01*d01 || 1e-9;
+    let v=(d11*d20 - d01*d21)/denom;
+    let w=(d00*d21 - d01*d20)/denom;
+    let u=1-v-w;
+    return {A:u,B:v,C:w};
+  }
+  function baryPoint(w,A,B,C){ return {x:w.A*A.x+w.B*B.x+w.C*C.x, y:w.A*A.y+w.B*B.y+w.C*C.y}; }
+  function clampBary(w,eps=1e-6){ 
+    const u=Math.max(eps,w.A), v=Math.max(eps,w.B), t=Math.max(eps,w.C);
+    const s=u+v+t;
+    return {A:u/s, B:v/s, C:t/s}; 
+  }
+
+  // ---------- State ----------
+
+  // Lanes & edges
+  const RANGE_LOG=2.5;
+  const MAX_Q=1.0;
+
+  function makeEdge(name,P,Q,Opp){
+    const t = V.norm(V.sub(Q,P));
+    const L = V.len(V.sub(Q,P));
+    const mid = V.mix(P,Q,0.5);
+    const nCand = V.perp(t);
+    const sgn = V.dot(nCand, V.sub(Opp,mid))>0 ? 1 : -1;
+    const n = V.mul(nCand, sgn);
+    const trackOffset = 0;           // lanes positioned exactly on triangle boundaries
+    const trackThickness = px(22);   // visual track thickness
+    const axisWidth = px(2);         // thin baseline (true axis)
+    const laneInside={dir:'P->Q',v0:P, dirEdge:t, normal:n,  offset:trackOffset, thickness:trackThickness, axis:axisWidth, bars:[]};
+    const laneOutside={dir:'Q->P',v0:Q, dirEdge:V.mul(t,-1), normal:V.mul(n,-1), offset:trackOffset, thickness:trackThickness, axis:axisWidth, bars:[]};
+    return {name,P,Q,Opp,L,t,n,mid,lanes:[laneInside,laneOutside]};
+  }
+  let laneToEdgeMap = new WeakMap();
+  function edgeByLane(l){ return laneToEdgeMap.get(l); }
+
+  // UNIFIED ABSTRACTED FUNCTION: Calculate edge intersection coordinates from price ratio
+  // This function is used by BOTH cutoff line positioning AND limit order positioning
+  // For edge P->Q with price ratio R, intersection at t = 1/(1+R)
+  function getPriceRatioIntersection(priceRatio, edge) {
+    const t = 1 / (1 + priceRatio);
+    const edgeVec = V.sub(edge.Q, edge.P);
+    return V.add(edge.P, V.mul(edgeVec, t));
+  }
+
+  function getBarRenderPosition(lane, bar) {
+    const edge = edgeByLane(lane);
+    const limitPrice = uToMin(bar.u);
+    
+    // Determine the correct price ratio for this lane direction
+    // Lane 0 = P->Q, Lane 1 = Q->P
+    const laneIndex = edge.lanes.indexOf(lane);
+    let priceRatio;
+    
+    if (edge === edgeAB) {
+      priceRatio = (laneIndex === 0) ? limitPrice : (1 / limitPrice); // A/B or B/A
+    } else if (edge === edgeBC) {
+      priceRatio = (laneIndex === 0) ? limitPrice : (1 / limitPrice); // B/C or C/B
+    } else { // edgeCA
+      priceRatio = (laneIndex === 0) ? limitPrice : (1 / limitPrice); // C/A or A/C
+    }
+    
+    // Use the unified abstracted function for consistent positioning
+    return getPriceRatioIntersection(priceRatio, edge);
+  }
+
+  function lanePoint(lane,u){
+    const along = V.mul(lane.dirEdge, u*edgeByLane(lane).L);
+    const base  = V.add(lane.v0, along);
+    const off   = V.mul(lane.normal, lane.offset);
+    return V.add(base, off);
+  }
+  function uToMin(u){ return Math.exp((u-0.5)*2*RANGE_LOG); }
+  function minToU(m){ return clamp(0.5 + Math.log(m)/(2*RANGE_LOG), 0, 1); }
+
+  function addBar(lane,u,h){ const b={id:nextBarId++,u:clamp(u,0,1),h:clamp(h,0,1),deleting:false}; lane.bars.push(b); return b; }
+  function seed(){
+    edges.forEach(e => e.lanes.forEach(l => l.bars.length=0));
+    selectedBar = null; // Clear selection when seeding
+    addBar(edgeAB.lanes[0],0.30,0.50); 
+    addBar(edgeAB.lanes[0],0.55,0.35); 
+    addBar(edgeAB.lanes[1],0.30,0.45);
+    addBar(edgeBC.lanes[0],0.40,0.40); 
+    addBar(edgeBC.lanes[0],0.70,0.35); 
+    addBar(edgeBC.lanes[1],0.35,0.50);
+    addBar(edgeCA.lanes[0],0.50,0.45); 
+    addBar(edgeCA.lanes[1],0.65,0.40);
+  }
+
+  // ---------- Prices & ratios ----------
+  function updateP(){ p = clampBary( bary(bead, tri.A, tri.B, tri.C) ); }
+  function gateU(edge){
+    const {P,Q} = EDGE_PROPS[edge.name];
+    return minToU(p[P]/p[Q]);
+  }
+
+  // ---------- Execution ----------
+  function execNow(){
+    const inflow={A:0,B:0,C:0}, outflow={A:0,B:0,C:0};
+    const executed=new WeakMap();
+    const gateUMap=new Map();
+    for(const e of edges){
+      const ug=gateU(e); gateUMap.set(e,ug);
+      const pairs = e.lanes.map((lane,i) => {
+        const {sell, buy} = edgePair(e, i);
+        return {lane, sell, buy, r: p[sell]/p[buy]};
+      });
+      for(const pr of pairs){
+        for(const b of pr.lane.bars){
+          const fill = (laneUToEdgeU(e, pr.lane, b.u) <= ug); executed.set(b, fill);
+          if(fill){
+            const qSell=b.h*MAX_Q;
+            inflow[pr.sell]+=qSell;
+            outflow[pr.buy]+=qSell*pr.r;
+          }
+        }
+      }
+    }
+    const D={A:outflow.A-inflow.A, B:outflow.B-inflow.B, C:outflow.C-inflow.C};
+    return {inflow,outflow,D,executed,gateU:gateUMap};
+  }
+
+  // ---------- Arrow step ----------
+  function arrowFrom(D){
+    const mean=(D.A+D.B+D.C)/3;
+    const dv={A:D.A-mean, B:D.B-mean, C:D.C-mean};
+    const dxy={x: dv.A*tri.A.x + dv.B*tri.B.x + dv.C*tri.C.x,
+               y: dv.A*tri.A.y + dv.B*tri.B.y + dv.C*tri.C.y};
+    const mag=Math.hypot(dxy.x,dxy.y)||1e-9;
+    const dir={x:dxy.x/mag,y:dxy.y/mag};
+    const dMax=Math.max(Math.abs(D.A),Math.abs(D.B),Math.abs(D.C));
+    const len=(0.08*STEP_LEVELS[stepIdx])*(1+1.5*Math.tanh(2*dMax));
+    return {dir,len};
+  }
+  function stepOnce(){
+    const {D}=execNow();
+    const arr=arrowFrom(D);
+    const move=arr.len*0.6;
+    bead={x:bead.x+arr.dir.x*move, y:bead.y+arr.dir.y*move};
+    let w=bary(bead,tri.A,tri.B,tri.C); w=clampBary(w,1e-5); bead=baryPoint(w,tri.A,tri.B,tri.C);
+    updateP();
+  }
+
+
+  // ---------- Hover picking ----------
+  function pick(pt){
+    // Bars
+    const bHit=hitBar(pt, true);
+    if(bHit) return {type:'bar', ...bHit};
+
+    // Gates
+    const gHit=hitGate(pt);
+    if(gHit) return {type:'gate', ...gHit};
+
+    // Assets
+    const aHit=hitAsset(pt);
+    if(aHit) return {type:'asset', asset:aHit.asset, pos:aHit.pos};
+
+    return null;
+  }
+  function hitAsset(pt){
+    const R=px(20);
+    if(Math.hypot(pt.x-tri.A.x, pt.y-tri.A.y)<=R) return {asset:'A',pos:tri.A};
+    if(Math.hypot(pt.x-tri.B.x, pt.y-tri.B.y)<=R) return {asset:'B',pos:tri.B};
+    if(Math.hypot(pt.x-tri.C.x, pt.y-tri.C.y)<=R) return {asset:'C',pos:tri.C};
+    return null;
+  }
+  function hitGate(pt){
+    for(const e of edges){
+      // Check if point is near the cutoff line (from bead perpendicular to edge)
+      const edgeVec = V.sub(e.Q, e.P);
+      const beadToP = V.sub(bead, e.P);
+      const tParam = V.dot(beadToP, edgeVec) / V.dot(edgeVec, edgeVec);
+      const lineEnd = V.add(e.P, V.mul(edgeVec, tParam));
+      
+      // Check distance from point to line segment (bead to lineEnd)
+      const lineVec = V.sub(lineEnd, bead);
+      const lineLen = V.len(lineVec);
+      if(lineLen < 1e-6) continue; // Degenerate line
+      
+      const pointVec = V.sub(pt, bead);
+      const t = Math.max(0, Math.min(1, V.dot(pointVec, lineVec) / (lineLen * lineLen)));
+      const closest = V.add(bead, V.mul(lineVec, t));
+      const dist = V.len(V.sub(pt, closest));
+      
+      if(dist <= px(8)){ // Within 8 pixels of the cutoff line
+        const {P, Q} = EDGE_PROPS[e.name];
+        const pair = [P, Q];
+        const r = p[P]/p[Q];
+        return {edge:e, center:closest, pair, ratio:r};
+      }
+    }
+    return null;
+  }
+  function pointInQuad(p,a,b,c,d){ // convex quad test via two triangles
+    const sign = (p1,p2,p3) => (p1.x-p3.x)*(p2.y-p3.y)-(p2.x-p3.x)*(p1.y-p3.y);
+    const inTri = (pt,v1,v2,v3) => {
+      const d1=sign(pt,v1,v2), d2=sign(pt,v2,v3), d3=sign(pt,v3,v1);
+      const hasNeg=(d1<0)||(d2<0)||(d3<0), hasPos=(d1>0)||(d2>0)||(d3>0);
+      return !(hasNeg && hasPos);
+    };
+    return inTri(p,a,b,c) || inTri(p,a,c,d);
+  }
+  function hitBar(pt, allowLoose){
+    for(const e of edges){
+      for(const lane of e.lanes){
+        for(const b of lane.bars){
+          const base=getBarRenderPosition(lane, b);
+          const n=lane.normal, tvec=V.perp(n);
+          const w=px(14), h=b.h*px(38); // base aligned to axis (no offset)
+          const left = V.add(base, V.mul(tvec,-w/2));
+          const right= V.add(base, V.mul(tvec,+w/2));
+          const topL = V.add(left, V.mul(n,h));
+          const topR = V.add(right,V.mul(n,h));
+          if(pointInQuad(pt,left,right,topR,topL)) return {lane, bar:b};
+          // loose hit line near baseline if requested (for tiny bars)
+          if(allowLoose && h<px(6)){
+            const proj = projectToLane(pt,lane);
+            const d = Math.abs(proj.dist);
+            if(proj.onSeg && d<px(10) && Math.abs(proj.u-b.u)<0.02) return {lane,bar:b};
+          }
+        }
+      }
+    }
+    return null;
+  }
+  function projectToLane(pt,lane){
+    const p0=lanePoint(lane,0), p1=lanePoint(lane,1);
+    const v=V.sub(p1,p0), L2=Math.max(V.dot(v,v),1e-9);
+    const w=V.sub(pt,p0);
+    const t=V.dot(w,v)/L2; const u=t;
+    const n=V.perp(V.norm(v));
+    const dist=V.dot(w,n);
+    return {u,dist,onSeg:(t>=0&&t<=1)};
+  }
+
+  // ---------- UI ----------
+  const ui = (() => {
+    const base = {x:16, y:16};
+    const btnSize = 42, btnGap = 8, chipW = 30;
+    return {
+      panel: {x:base.x, y:base.y, w:330, h:68}, // Reduced panel width
+      play:  {x:base.x+12, y:base.y+12, w:btnSize, h:btnSize},
+      reset: {x:base.x+12+btnSize+btnGap, y:base.y+12, w:btnSize, h:btnSize}, // Now directly after play
+      strength: [0,1,2].map(i => ({x:base.x+124+i*(chipW+4), y:base.y+14, w:chipW, h:26, lvl:i})), // Moved left
+      clear: {x:base.x+242, y:base.y+12, w:btnSize, h:btnSize} // Moved left
+    };
+  })();
+  
+  // Addition buttons positioned at edge midpoints
+  function getAdditionButtons() {
+    if (!tri || !edges) return [];
+    const buttons = [];
+    const btnRadius = 12; // Screen space radius (will be scaled by px() later)
+    
+    for (let ei = 0; ei < edges.length; ei++) {
+      const edge = edges[ei];
+      const midpoint = edge.mid;
+      
+      // Two buttons per edge, positioned on either side of the midpoint
+      const offset = 50; // Screen space offset (twice as far from edges)
+      const perpendicular = V.mul(edge.n, offset * DPR); // Convert to canvas space for positioning
+      
+      // Lane 0 button (inside direction)
+      const pos0Canvas = V.add(midpoint, perpendicular);
+      const pos0Screen = {x: pos0Canvas.x / DPR, y: pos0Canvas.y / DPR}; // Convert back to screen space
+      buttons.push({
+        x: pos0Screen.x - btnRadius, y: pos0Screen.y - btnRadius,
+        w: btnRadius * 2, h: btnRadius * 2,
+        edge: ei, lane: 0, center: pos0Canvas // Keep canvas space center for drawing
+      });
+      
+      // Lane 1 button (outside direction) 
+      const pos1Canvas = V.sub(midpoint, perpendicular);
+      const pos1Screen = {x: pos1Canvas.x / DPR, y: pos1Canvas.y / DPR}; // Convert back to screen space
+      buttons.push({
+        x: pos1Screen.x - btnRadius, y: pos1Screen.y - btnRadius,
+        w: btnRadius * 2, h: btnRadius * 2,
+        edge: ei, lane: 1, center: pos1Canvas // Keep canvas space center for drawing
+      });
+    }
+    
+    return buttons;
+  }
+  function drawUI(){
+    const P=ui.panel;
+    ctx.fillStyle=COL.uiBG; ctx.fillRect(px(P.x),px(P.y),px(P.w),px(P.h));
+    ctx.strokeStyle=COL.uiStroke; ctx.lineWidth=px(1); ctx.strokeRect(px(P.x),px(P.y),px(P.w),px(P.h));
+
+    button(ui.play, ()=>{
+      ctx.fillStyle=COL.uiIcon;
+      if(playing){ // pause
+        ctx.fillRect(0,0,px(8),px(24)); ctx.fillRect(px(14),0,px(8),px(24));
+      } else { // play
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(px(22),px(12)); ctx.lineTo(0,px(24)); ctx.closePath(); ctx.fill();
+      }
+    });
+    button(ui.reset, ()=>{
+      ctx.strokeStyle=COL.uiIcon; ctx.lineWidth=px(2);
+      ctx.beginPath(); ctx.arc(px(14),px(12),px(10),Math.PI*0.2,Math.PI*1.7); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(px(26),px(4)); ctx.lineTo(px(26),px(16)); ctx.lineTo(px(18),px(10)); ctx.closePath(); ctx.fillStyle=COL.uiIcon; ctx.fill();
+    });
+
+    for(let i=0;i<ui.strength.length;i++){
+      const chip=ui.strength[i];
+      ctx.strokeStyle=(i===stepIdx)?COL.uiActive:COL.uiStroke; ctx.lineWidth=px(1);
+      ctx.strokeRect(px(chip.x),px(chip.y),px(chip.w),px(chip.h));
+      const len=(i===0)?10:(i===1)?16:22;
+      drawArrow({x:px(chip.x+6),y:px(chip.y+chip.h/2)},
+                {x:px(chip.x+6+len),y:px(chip.y+chip.h/2)},
+                (i===stepIdx)?COL.uiActive:COL.uiIcon);
+    }
+
+    button(ui.clear, ()=>{
+      ctx.fillStyle=COL.uiIcon;
+      ctx.fillRect(0,px(6),px(20),px(18));
+      ctx.fillRect(px(-2),px(2),px(24),px(4));
+    });
+    
+    // Draw addition buttons at edge midpoints
+    const addButtons = getAdditionButtons();
+    for (const btn of addButtons) {
+      ctx.save();
+      ctx.translate(btn.center.x, btn.center.y);
+      
+      // Button background circle
+      ctx.fillStyle = COL.uiBG;
+      ctx.beginPath();
+      ctx.arc(0, 0, px(12), 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.strokeStyle = COL.uiStroke;
+      ctx.lineWidth = px(1);
+      ctx.stroke();
+      
+      // Plus sign
+      ctx.strokeStyle = COL.uiIcon;
+      ctx.lineWidth = px(2);
+      ctx.lineCap = 'round';
+      
+      // Horizontal line
+      ctx.beginPath();
+      ctx.moveTo(-px(6), 0);
+      ctx.lineTo(px(6), 0);
+      ctx.stroke();
+      
+      // Vertical line
+      ctx.beginPath();
+      ctx.moveTo(0, -px(6));
+      ctx.lineTo(0, px(6));
+      ctx.stroke();
+      
+      ctx.restore();
+    }
+  }
+  function button(box, paint){
+    ctx.save(); ctx.translate(px(box.x), px(box.y));
+    ctx.strokeStyle=COL.uiStroke; ctx.lineWidth=px(1); ctx.strokeRect(0,0,px(box.w),px(box.h));
+    ctx.save(); ctx.translate(px(10),px(9)); paint(); ctx.restore();
+    ctx.restore();
+  }
+  function uiHit(pt){
+    function inB(b){const x=px(b.x),y=px(b.y),w=px(b.w),h=px(b.h); return pt.x>=x&&pt.x<=x+w&&pt.y>=y&&pt.y<=y+h;}
+    if(inB(ui.play))  return {k:'play'};
+    if(inB(ui.reset)) return {k:'reset'};
+    for(let i=0;i<ui.strength.length;i++) if(inB(ui.strength[i])) return {k:'strength',i};
+    if(inB(ui.clear)) return {k:'clear'};
+    
+    // Check addition buttons  
+    const addButtons = getAdditionButtons();
+    for (let i = 0; i < addButtons.length; i++) {
+      const btn = addButtons[i];
+      // Convert button coordinates to screen space for hit testing
+      const screenBtn = {
+        x: btn.x, y: btn.y, // Already in screen space
+        w: btn.w, h: btn.h
+      };
+      if (inB(screenBtn)) {
+        return {k:'add', edgeIndex: btn.edge, laneIndex: btn.lane};
+      }
+    }
+    
+    return null;
+  }
+
+  // ---------- Legend ----------
+  function drawLegend(){
+    // Legend items
+    const items = [
+      { color: COL.barQueued, label: 'Queued offer' },
+      { color: COL.barExec, label: 'Executed offer' },
+      { color: COL.resIn, label: 'Excess demand' },
+      { color: COL.resOut, label: 'Excess supply' }
+    ];
+    
+    const LEGEND = {
+      x: 16,
+      y: 96,
+      padding: 12,
+      iconSize: 16,
+      iconColumn: 28,    // Icons at x=28 (16+12)  
+      rowHeight: 22,     // Row spacing
+      boxWidth: 200,
+      boxHeight: (items.length + 1) * 22 + 24  // +1 for cutoff line, +24 for padding
+    };
+    
+    // Draw legend background
+    ctx.fillStyle = COL.legendBG;
+    ctx.fillRect(px(LEGEND.x), px(LEGEND.y), px(LEGEND.boxWidth), px(LEGEND.boxHeight));
+    ctx.strokeStyle = COL.legendStroke;
+    ctx.lineWidth = px(1);
+    ctx.strokeRect(px(LEGEND.x), px(LEGEND.y), px(LEGEND.boxWidth), px(LEGEND.boxHeight));
+    
+    // Set up text rendering
+    ctx.font = px(12) + 'px system-ui,Segoe UI,Roboto,Helvetica,Arial';
+    ctx.fillStyle = COL.legendText;
+    ctx.textBaseline = 'middle';
+    
+    // Draw legend items
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const rowY = LEGEND.y + LEGEND.padding + (i * LEGEND.rowHeight) + LEGEND.rowHeight/2;
+      
+      // Draw color square
+      ctx.fillStyle = item.color;
+      ctx.fillRect(px(LEGEND.iconColumn), px(rowY - LEGEND.iconSize/2), px(LEGEND.iconSize), px(LEGEND.iconSize));
+      
+      // Draw text immediately to the right of the swatch
+      ctx.fillStyle = COL.legendText;
+      ctx.textAlign = 'left';
+      ctx.fillText(item.label, px(LEGEND.iconColumn + LEGEND.iconSize + 4), px(rowY));
+    }
+    
+    // Draw cutoff line and label
+    const cutoffY = LEGEND.y + LEGEND.padding + (items.length * LEGEND.rowHeight) + LEGEND.rowHeight/2;
+    
+    // Cutoff line
+    ctx.strokeStyle = COL.gate;
+    ctx.lineWidth = px(2);
+    ctx.beginPath();
+    ctx.moveTo(px(LEGEND.iconColumn), px(cutoffY));
+    ctx.lineTo(px(LEGEND.iconColumn + LEGEND.iconSize), px(cutoffY));
+    ctx.stroke();
+    
+    // Cutoff text immediately to the right of the line
+    ctx.fillStyle = COL.legendText;
+    ctx.textAlign = 'left';
+    ctx.fillText('Cutoff', px(LEGEND.iconColumn + LEGEND.iconSize + 4), px(cutoffY));
+  }
+
+  // ---------- Edge Helpers ----------
+  // Maps for edge properties to avoid repeated conditionals
+  const EDGE_PROPS = {
+    'AB': {P:'A', Q:'B', lanes:[{sell:'A',buy:'B'}, {sell:'B',buy:'A'}]},
+    'BC': {P:'B', Q:'C', lanes:[{sell:'B',buy:'C'}, {sell:'C',buy:'B'}]},
+    'CA': {P:'C', Q:'A', lanes:[{sell:'C',buy:'A'}, {sell:'A',buy:'C'}]}
+  };
+  function edgePair(e, laneIndex){ return EDGE_PROPS[e.name].lanes[laneIndex]; }
+
+  // Convert a lane's u (which may run Q->P) to the edge's canonical u (P->Q)
+  function laneUToEdgeU(e, lane, u){
+    return (V.dot(lane.dirEdge, e.t) >= 0) ? u : (1 - u);
+  }
+
+  // Point along the edge at canonical u (0 at P, 1 at Q)
+  function ePoint(e, u){
+    return { x: e.P.x + e.t.x * (u*e.L), y: e.P.y + e.t.y * (u*e.L) };
+  }
+
+  // Draw a rectangular strip along the edge, offset from the axis, with thickness
+  function drawStrip(e, u0, u1, offset, thickness, color, alpha=0.22){
+    if(u0>u1){ const tmp=u0; u0=u1; u1=tmp; }
+    const p0 = ePoint(e, u0);
+    const p1 = ePoint(e, u1);
+    const n  = e.n; // inward unit normal
+    const half = thickness*0.5;
+    const a0 = V.add(p0, V.mul(n, offset - half));
+    const b0 = V.add(p0, V.mul(n, offset + half));
+    const a1 = V.add(p1, V.mul(n, offset - half));
+    const b1 = V.add(p1, V.mul(n, offset + half));
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(a0.x,a0.y); ctx.lineTo(a1.x,a1.y); ctx.lineTo(b1.x,b1.y); ctx.lineTo(b0.x,b0.y);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawGutters(ex){
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over'; // gutters paint over existing pixels
+    
+    // Constants (pixel-space; scale by DPR)
+    const lane0 = edges[0].lanes[0];
+    const SEP     = (lane0.thickness*0.6) + px(10); // distance from edge axis to gutter centerline
+    const BASE    = px(3);    // minimum gutter thickness
+    const AMP     = px(16);   // extra thickness per unit bar height
+    const STOPU   = 0.04;     // stop short of vertices to avoid covering reservoirs
+    const ALPHAIN = 0.22;
+    const ALPHAOUT= 0.22;
+
+    for(const e of edges){
+      const props = EDGE_PROPS[e.name];
+      for(let li=0; li<2; li++){
+        const lane = e.lanes[li];
+        const {sell, buy} = props.lanes[li];
+
+        // canonical target u for sell/buy vertices (P=0,Q=1), clipped by STOPU
+        const uSell = (sell===props.P) ? STOPU : (1-STOPU);
+        const uBuy  = (buy ===props.P) ? STOPU : (1-STOPU);
+
+        for(const b of lane.bars){
+          if(!ex.executed.get(b)) continue;
+
+          // Get bar position using same logic as limit order rendering
+          const barPos = getBarRenderPosition(lane, b);
+          
+          // Convert bar position back to canonical edge u coordinate
+          // Project the bar position onto the edge vector
+          const edgeVec = V.sub(e.Q, e.P);
+          const barVec = V.sub(barPos, e.P);
+          const uBar = V.dot(barVec, edgeVec) / V.dot(edgeVec, edgeVec);
+
+          // Thickness encodes quantity (bar height)
+          const th = BASE + AMP * b.h;
+
+          // Inbound to SELL asset: inside (positive) offset along inward normal
+          drawStrip(e, uBar, uSell, +SEP, th, COL.flowIn, ALPHAIN);
+
+          // Outbound from BUY asset: outside (negative) offset along inward normal
+          drawStrip(e, uBuy, uBar, -SEP, th, COL.flowOut, ALPHAOUT);
+        }
+      }
+    }
+    
+    ctx.restore();
+  }
+
+  // ---------- Draw ----------
+  function draw(){
+    const W=canvas.width,H=canvas.height;
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle=COL.bg; ctx.fillRect(0,0,W,H);
+
+    // Triangle base
+    ctx.beginPath(); ctx.moveTo(tri.A.x,tri.A.y); ctx.lineTo(tri.B.x,tri.B.y); ctx.lineTo(tri.C.x,tri.C.y); ctx.closePath();
+    ctx.fillStyle=COL.tri; ctx.fill();
+    ctx.strokeStyle=COL.triEdge; ctx.lineWidth=px(2); ctx.stroke();
+
+    // Exec snapshot for coloring/flows
+    const ex=execNow();
+
+    // Edges: lanes, bars, gates
+    drawEdges(ex);
+    // drawGutters(ex); // Disabled for now
+
+    // Reservoirs & flows
+    drawReservoir('A', tri.A, ex);
+    drawReservoir('B', tri.B, ex);
+    drawReservoir('C', tri.C, ex);
+
+
+    // Bead halo (||D||∞)
+    const dMax=Math.max(Math.abs(ex.D.A),Math.abs(ex.D.B),Math.abs(ex.D.C));
+    const haloR=clamp(px(12) + px(40)*Math.tanh(2*dMax), px(12), px(52));
+    ctx.fillStyle=COL.beadHalo; ctx.beginPath(); ctx.arc(bead.x,bead.y,haloR,0,Math.PI*2); ctx.fill();
+
+    // Bead
+    ctx.fillStyle=COL.bead; ctx.beginPath(); ctx.arc(bead.x,bead.y,px(8),0,Math.PI*2); ctx.fill();
+
+    // Arrow
+    const arr=arrowFrom(ex.D); const L=px(46)*(STEP_LEVELS[stepIdx]*0.6);
+    drawArrow(bead, {x:bead.x+arr.dir.x*L, y:bead.y+arr.dir.y*L}, COL.beadArrow);
+
+    // UI & legend
+    drawUI();
+    drawLegend();
+
+    // Hover tooltip
+    drawTooltip(ex);
+  }
+
+  function drawEdges(ex){
+    for(const e of edges){
+      
+      // Draw single track and axis line for this edge (use first lane's position since both are now at trackOffset=0)
+      const lane0 = e.lanes[0];
+      const p0=lanePoint(lane0,0), p1=lanePoint(lane0,1);
+      ctx.strokeStyle=COL.laneTrack; ctx.lineWidth=lane0.thickness; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(p0.x,p0.y); ctx.lineTo(p1.x,p1.y); ctx.stroke();
+      // axis hairline
+      ctx.strokeStyle=COL.laneAxis; ctx.lineWidth=lane0.axis; ctx.beginPath(); ctx.moveTo(p0.x,p0.y); ctx.lineTo(p1.x,p1.y); ctx.stroke();
+
+      // Draw bars from both lanes on the same visual line
+      for(const lane of e.lanes){
+        for(const b of lane.bars){
+          const base=getBarRenderPosition(lane, b);
+          const n=lane.normal, tvec=V.perp(n);
+          const w=px(14), h=b.h*px(38);
+          const left = V.add(base, V.mul(tvec,-w/2));
+          const right= V.add(base, V.mul(tvec,+w/2));
+          const topL = V.add(left, V.mul(n,h));
+          const topR = V.add(right,V.mul(n,h));
+          ctx.beginPath(); ctx.moveTo(left.x,left.y); ctx.lineTo(right.x,right.y); ctx.lineTo(topR.x,topR.y); ctx.lineTo(topL.x,topL.y); ctx.closePath();
+          const isExec = ex.executed.get(b);
+          const isSelected = (selectedBar === b);
+          ctx.fillStyle = (hover && hover.type==='bar' && hover.bar===b) ? COL.barHover : (isExec?COL.barExec:COL.barQueued);
+          ctx.fill();
+          if(isSelected){ ctx.strokeStyle=COL.uiActive; ctx.lineWidth=px(2); ctx.stroke(); }
+        }
+      }
+
+      // Cutoff: crosshair (strong baseline ticks + long normal guide)
+      const ugEdge = ex.gateU.get(e); // canonical u
+      const center=e.mid; // Fixed midpoint of edge, never moves
+      // Calculate cutoff intersection using same logic as order positioning
+      const {P, Q} = EDGE_PROPS[e.name];
+      const priceRatio = p[P] / p[Q];
+      const intersectionPoint = getPriceRatioIntersection(priceRatio, e);
+      
+      // Long normal guide - radiates from bead to price-ratio intersection
+      ctx.strokeStyle=COL.gateGuide; ctx.lineWidth=px(2);
+      ctx.beginPath();
+      ctx.moveTo(bead.x, bead.y);
+      ctx.lineTo(intersectionPoint.x, intersectionPoint.y);
+      ctx.stroke();
+      
+      // Baseline ticks at fixed midpoint (perpendicular to edge)
+      ctx.strokeStyle=COL.gate; ctx.lineWidth=px(3);
+      ctx.beginPath();
+      const tick=px(12);
+      ctx.moveTo(center.x - e.t.x*tick, center.y - e.t.y*tick);
+      ctx.lineTo(center.x + e.t.x*tick, center.y + e.t.y*tick);
+      ctx.stroke();
+      // Small center dot at fixed midpoint
+      ctx.fillStyle=COL.gate; ctx.beginPath(); ctx.arc(center.x,center.y,px(3.2),0,Math.PI*2); ctx.fill();
+    }
+  }
+
+  function drawReservoir(name,pos,ex){
+    const D=ex.D[name];
+    const r=px(30); // Much larger circle
+    const center=pos; // Position exactly at vertex
+    
+    // Draw background circle
+    ctx.fillStyle=COL.resChamber;
+    ctx.beginPath(); ctx.arc(center.x,center.y,r,0,Math.PI*2); ctx.fill();
+    
+    // Calculate inflow and outflow amounts
+    const infl=Math.max(0,-D), outf=Math.max(0,D);
+    const hi=clamp(infl*1.2,0,1), ho=clamp(outf*1.2,0,1);
+    
+    // Draw inflow gauge (green) if any
+    if(hi > 0) {
+      ctx.beginPath(); ctx.moveTo(center.x,center.y); ctx.fillStyle=COL.resIn;
+      ctx.arc(center.x,center.y, r-px(2), -Math.PI/2, -Math.PI/2+Math.PI*2*hi); 
+      ctx.lineTo(center.x,center.y); ctx.fill();
+    }
+    
+    // Draw outflow gauge (red) if any
+    if(ho > 0) {
+      ctx.beginPath(); ctx.moveTo(center.x,center.y); ctx.fillStyle=COL.resOut;
+      ctx.arc(center.x,center.y, r-px(2), -Math.PI/2, -Math.PI/2+Math.PI*2*ho); 
+      ctx.lineTo(center.x,center.y); ctx.fill();
+    }
+    
+    // Draw asset label in center
+    ctx.fillStyle=COL.label; ctx.font=px(14)+'px system-ui,Segoe UI,Roboto,Helvetica,Arial';
+    ctx.textAlign='center'; ctx.textBaseline='middle'; 
+    ctx.fillText(name, center.x, center.y);
+  }
+
+  function drawArrow(from,to,color){
+    const v=V.sub(to,from), L=V.len(v)||1e-6, d={x:v.x/L,y:v.y/L};
+    ctx.strokeStyle=color; ctx.lineWidth=px(3); ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(from.x,from.y); ctx.lineTo(to.x,to.y); ctx.stroke();
+    const head=px(9);
+    const left=V.add(to, V.add(V.mul({x:-d.x,y:-d.y}, head), V.mul(V.perp(d), 0.6*head)));
+    const right=V.add(to, V.add(V.mul({x:-d.x,y:-d.y}, head), V.mul(V.perp(d),-0.6*head)));
+    ctx.fillStyle=color; ctx.beginPath(); ctx.moveTo(to.x,to.y); ctx.lineTo(left.x,left.y); ctx.lineTo(right.x,right.y); ctx.closePath(); ctx.fill();
+  }
+
+  // ---------- Tooltip ----------
+  function drawTooltip(ex){
+    if(!hover) return;
+    let lines=[], anchor={x:0,y:0};
+    if(hover.type==='bar'){
+      const e=edgeByLane(hover.lane);
+      const laneIdx = e.lanes.indexOf(hover.lane);
+      const {sell, buy} = edgePair(e, laneIdx);
+      const pair = [sell, buy];
+      const r = p[sell]/p[buy];
+      const qty = hover.bar.h*MAX_Q;
+      const min = uToMin(hover.bar.u);
+      const exec = ex.executed.get(hover.bar);
+      lines = [
+        `${pair[0]}→${pair[1]}`,
+        `qty: ${qty.toFixed(4)}`,
+        `min: ${min.toFixed(4)} (${pair[1]}/${pair[0]})`,
+        `pair: ${r.toFixed(4)}`,
+        exec ? `EXECUTED` : `QUEUED`
+      ];
+      // anchor near bar top
+      const base=getBarRenderPosition(hover.lane, hover.bar);
+      const top=V.add(base, V.mul(hover.lane.normal, hover.bar.h*px(38)));
+      anchor = V.add(top, {x:px(10), y:px(-10)});
+    } else if(hover.type==='gate'){
+      const [X,Y]=hover.pair;
+      lines = [`cutoff ${X}/${Y}`, `${hover.ratio.toFixed(6)}`];
+      anchor = V.add(hover.center, {x:px(12),y:px(-12)});
+    } else if(hover.type==='asset'){
+      const A=hover.asset;
+      const infl=ex.inflow[A], outf=ex.outflow[A], net=outf-infl;
+      lines = [`asset ${A}`, `p: ${p[A].toPrecision(6)}`, `in: ${infl.toFixed(6)}`, `out: ${outf.toFixed(6)}`, `net: ${net.toFixed(6)}`];
+      anchor = V.add(hover.pos, {x:px(16),y:px(-16)});
+    }
+    tooltip(lines, anchor);
+  }
+  function tooltip(lines, at){
+    const pad=px(6), lh=px(14);
+    ctx.font=px(12)+'px system-ui,Segoe UI,Roboto,Helvetica,Arial';
+    let w=0; for(const s of lines){ w=Math.max(w, ctx.measureText(s).width); }
+    const h=lh*lines.length + pad*2;
+    const x=at.x, y=at.y - h - px(6);
+    ctx.fillStyle='rgba(8,12,20,0.95)'; ctx.fillRect(x,y,w+pad*2,h);
+    ctx.strokeStyle='#2a3a53'; ctx.lineWidth=px(1); ctx.strokeRect(x,y,w+pad*2,h);
+    ctx.fillStyle='#d9ecff'; ctx.textBaseline='top';
+    for(let i=0;i<lines.length;i++) ctx.fillText(lines[i], x+pad, y+pad+i*lh);
+  }
+
+  // ---------- Interaction ----------
+  const pointer={x:0,y:0,down:false}; let drag=null; // 'bead' | {type:'bar',lane,bar}
+
+  canvas.addEventListener('pointerdown', (e)=>{
+    e.preventDefault();
+    canvas.setPointerCapture(e.pointerId);
+    const pt=getPt(e); 
+    pointer.down=true; pointer.x=pt.x; pointer.y=pt.y;
+
+    // Check UI first
+    const UI=uiHit(pt);
+    if(UI){ handleUI(UI); draw(); return; }
+
+    // Check bead
+    if(Math.hypot(pt.x-bead.x, pt.y-bead.y) <= px(16)){ 
+      drag='bead'; 
+      return; 
+    }
+
+    // Check existing bars
+    const hit=hitBar(pt,false);
+    if(hit){ 
+      drag={type:'bar',lane:hit.lane,bar:hit.bar}; 
+      selectedBar=hit.bar; // Set as the selected bar
+      focusedEdge=edgeByLane(hit.lane); 
+      draw(); 
+      return; 
+    }
+
+    // Check lanes for new bar
+    const lane=hitLane(pt);
+    if(lane){
+      const b=addBar(lane.lane, lane.u, 0.25);
+      selectedBar=b; // Set as the selected bar
+      drag={type:'bar',lane:lane.lane,bar:b}; 
+      focusedEdge=edgeByLane(lane.lane); 
+      draw();
+    }
+  });
+  canvas.addEventListener('pointermove', (e)=>{
+    const pt=getPt(e); 
+    pointer.x=pt.x; pointer.y=pt.y;
+    
+    if(pointer.down && drag){
+      if(drag==='bead'){ 
+        bead=clampToTri(pt); 
+        updateP(); 
+      } else if(drag.type==='bar'){
+        const {lane,bar}=drag;
+        const proj=projectToLane(pt,lane);
+        if(proj.onSeg){
+          // Convert projected position to correct price-ratio-based u parameter
+          const edge = edgeByLane(lane);
+          const edgeVec = V.sub(edge.Q, edge.P);
+          const projPoint = V.add(lanePoint(lane,0), V.mul(V.sub(lanePoint(lane,1), lanePoint(lane,0)), proj.u));
+          const projVec = V.sub(projPoint, edge.P);
+          const edgeU = V.dot(projVec, edgeVec) / V.dot(edgeVec, edgeVec);
+          
+          // Convert canonical edge u back to price ratio, then to bar u
+          const {P, Q} = EDGE_PROPS[edge.name];
+          const laneIndex = edge.lanes.indexOf(lane);
+          let priceRatio;
+          
+          if (edgeU <= 0.001) priceRatio = 0.001; // Avoid division by zero
+          else if (edgeU >= 0.999) priceRatio = 1000;
+          else {
+            // Calculate base price ratio from edge position
+            const basePriceRatio = (1 - edgeU) / edgeU;
+            // Lane 0 = P->Q, Lane 1 = Q->P - adjust ratio based on lane direction
+            priceRatio = (laneIndex === 0) ? basePriceRatio : (1 / basePriceRatio);
+          }
+          
+          // Convert price ratio to u parameter
+          bar.u = clamp(minToU(priceRatio), 0, 1);
+          
+          const base=getBarRenderPosition(lane, bar);
+          const alongN=V.dot(V.sub(pt,base), lane.normal);
+          bar.h=clamp(alongN/px(38),0,1);
+          const sideDist=Math.abs(V.dot(V.sub(pt,base), V.perp(lane.normal)));
+          bar.deleting = (sideDist > lane.thickness*0.9 + px(24));
+        }
+      }
+    } else {
+      hover=pick(pt);
+    }
+    draw();
+  });
+  canvas.addEventListener('pointerup', (e)=>{
+    pointer.down=false;
+    if(drag && drag.type==='bar'){
+      const {lane,bar}=drag;
+      if(bar.deleting){ 
+        const i=lane.bars.indexOf(bar); 
+        if(i>=0) {
+          lane.bars.splice(i,1);
+          if(selectedBar === bar) selectedBar = null; // Clear selection if deleted
+        }
+      }
+      bar.deleting=false;
+    }
+    drag=null; 
+    draw();
+  });
+
+  function getPt(e){ 
+    const r=canvas.getBoundingClientRect(); 
+    return {x:(e.clientX-r.left)*DPR, y:(e.clientY-r.top)*DPR}; 
+  }
+  function clampToTri(P){ let w=bary(P,tri.A,tri.B,tri.C); w=clampBary(w,1e-5); return baryPoint(w,tri.A,tri.B,tri.C); }
+  function hitLane(pt){
+    let best=null, bestD=1e9;
+    for(const e of edges){
+      for(const lane of e.lanes){
+        const proj=projectToLane(pt,lane);
+        if(!proj.onSeg) continue;
+        const d=Math.abs(proj.dist);
+        if(d<lane.thickness*0.5 && d<bestD){ bestD=d; best={lane,u:proj.u}; }
+      }
+    }
+    return best;
+  }
+  function handleUI(hit){
+    switch(hit.k){
+      case 'play': 
+        playing=!playing; 
+        if(playing) requestAnimationFrame(loop); 
+        break;
+      case 'reset': 
+        bead=baryPoint({A:1/3,B:1/3,C:1/3}, tri.A, tri.B, tri.C); 
+        updateP(); 
+        selectedBar = null; // Clear selection on reset
+        seed(); 
+        break;
+      case 'strength': 
+        stepIdx=hit.i; 
+        break;
+      case 'clear': 
+        if(selectedBar) {
+          // Find and remove the selected bar
+          for(const e of edges) {
+            for(const lane of e.lanes) {
+              const i = lane.bars.indexOf(selectedBar);
+              if(i >= 0) {
+                lane.bars.splice(i, 1);
+                selectedBar = null;
+                return;
+              }
+            }
+          }
+        }
+        break;
+      case 'add':
+        // Add new order at midpoint (u=0.5) with quantity 0.5
+        const edge = edges[hit.edgeIndex];
+        const lane = edge.lanes[hit.laneIndex];
+        const newBar = addBar(lane, 0.5, 0.5); // u=0.5 (midpoint), h=0.5 (qty=0.5)
+        selectedBar = newBar; // Select the newly created bar
+        focusedEdge = edge;
+        break;
+    }
+  }
+
+  // ---------- Main loop ----------
+  function loop(ts){
+    last=ts;
+    if(playing){
+      stepOnce();
+      draw();
+      requestAnimationFrame(loop);
+    }
+  }
+
+  // ---------- Initialization ----------
+  function init() {
+    // 1. Initialize basic variables
+    DPR = Math.max(1, window.devicePixelRatio || 1);
+    p = {A: 1/3, B: 1/3, C: 1/3};
+    stepIdx = 1;
+    playing = false;
+    focusedEdge = null;
+    hover = null;
+    last = performance.now();
+    
+    // 2. Set up canvas and triangle (depends on canvas)
+    canvas.width = Math.floor(window.innerWidth * DPR);
+    canvas.height = Math.floor(window.innerHeight * DPR);
+    tri = layoutTriangle();
+    
+    // 3. Create edges (depends on tri)
+    edgeAB = makeEdge('AB', tri.A, tri.B, tri.C);
+    edgeBC = makeEdge('BC', tri.B, tri.C, tri.A);
+    edgeCA = makeEdge('CA', tri.C, tri.A, tri.B);
+    edges = [edgeAB, edgeBC, edgeCA];
+    // Build lane->edge lookup
+    laneToEdgeMap = new WeakMap();
+    edges.forEach(e => e.lanes.forEach(l => laneToEdgeMap.set(l, e)));
+    
+    // 4. Initialize bead (depends on tri)
+    bead = baryPoint({A: 1/3, B: 1/3, C: 1/3}, tri.A, tri.B, tri.C);
+    updateP();
+    
+    // 5. Seed the market (depends on edges)
+    seed();
+    
+    // 6. First draw and start loop
+    draw();
+    requestAnimationFrame(loop);
+  }
+  
+  // Setup and start
+  window.addEventListener('resize', resize, {passive: true});
+  init();
+
+})();
+</script>
+</body>
+</html>
+
