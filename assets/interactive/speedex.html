@@ -24,6 +24,16 @@
   let selectedBar = null; // Track the currently selected bar
   const STEP_LEVELS = [0.6, 1.0, 1.6];
   let nextBarId = 1;
+  let streamlines = [];
+  let fieldDirty = true; // recompute streamlines when true
+  let showStreamlines = true; // toggle for streamline visibility
+  
+  // --- Tatonnement params (paper C.1/C.2) ---
+  let mu = 0.05;           // smoothing band for demands (optional but recommended)
+  let delta = 0.20;        // step size "δ_t" (adaptive, will change every step)
+  const nu = {A:1, B:1, C:1}; // volume normalizers ν_A (updated online)
+  const DELTA_UP = 1.25, DELTA_DOWN = 0.5;
+  const MAX_LINESEARCH_ITERS = 6;
   
   function resize(){
     if (!tri) return; // Skip if not initialized yet
@@ -61,6 +71,7 @@
     
     // Update bead position
     bead = baryPoint(p, tri.A, tri.B, tri.C);
+    fieldDirty = true;
     draw();
   }
 
@@ -105,7 +116,9 @@
     uiBG:'rgba(15,20,28,0.8)',
     uiStroke:'#2a3a53',
     uiIcon:'#e7f1ff',
-    uiActive:'#9ed0ff'
+    uiActive:'#9ed0ff',
+    streamline: 'rgba(126,166,255,0.65)',
+    streamlineFade: 'rgba(126,166,255,0.18)'
   };
 
   // ---------- Triangle & barycentric ----------
@@ -134,6 +147,12 @@
     const u=Math.max(eps,w.A), v=Math.max(eps,w.B), t=Math.max(eps,w.C);
     const s=u+v+t;
     return {A:u/s, B:v/s, C:t/s}; 
+  }
+
+  // Point-in-triangle test for seeding
+  function pointInTriangle(P, A, B, C, eps = 1e-6){
+    const w = bary(P, A, B, C);
+    return (w.A > eps && w.B > eps && w.C > eps);
   }
 
   // ---------- State ----------
@@ -210,6 +229,7 @@
     addBar(edgeBC.lanes[1],0.35,0.50);
     addBar(edgeCA.lanes[0],0.50,0.45); 
     addBar(edgeCA.lanes[1],0.65,0.40);
+    fieldDirty = true;
   }
 
   // ---------- Prices & ratios ----------
@@ -232,11 +252,22 @@
       });
       for(const pr of pairs){
         for(const b of pr.lane.bars){
-          const fill = (laneUToEdgeU(e, pr.lane, b.u) <= ug); executed.set(b, fill);
-          if(fill){
-            const qSell=b.h*MAX_Q;
-            inflow[pr.sell]+=qSell;
-            outflow[pr.buy]+=qSell*pr.r;
+          // µ-smoothed demand (paper C.2, Eq. 16)
+          const m = uToMin(b.u);              // bar's min price (sold-asset units)
+          const r = pr.r;                      // current pair rate p_sell/p_buy
+          let frac = 0;
+          const low = (1 - mu) * r;
+          if (m <= low)      frac = 1;                   // fully in-the-money
+          else if (m <= r)   frac = (r - m) / (mu * r);  // linear interpolation
+          else               frac = 0;
+
+          if (frac > 0){
+            const qSell = b.h * MAX_Q * frac;
+            inflow[pr.sell] += qSell;
+            outflow[pr.buy] += qSell * r;
+            executed.set(b, frac >= 0.999);  // Mark as executed if nearly full
+          } else {
+            executed.set(b, false);
           }
         }
       }
@@ -246,6 +277,209 @@
   }
 
   // ---------- Arrow step ----------
+  // Execution at arbitrary price (decoupled from bead)
+  function execAtPrice(pLocal){
+    const inflow={A:0,B:0,C:0}, outflow={A:0,B:0,C:0};
+    // gate u given local price
+    function gateULocal(e){
+      const {P,Q} = EDGE_PROPS[e.name];
+      return minToU(pLocal[P]/pLocal[Q]);
+    }
+    for(const e of edges){
+      const ug = gateULocal(e);
+      const pairs = e.lanes.map((lane,i) => {
+        const {sell, buy} = edgePair(e, i);
+        return {lane, sell, buy, r: pLocal[sell]/pLocal[buy], ug};
+      });
+      for(const pr of pairs){
+        for(const b of pr.lane.bars){
+          // µ-smoothed demand (same as execNow)
+          const m = uToMin(b.u);
+          const r = pr.r;
+          let frac = 0;
+          const low = (1 - mu) * r;
+          if (m <= low)      frac = 1;
+          else if (m <= r)   frac = (r - m) / (mu * r);
+          else               frac = 0;
+          
+          if(frac > 0){
+            const qSell=b.h*MAX_Q*frac;
+            inflow[pr.sell]+=qSell;
+            outflow[pr.buy]+=qSell*r;
+          }
+        }
+      }
+    }
+    const D={A:outflow.A-inflow.A, B:outflow.B-inflow.B, C:outflow.C-inflow.C};
+    return {inflow,outflow,D};
+  }
+
+  // Vector field at an arbitrary XY point (canvas space)
+  function fieldDirAtXY(pt){
+    // Convert XY -> bary -> clamp -> local price vector
+    let w = clampBary( bary(pt, tri.A, tri.B, tri.C), 1e-5 );
+    const pLocal = {A:w.A, B:w.B, C:w.C};
+
+    // Compute field direction using tâtonnement update
+    const ex = execAtPrice(pLocal);
+    const pProposed = {
+      A: pLocal.A * (1 + pLocal.A * ex.D.A * 0.1 * nu.A),
+      B: pLocal.B * (1 + pLocal.B * ex.D.B * 0.1 * nu.B),
+      C: pLocal.C * (1 + pLocal.C * ex.D.C * 0.1 * nu.C),
+    };
+    const s = pProposed.A + pProposed.B + pProposed.C;
+    pProposed.A /= s; pProposed.B /= s; pProposed.C /= s;
+    
+    // Convert price change to XY direction
+    const beadLocal = baryPoint(pLocal, tri.A, tri.B, tri.C);
+    const beadProposed = baryPoint(pProposed, tri.A, tri.B, tri.C);
+    const dir = V.sub(beadProposed, beadLocal);
+    const L = Math.hypot(dir.x, dir.y) || 1e-9;
+    return {dir:{x:dir.x/L, y:dir.y/L}, speed:L}; // unit dir + nominal speed
+  }
+
+  // Streamline tracer (RK2 midpoint integrator)
+  function traceStreamline(seed, dirSign){
+    const pts = [seed];
+    const MAX_STEPS = 80;
+    const stepPx = px(10) * STEP_LEVELS[stepIdx] * 0.6; // scale with strength to match bead motion
+    let cur = {x:seed.x, y:seed.y};
+
+    for(let i=0;i<MAX_STEPS;i++){
+      const vf0 = fieldDirAtXY(cur);
+      const v0 = {x:vf0.dir.x*dirSign, y:vf0.dir.y*dirSign};
+
+      // Stop if the field is degenerate
+      if(!isFinite(v0.x) || !isFinite(v0.y)) break;
+
+      // Midpoint step (RK2)
+      const mid = {x: cur.x + v0.x*(stepPx*0.5), y: cur.y + v0.y*(stepPx*0.5)};
+      const vf1 = fieldDirAtXY(mid);
+      const v1 = {x:vf1.dir.x*dirSign, y:vf1.dir.y*dirSign};
+
+      // Advance
+      let nxt = {x: cur.x + v1.x*stepPx, y: cur.y + v1.y*stepPx};
+      // Clamp to triangle; abort if we hit boundary
+      const clamped = clampToTri(nxt);
+      const dx = clamped.x - cur.x, dy = clamped.y - cur.y;
+      if(Math.hypot(dx,dy) < px(0.5)) break; // stagnation / boundary
+      cur = clamped;
+
+      // Terminate if we left triangle numerically
+      if(!pointInTriangle(cur, tri.A, tri.B, tri.C, 1e-4)) break;
+
+      pts.push({x:cur.x,y:cur.y});
+    }
+    return pts;
+  }
+
+  // (Re)build streamlines cache
+  function computeStreamlines(){
+    streamlines = [];
+
+    // Grid seeding over triangle's bbox
+    const minX = Math.min(tri.A.x, tri.B.x, tri.C.x);
+    const maxX = Math.max(tri.A.x, tri.B.x, tri.C.x);
+    const minY = Math.min(tri.A.y, tri.B.y, tri.C.y);
+    const maxY = Math.max(tri.A.y, tri.B.y, tri.C.y);
+
+    const spacing = px(44); // visual density control
+    // Hex-like staggering
+    let count = 0, MAX_SEEDS = 220;
+
+    for(let y=minY; y<=maxY && count<MAX_SEEDS; y+=spacing){
+      const offset = (((y-minY)/spacing)|0)%2 ? spacing*0.5 : 0;
+      for(let x=minX+offset; x<=maxX && count<MAX_SEEDS; x+=spacing){
+        const P = {x,y};
+        if(!pointInTriangle(P, tri.A, tri.B, tri.C, 1e-4)) continue;
+
+        // Skip near reservoirs (keep lines readable)
+        const nearR = (Math.hypot(P.x-tri.A.x,P.y-tri.A.y) < px(34)) ||
+                      (Math.hypot(P.x-tri.B.x,P.y-tri.B.y) < px(34)) ||
+                      (Math.hypot(P.x-tri.C.x,P.y-tri.C.y) < px(34));
+        if(nearR) continue;
+
+        // Trace in both directions from seed
+        const fwd = traceStreamline(P, +1);
+        const bwd = traceStreamline(P, -1);
+        // Merge (reverse bwd without duplicate seed)
+        bwd.pop();
+        bwd.reverse();
+        const pts = bwd.concat(fwd);
+
+        if(pts.length >= 8){ // ignore trivial curves
+          streamlines.push(pts);
+          count++;
+        }
+      }
+    }
+
+    fieldDirty = false;
+  }
+
+  // ---------- Tatonnement helpers ----------
+  function valueNorm(ex){ // || p ⊙ Z ||_2
+    const a = p.A*ex.D.A, b = p.B*ex.D.B, c = p.C*ex.D.C;
+    return Math.hypot(a, b, c);
+  }
+
+  function proposePrices(p0, ex, δ){
+    // p_A <- p_A * (1 + p_A * Z_A * δ_t * ν_A)
+    const p1 = {
+      A: p0.A * (1 + p0.A * ex.D.A * δ * nu.A),
+      B: p0.B * (1 + p0.B * ex.D.B * δ * nu.B),
+      C: p0.C * (1 + p0.C * ex.D.C * δ * nu.C),
+    };
+    // renormalize to the simplex (scale-invariant)
+    const s = p1.A + p1.B + p1.C;
+    p1.A /= s; p1.B /= s; p1.C /= s;
+    return p1;
+  }
+
+  function execGiven(pTest){
+    // Evaluate demand at candidate prices without permanently mutating state
+    const pSaved = p, beadSaved = bead;
+    p = pTest; // gateU() reads p via ratio()
+    const ex = execNow();
+    p = pSaved; bead = beadSaved;
+    return ex;
+  }
+
+  function stepOnce(){
+    // current demand & norm
+    const ex0 = execNow();
+    const n0  = valueNorm(ex0);
+
+    // simple volume estimate ν_A := ema(min(in, out))
+    // Keep a minimum value to prevent complete collapse
+    for (const A of ['A','B','C']) {
+      const vol = Math.min(ex0.inflow[A], ex0.outflow[A]) + 0.001; // Minimum volume to prevent collapse
+      nu[A] = Math.max(0.001, 0.9*nu[A] + 0.1*vol); // Ensure nu never goes below 0.001
+    }
+
+    // backtracking line search on || p ⊙ Z ||_2 (paper C.1)
+    let δ = delta, accepted = false, pCand = null, ex1 = null, n1 = null;
+    for (let k=0; k<MAX_LINESEARCH_ITERS; k++){
+      pCand = proposePrices(p, ex0, δ);
+      ex1   = execGiven(pCand);
+      n1    = valueNorm(ex1);
+      if (n1 < n0){ accepted = true; break; }
+      δ *= DELTA_DOWN;
+    }
+    if (accepted){
+      // accept step, grow δ a bit next round
+      p = pCand;
+      delta = Math.min(δ * DELTA_UP, 1.0);
+    } else {
+      // no improvement—shrink step but keep minimum
+      delta = Math.max(δ, 0.001); // Prevent delta from going to zero
+    }
+
+    // place bead at new prices
+    bead = baryPoint(p, tri.A, tri.B, tri.C);
+  }
+  
+  // Keep arrow visualization as derived from price update (for display only)
   function arrowFrom(D){
     const mean=(D.A+D.B+D.C)/3;
     const dv={A:D.A-mean, B:D.B-mean, C:D.C-mean};
@@ -256,14 +490,6 @@
     const dMax=Math.max(Math.abs(D.A),Math.abs(D.B),Math.abs(D.C));
     const len=(0.08*STEP_LEVELS[stepIdx])*(1+1.5*Math.tanh(2*dMax));
     return {dir,len};
-  }
-  function stepOnce(){
-    const {D}=execNow();
-    const arr=arrowFrom(D);
-    const move=arr.len*0.6;
-    bead={x:bead.x+arr.dir.x*move, y:bead.y+arr.dir.y*move};
-    let w=bary(bead,tri.A,tri.B,tri.C); w=clampBary(w,1e-5); bead=baryPoint(w,tri.A,tri.B,tri.C);
-    updateP();
   }
 
 
@@ -368,7 +594,8 @@
       play:  {x:base.x+12, y:base.y+12, w:btnSize, h:btnSize},
       reset: {x:base.x+12+btnSize+btnGap, y:base.y+12, w:btnSize, h:btnSize}, // Now directly after play
       strength: [0,1,2].map(i => ({x:base.x+124+i*(chipW+4), y:base.y+14, w:chipW, h:26, lvl:i})), // Moved left
-      clear: {x:base.x+242, y:base.y+12, w:btnSize, h:btnSize} // Moved left
+      clear: {x:base.x+242, y:base.y+12, w:btnSize, h:btnSize}, // Moved left
+      streamToggle: {x:base.x+124+30, y:base.y+44, w:60, h:20} // Toggle below strength buttons
     };
   })();
   
@@ -442,6 +669,29 @@
       ctx.fillRect(px(-2),px(2),px(24),px(4));
     });
     
+    // Draw streamline toggle
+    const toggle = ui.streamToggle;
+    ctx.strokeStyle = showStreamlines ? COL.uiActive : COL.uiStroke;
+    ctx.lineWidth = px(1);
+    ctx.strokeRect(px(toggle.x), px(toggle.y), px(toggle.w), px(toggle.h));
+    
+    // Draw wave icon
+    ctx.save();
+    ctx.translate(px(toggle.x + 10), px(toggle.y + toggle.h/2));
+    ctx.strokeStyle = showStreamlines ? COL.uiActive : COL.uiIcon;
+    ctx.lineWidth = px(1.5);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    // Draw three wavy lines
+    for(let i = 0; i < 3; i++) {
+      const y = (i - 1) * px(5);
+      ctx.moveTo(0, y);
+      ctx.bezierCurveTo(px(10), y - px(2), px(10), y + px(2), px(20), y);
+      ctx.bezierCurveTo(px(30), y - px(2), px(30), y + px(2), px(40), y);
+    }
+    ctx.stroke();
+    ctx.restore();
+    
     // Draw addition buttons at edge midpoints
     const addButtons = getAdditionButtons();
     for (const btn of addButtons) {
@@ -490,6 +740,7 @@
     if(inB(ui.reset)) return {k:'reset'};
     for(let i=0;i<ui.strength.length;i++) if(inB(ui.strength[i])) return {k:'strength',i};
     if(inB(ui.clear)) return {k:'clear'};
+    if(inB(ui.streamToggle)) return {k:'streamToggle'};
     
     // Check addition buttons  
     const addButtons = getAdditionButtons();
@@ -673,6 +924,9 @@
     ctx.fillStyle=COL.tri; ctx.fill();
     ctx.strokeStyle=COL.triEdge; ctx.lineWidth=px(2); ctx.stroke();
 
+    // Draw streamlines
+    drawStreamlines();
+
     // Exec snapshot for coloring/flows
     const ex=execNow();
 
@@ -694,9 +948,12 @@
     // Bead
     ctx.fillStyle=COL.bead; ctx.beginPath(); ctx.arc(bead.x,bead.y,px(8),0,Math.PI*2); ctx.fill();
 
-    // Arrow
-    const arr=arrowFrom(ex.D); const L=px(46)*(STEP_LEVELS[stepIdx]*0.6);
-    drawArrow(bead, {x:bead.x+arr.dir.x*L, y:bead.y+arr.dir.y*L}, COL.beadArrow);
+    // Arrow - show proposed price update direction as derived visualization
+    const pProposed = proposePrices(p, ex, 0.1); // Small delta for visualization
+    const beadProposed = baryPoint(pProposed, tri.A, tri.B, tri.C);
+    const dir = V.norm(V.sub(beadProposed, bead));
+    const L=px(46)*(STEP_LEVELS[stepIdx]*0.6);
+    drawArrow(bead, {x:bead.x+dir.x*L, y:bead.y+dir.y*L}, COL.beadArrow);
 
     // UI & legend
     drawUI();
@@ -794,6 +1051,30 @@
     ctx.fillStyle=COL.label; ctx.font=px(14)+'px system-ui,Segoe UI,Roboto,Helvetica,Arial';
     ctx.textAlign='center'; ctx.textBaseline='middle'; 
     ctx.fillText(name, center.x, center.y);
+  }
+
+  // Draw cached streamlines
+  function drawStreamlines(){
+    if(!showStreamlines) return; // Skip if toggled off
+    if(fieldDirty) computeStreamlines();
+
+    ctx.save();
+    ctx.lineWidth = px(1.5);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    for(const line of streamlines){
+      // Fade by length for readability
+      const alpha = clamp(0.15 + line.length*0.002, 0.15, 0.65);
+      ctx.strokeStyle = `rgba(126,166,255,${alpha.toFixed(3)})`;
+
+      ctx.beginPath();
+      ctx.moveTo(line[0].x, line[0].y);
+      for(let i=1;i<line.length;i++) ctx.lineTo(line[i].x, line[i].y);
+      ctx.stroke();
+    }
+
+    ctx.restore();
   }
 
   function drawArrow(from,to,color){
@@ -934,6 +1215,7 @@
           bar.h=clamp(alongN/px(38),0,1);
           const sideDist=Math.abs(V.dot(V.sub(pt,base), V.perp(lane.normal)));
           bar.deleting = (sideDist > lane.thickness*0.9 + px(24));
+          fieldDirty = true;
         }
       }
     } else {
@@ -950,6 +1232,7 @@
         if(i>=0) {
           lane.bars.splice(i,1);
           if(selectedBar === bar) selectedBar = null; // Clear selection if deleted
+          fieldDirty = true;
         }
       }
       bar.deleting=false;
@@ -970,6 +1253,13 @@
         const proj=projectToLane(pt,lane);
         if(!proj.onSeg) continue;
         const d=Math.abs(proj.dist);
+        
+        // Exclude area near midpoint where addition buttons are located
+        // Check if we're close to the midpoint (u ≈ 0.5) on this edge
+        const midpointU = 0.5;
+        const midpointTolerance = 0.15; // Exclude ±15% around midpoint
+        if(Math.abs(proj.u - midpointU) < midpointTolerance) continue;
+        
         if(d<lane.thickness*0.5 && d<bestD){ bestD=d; best={lane,u:proj.u}; }
       }
     }
@@ -986,9 +1276,14 @@
         updateP(); 
         selectedBar = null; // Clear selection on reset
         seed(); 
+        fieldDirty = true;
+        // Reset tâtonnement parameters to prevent getting stuck
+        delta = 0.20;
+        nu.A = 1; nu.B = 1; nu.C = 1;
         break;
       case 'strength': 
         stepIdx=hit.i; 
+        fieldDirty = true;
         break;
       case 'clear': 
         if(selectedBar) {
@@ -999,6 +1294,7 @@
               if(i >= 0) {
                 lane.bars.splice(i, 1);
                 selectedBar = null;
+                fieldDirty = true;
                 return;
               }
             }
@@ -1012,6 +1308,10 @@
         const newBar = addBar(lane, 0.5, 0.5); // u=0.5 (midpoint), h=0.5 (qty=0.5)
         selectedBar = newBar; // Select the newly created bar
         focusedEdge = edge;
+        fieldDirty = true;
+        break;
+      case 'streamToggle':
+        showStreamlines = !showStreamlines;
         break;
     }
   }
@@ -1059,6 +1359,7 @@
     seed();
     
     // 6. First draw and start loop
+    fieldDirty = true; // ensure first compute with current DPR/tri
     draw();
     requestAnimationFrame(loop);
   }
@@ -1066,6 +1367,20 @@
   // Setup and start
   window.addEventListener('resize', resize, {passive: true});
   init();
+  
+  // Expose for testing
+  window.DEBUG = {
+    stepOnce, 
+    execNow, 
+    valueNorm,
+    proposePrices,
+    get p() { return p; },
+    get delta() { return delta; },
+    get nu() { return nu; },
+    get mu() { return mu; },
+    set mu(val) { mu = val; },
+    draw
+  };
 
 })();
 </script>
